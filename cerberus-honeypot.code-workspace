@@ -1,0 +1,107 @@
+{
+	"folders": [
+		{
+			"path": ".",
+			"name": "CERBERUS Honeynet"
+		}
+	],
+	"settings": {
+		"files.exclude": {
+			"**/build/*": true,
+			"!**/build/.gitkeep": true,
+			"**/logs/*": true,
+			"!**/logs/.gitkeep": true,
+			"**/.git": true
+		},
+		"files.associations": {
+			"*.h": "c",
+			"*.c": "c"
+		},
+		"C_Cpp.default.includePath": [
+			"${workspaceFolder}/include",
+			"${workspaceFolder}/src"
+		],
+		"C_Cpp.default.compilerPath": "/usr/bin/gcc",
+		"C_Cpp.default.cStandard": "c11",
+		"C_Cpp.default.intelliSenseMode": "linux-gcc-x64",
+		"editor.formatOnSave": true,
+		"editor.tabSize": 4,
+		"editor.insertSpaces": true,
+		"[c]": {
+			"editor.tabSize": 4,
+			"editor.insertSpaces": true
+		},
+		"[makefile]": {
+			"editor.tabSize": 4
+		},
+		"files.watcherExclude": {
+			"**/build/**": true,
+			"**/logs/**": true,
+			"**/.git/**": true
+		}
+	},
+	"tasks": {
+		"version": "2.0.0",
+		"tasks": [
+			{
+				"label": "Build C Modules",
+				"type": "shell",
+				"command": "make",
+				"group": {
+					"kind": "build",
+					"isDefault": true
+				},
+				"problemMatcher": ["$gcc"],
+				"presentation": {
+					"reveal": "always",
+					"panel": "dedicated"
+				}
+			},
+			{
+				"label": "Clean Build",
+				"type": "shell",
+				"command": "make clean",
+				"group": "build",
+				"problemMatcher": []
+			},
+			{
+				"label": "Setup Services",
+				"type": "shell",
+				"command": "./services/setup-services.sh",
+				"group": "build",
+				"problemMatcher": []
+			},
+			{
+				"label": "Docker: Start Services",
+				"type": "shell",
+				"command": "cd docker && docker compose up -d",
+				"group": "build",
+				"problemMatcher": []
+			},
+			{
+				"label": "Docker: Stop Services",
+				"type": "shell",
+				"command": "cd docker && docker compose down",
+				"group": "build",
+				"problemMatcher": []
+			},
+			{
+				"label": "Docker: View Logs",
+				"type": "shell",
+				"command": "cd docker && docker compose logs -f",
+				"group": "build",
+				"problemMatcher": []
+			}
+		]
+	},
+	"extensions": {
+		"recommendations": [
+			"ms-vscode.cpptools",
+			"ms-vscode.makefile-tools",
+			"ms-python.python",
+			"ms-azuretools.vscode-docker",
+			"redhat.vscode-yaml"
+		]
+	}
+}
+

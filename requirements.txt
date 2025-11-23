@@ -1,0 +1,21 @@
+# Python Dependencies for CERBERUS Honeynet
+# 
+# Install with: pip install -r requirements.txt
+# Or use in virtualenv: python3 -m venv venv && source venv/bin/activate && pip install -r requirements.txt
+
+# Cowrie Honeypot
+# Note: Cowrie should be installed separately via git clone
+# These are supporting packages that Cowrie may need
+twisted>=22.4.0
+pyasn1>=0.4.8
+cryptography>=3.4.8
+configparser>=5.0.0
+
+# Dashboard (if using Flask)
+Flask>=2.0.0
+Flask-CORS>=3.0.10
+
+# Log parsing utilities (for quorum engine)
+# These may be needed if we add Python log parsers
+# python-dateutil>=2.8.0
+

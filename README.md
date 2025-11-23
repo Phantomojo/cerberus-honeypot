@@ -32,23 +32,47 @@ honeynet/
 
 ## Quick Start
 
-1. **Clone the repo**
-
-2. **Build C modules:**
+1. **Clone the repo:**
    ```sh
-   make
+   git clone https://github.com/Phantomojo/cerberus-honeypot.git
+   cd cerberus-honeypot
    ```
 
-3. **Start services (requires Docker):**
+2. **Run setup script:**
+   ```sh
+   ./setup.sh
+   ```
+   This will:
+   - Check/install dependencies (use `./setup.sh --install-deps` to auto-install)
+   - Set up Python virtual environment
+   - Configure service directories
+   - Build C modules
+
+3. **Configure services:**
+   ```sh
+   ./services/setup-services.sh
+   ```
+   This creates initial configurations for all honeypot services.
+
+4. **Start services (requires Docker):**
    ```sh
    cd docker
    docker compose up -d
    ```
 
-4. **Run morphing/quorum engines as daemons or cron jobs.**
+5. **Run morphing/quorum engines:**
+   ```sh
+   ./build/morph    # Test morphing engine
+   ./build/quorum   # Test quorum engine
+   ```
+   (Later: set up as daemons or cron jobs)
 
-5. **View logs:**  
-   Service logs in `logs/`, morph/quorum events in `build/`.
+6. **View logs:**  
+   Service logs in `logs/` and `services/*/logs/`, morph/quorum events in `build/`.
+
+**For detailed setup instructions, see:**
+- `DEPENDENCIES.md` - System requirements and dependencies
+- `SETUP_PLAN.md` - Architecture and implementation plan
 
 ---
 
@@ -74,7 +98,10 @@ honeynet/
 
 ---
 
-**For setup details, see `docs/`, and for architecture see the system diagram inside.**
+**For setup details, see:**
+- `DEPENDENCIES.md` - System requirements and dependencies
+- `SETUP_PLAN.md` - Architecture and implementation plan
+- `docs/` - Project concept PDFs and design diagrams
 
 ---
 
