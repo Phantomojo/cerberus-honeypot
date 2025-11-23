@@ -1,0 +1,42 @@
+# Build artifacts
+build/*
+!build/.gitkeep
+
+# Logs
+logs/*
+!logs/.gitkeep
+
+# Compiled binaries
+*.o
+*.so
+*.a
+*.exe
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Docker
+docker/.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+
+# Temporary files
+*.tmp
+*.bak
+*.log
+
