@@ -2,6 +2,12 @@
 # Test script for quorum detection engine
 # Tests log scanning, IP extraction, and attack correlation
 
+# Exit code constants
+# Exit 0: Normal execution, no attacks detected
+# Exit 1: Normal execution, coordinated attacks detected
+EXIT_SUCCESS=0
+EXIT_ALERT=1
+
 # Colors for output
 GREEN='\033[0;32m'
 RED='\033[0;31m'
@@ -86,10 +92,10 @@ pass "Test logs created with IP: $TEST_IP"
 echo "Test 6: Test IP extraction from logs"
 ./build/quorum > /tmp/quorum_test_output2.txt 2>&1
 QUORUM_EXIT=$?
-# Exit code 1 means coordinated attack detected (which is expected with our test logs)
-if [ $QUORUM_EXIT -eq 0 ] || [ $QUORUM_EXIT -eq 1 ]; then
+# Both success and alert exit codes are acceptable
+if [ $QUORUM_EXIT -eq $EXIT_SUCCESS ] || [ $QUORUM_EXIT -eq $EXIT_ALERT ]; then
     pass "Quorum engine executed successfully (exit: $QUORUM_EXIT)"
-    if [ $QUORUM_EXIT -eq 1 ]; then
+    if [ $QUORUM_EXIT -eq $EXIT_ALERT ]; then
         pass "Coordinated attack detected as expected"
     fi
 else
@@ -111,10 +117,10 @@ pass "Coordinated attack logs created with IP: $ATTACKER_IP"
 echo "Test 8: Test coordinated attack detection"
 ./build/quorum > /tmp/quorum_test_output3.txt 2>&1
 QUORUM_EXIT=$?
-# Exit code 1 means coordinated attack detected (expected behavior)
-if [ $QUORUM_EXIT -eq 0 ] || [ $QUORUM_EXIT -eq 1 ]; then
+# Both success and alert exit codes are acceptable
+if [ $QUORUM_EXIT -eq $EXIT_SUCCESS ] || [ $QUORUM_EXIT -eq $EXIT_ALERT ]; then
     pass "Quorum engine executed with coordinated attack logs (exit: $QUORUM_EXIT)"
-    if [ $QUORUM_EXIT -eq 1 ]; then
+    if [ $QUORUM_EXIT -eq $EXIT_ALERT ]; then
         pass "Coordinated attack correctly detected"
     fi
     
@@ -133,8 +139,8 @@ echo "[$(date '+%Y-%m-%d %H:%M:%S')] Connection from 999.999.999.999" >> service
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Random log entry without IP" >> services/cowrie/logs/test.log
 ./build/quorum > /tmp/quorum_test_output4.txt 2>&1
 QUORUM_EXIT=$?
-# Exit code 0 or 1 are both acceptable
-if [ $QUORUM_EXIT -eq 0 ] || [ $QUORUM_EXIT -eq 1 ]; then
+# Both success and alert exit codes are acceptable
+if [ $QUORUM_EXIT -eq $EXIT_SUCCESS ] || [ $QUORUM_EXIT -eq $EXIT_ALERT ]; then
     pass "Quorum handles invalid log entries gracefully"
 else
     fail "Quorum crashes with invalid log entries (exit: $QUORUM_EXIT)"
@@ -149,16 +155,21 @@ echo "[$(date '+%Y-%m-%d %H:%M:%S')] Connection from 192.168.1.30" >> services/c
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Connection from 10.0.0.100" >> services/cowrie/logs/cowrie.log
 ./build/quorum > /tmp/quorum_test_output5.txt 2>&1
 QUORUM_EXIT=$?
-# Exit code 0 or 1 are both acceptable
-if [ $QUORUM_EXIT -eq 0 ] || [ $QUORUM_EXIT -eq 1 ]; then
+# Both success and alert exit codes are acceptable
+if [ $QUORUM_EXIT -eq $EXIT_SUCCESS ] || [ $QUORUM_EXIT -eq $EXIT_ALERT ]; then
     pass "Quorum processes multiple unique IPs"
     
-    # Check if multiple IPs tracked
-    UNIQUE_COUNT=$(grep -o "unique IPs tracked: [0-9]*" /tmp/quorum_test_output5.txt | grep -o "[0-9]*$" || echo "0")
-    if [ -n "$UNIQUE_COUNT" ] && [ "$UNIQUE_COUNT" != "0" ]; then
-        pass "Tracked $UNIQUE_COUNT unique IP(s)"
+    # Check if multiple IPs tracked - split into steps for better error handling
+    UNIQUE_LINE=$(grep "unique IPs tracked:" /tmp/quorum_test_output5.txt 2>/dev/null || echo "")
+    if [ -n "$UNIQUE_LINE" ]; then
+        UNIQUE_COUNT=$(echo "$UNIQUE_LINE" | grep -o "[0-9]*$" || echo "0")
+        if [ -n "$UNIQUE_COUNT" ] && [ "$UNIQUE_COUNT" != "0" ]; then
+            pass "Tracked $UNIQUE_COUNT unique IP(s)"
+        else
+            info "IP tracking: $UNIQUE_COUNT"
+        fi
     else
-        info "IP tracking: $UNIQUE_COUNT"
+        info "Could not extract IP count from output"
     fi
 else
     fail "Quorum failed with multiple IPs (exit: $QUORUM_EXIT)"
