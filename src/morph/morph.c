@@ -61,6 +61,9 @@ int load_profiles(const char* config_file) {
                 snprintf(current->camera_html_path, MAX_PATH_SIZE, "services/fake-camera-web/html/index.html");
                 snprintf(current->kernel_version, MAX_KERNEL_VERSION, "3.2.0");
                 snprintf(current->arch, MAX_PROFILE_NAME, "armv7l");
+                snprintf(current->mac_address, MAX_MAC_ADDR, "00:11:22");
+                current->memory_mb = 64;
+                current->cpu_mhz = 600;
                 
                 profile_count++;
             }
@@ -89,6 +92,12 @@ int load_profiles(const char* config_file) {
                     strncpy(current->kernel_version, value, MAX_KERNEL_VERSION - 1);
                 } else if (strcmp(key, "arch") == 0) {
                     strncpy(current->arch, value, MAX_PROFILE_NAME - 1);
+                } else if (strcmp(key, "mac_prefix") == 0) {
+                    strncpy(current->mac_address, value, MAX_MAC_ADDR - 1);
+                } else if (strcmp(key, "memory_mb") == 0) {
+                    current->memory_mb = atoi(value);
+                } else if (strcmp(key, "cpu_mhz") == 0) {
+                    current->cpu_mhz = atoi(value);
                 }
             }
         }
@@ -116,6 +125,9 @@ static int create_default_profiles(void) {
     strcpy(profiles[0].camera_html_path, "services/fake-camera-web/html/themes/default.html");
     strcpy(profiles[0].kernel_version, "3.10.49");
     strcpy(profiles[0].arch, "mips");
+    strcpy(profiles[0].mac_address, "14:cc:20");
+    profiles[0].memory_mb = 128;
+    profiles[0].cpu_mhz = 720;
     
     // Profile 2: D-Link DIR-615 Router
     strcpy(profiles[1].name, "D-Link_DIR-615");
@@ -125,6 +137,9 @@ static int create_default_profiles(void) {
     strcpy(profiles[1].camera_html_path, "services/fake-camera-web/html/themes/default.html");
     strcpy(profiles[1].kernel_version, "2.6.30");
     strcpy(profiles[1].arch, "mips");
+    strcpy(profiles[1].mac_address, "00:1b:11");
+    profiles[1].memory_mb = 32;
+    profiles[1].cpu_mhz = 400;
     
     // Profile 3: Netgear R7000 Router
     strcpy(profiles[2].name, "Netgear_R7000");
@@ -134,6 +149,9 @@ static int create_default_profiles(void) {
     strcpy(profiles[2].camera_html_path, "services/fake-camera-web/html/themes/default.html");
     strcpy(profiles[2].kernel_version, "2.6.36.4brcmarm");
     strcpy(profiles[2].arch, "armv7l");
+    strcpy(profiles[2].mac_address, "a0:63:91");
+    profiles[2].memory_mb = 256;
+    profiles[2].cpu_mhz = 1000;
     
     // Profile 4: Hikvision DS-2CD2 Camera
     strcpy(profiles[3].name, "Hikvision_DS-2CD2");
@@ -143,6 +161,9 @@ static int create_default_profiles(void) {
     strcpy(profiles[3].camera_html_path, "services/fake-camera-web/html/themes/hikvision.html");
     strcpy(profiles[3].kernel_version, "3.0.8");
     strcpy(profiles[3].arch, "armv7l");
+    strcpy(profiles[3].mac_address, "44:19:b6");
+    profiles[3].memory_mb = 64;
+    profiles[3].cpu_mhz = 600;
     
     // Profile 5: Dahua IPC-HDW Camera
     strcpy(profiles[4].name, "Dahua_IPC-HDW");
@@ -152,6 +173,9 @@ static int create_default_profiles(void) {
     strcpy(profiles[4].camera_html_path, "services/fake-camera-web/html/themes/dahua.html");
     strcpy(profiles[4].kernel_version, "3.4.35");
     strcpy(profiles[4].arch, "armv7l");
+    strcpy(profiles[4].mac_address, "00:12:16");
+    profiles[4].memory_mb = 128;
+    profiles[4].cpu_mhz = 800;
     
     // Profile 6: Generic Router (fallback)
     strcpy(profiles[5].name, "Generic_Router");
@@ -161,6 +185,9 @@ static int create_default_profiles(void) {
     strcpy(profiles[5].camera_html_path, "services/fake-camera-web/html/themes/default.html");
     strcpy(profiles[5].kernel_version, "4.4.0");
     strcpy(profiles[5].arch, "armv7l");
+    strcpy(profiles[5].mac_address, "00:11:22");
+    profiles[5].memory_mb = 64;
+    profiles[5].cpu_mhz = 533;
     
     return profile_count;
 }
@@ -411,6 +438,44 @@ int init_morph_engine(const char* config_file, const char* state_file) {
     return 0;
 }
 
+// Session variation functions - generate unique values for each session
+void generate_random_mac(char* mac_out, size_t size, const char* vendor_prefix) {
+    // Generate random MAC address with vendor prefix
+    // vendor_prefix should be like "14:cc:20" (first 3 octets)
+    srand(time(NULL) + getpid());
+    snprintf(mac_out, size, "%s:%02x:%02x:%02x", 
+             vendor_prefix,
+             rand() % 256,
+             rand() % 256,
+             rand() % 256);
+}
+
+int generate_session_variations(const device_profile_t* profile) {
+    if (!profile) return -1;
+    
+    // Generate random MAC address based on vendor prefix
+    char session_mac[MAX_MAC_ADDR];
+    generate_random_mac(session_mac, sizeof(session_mac), profile->mac_address);
+    
+    // Calculate random uptime (1-365 days in seconds)
+    srand(time(NULL) + getpid());
+    int uptime_seconds = (rand() % (365 * 24 * 3600)) + (24 * 3600);
+    
+    // Add small random variation to memory (±10%)
+    int memory_variation = profile->memory_mb + ((rand() % 21) - 10) * profile->memory_mb / 100;
+    if (memory_variation < 1) memory_variation = profile->memory_mb;
+    
+    char msg[512];
+    snprintf(msg, sizeof(msg), 
+             "Session variations: MAC=%s, Uptime=%d days, Memory=%dMB",
+             session_mac, uptime_seconds / (24 * 3600), memory_variation);
+    log_event_level(LOG_INFO, msg);
+    
+    // These values would be written to Cowrie's txtcmds or similar
+    // For now, just log them - full implementation would write to files
+    return 0;
+}
+
 int main(int argc, char* argv[]) {
     printf("Bio-Adaptive IoT Honeynet Morphing Engine\n");
     
@@ -424,6 +489,14 @@ int main(int argc, char* argv[]) {
     printf("Morph event: Rotating device profile at %s", ctime(&now));
     
     int result = morph_device();
+    
+    // Generate session-specific variations
+    if (result == 0) {
+        device_profile_t* current = get_profile(get_current_profile_index());
+        if (current) {
+            generate_session_variations(current);
+        }
+    }
     
     return (result == 0) ? 0 : 1;
 }

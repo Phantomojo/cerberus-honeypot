@@ -1,3 +1,92 @@
 <!DOCTYPE html>
-<html><head><title>Router Admin - Dahua_IPC-HDW</title></head>
-<body><h1>Router Administration</h1><p>Device: Dahua_IPC-HDW</p></body></html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TP-Link Router Administration</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+        }
+        .logo {
+            text-align: center;
+            color: #667eea;
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 30px;
+        }
+        .status {
+            background: #4CAF50;
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .info {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #ddd;
+        }
+        .info-item:last-child { border-bottom: none; }
+        .label { font-weight: bold; color: #666; }
+        .value { color: #333; }
+        .footer {
+            text-align: center;
+            color: #999;
+            font-size: 12px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">TP-Link</div>
+        <div class="status">✓ System Online</div>
+        <div class="info">
+            <div class="info-item">
+                <span class="label">Model:</span>
+                <span class="value">Archer C7</span>
+            </div>
+            <div class="info-item">
+                <span class="label">Firmware:</span>
+                <span class="value">3.16.9 Build 180511</span>
+            </div>
+            <div class="info-item">
+                <span class="label">Uptime:</span>
+                <span class="value">15 days 3 hours</span>
+            </div>
+            <div class="info-item">
+                <span class="label">WAN IP:</span>
+                <span class="value">192.168.1.1</span>
+            </div>
+        </div>
+        <div class="footer">
+            TP-Link Router Administration Panel<br>
+            <em>This is a honeypot emulation</em>
+        </div>
+    </div>
+</body>
+</html>
+
