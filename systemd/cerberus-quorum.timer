@@ -1,0 +1,15 @@
+[Unit]
+Description=CERBERUS Quorum Detection Timer
+Documentation=https://github.com/Phantomojo/cerberus-honeypot
+Requires=cerberus-quorum.service
+
+[Timer]
+# Run every 15 minutes
+OnCalendar=*:0/15
+# Run 2 minutes after boot
+OnBootSec=2min
+# If missed, run immediately
+Persistent=true
+
+[Install]
+WantedBy=timers.target

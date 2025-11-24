@@ -1,0 +1,17 @@
+[Unit]
+Description=CERBERUS Morphing Engine Timer
+Documentation=https://github.com/Phantomojo/cerberus-honeypot
+Requires=cerberus-morph.service
+
+[Timer]
+# Run every 6 hours
+OnCalendar=*-*-* 00,06,12,18:00:00
+# Run 5 minutes after boot
+OnBootSec=5min
+# If missed, run immediately
+Persistent=true
+# Add random delay up to 30 minutes to avoid predictability
+RandomizedDelaySec=30min
+
+[Install]
+WantedBy=timers.target

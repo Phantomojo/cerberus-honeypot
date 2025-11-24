@@ -1,0 +1,31 @@
+[Unit]
+Description=CERBERUS Morphing Engine - Bio-Adaptive Honeypot
+Documentation=https://github.com/Phantomojo/cerberus-honeypot
+After=network.target docker.service
+Wants=docker.service
+
+[Service]
+Type=oneshot
+User=cerberus
+Group=cerberus
+WorkingDirectory=/opt/cerberus-honeypot
+ExecStart=/opt/cerberus-honeypot/build/morph /opt/cerberus-honeypot/profiles.conf
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/cerberus-honeypot/build /opt/cerberus-honeypot/services /opt/cerberus-honeypot/logs
+
+# Resource limits
+CPUQuota=25%
+MemoryLimit=128M
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=cerberus-morph
+
+[Install]
+WantedBy=multi-user.target
