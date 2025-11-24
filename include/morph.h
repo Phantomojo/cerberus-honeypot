@@ -5,6 +5,7 @@
 #define MAX_PROFILE_NAME 64
 #define MAX_BANNER_SIZE 512
 #define MAX_PATH_SIZE 512
+#define MAX_KERNEL_VERSION 128
 
 typedef struct {
     char name[MAX_PROFILE_NAME];
@@ -12,6 +13,8 @@ typedef struct {
     char telnet_banner[MAX_BANNER_SIZE];
     char router_html_path[MAX_PATH_SIZE];
     char camera_html_path[MAX_PATH_SIZE];
+    char kernel_version[MAX_KERNEL_VERSION];
+    char arch[MAX_PROFILE_NAME];
 } device_profile_t;
 
 // Profile management

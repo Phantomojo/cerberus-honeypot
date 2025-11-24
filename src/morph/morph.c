@@ -59,6 +59,8 @@ int load_profiles(const char* config_file) {
                 snprintf(current->telnet_banner, MAX_BANNER_SIZE, "Welcome to device");
                 snprintf(current->router_html_path, MAX_PATH_SIZE, "services/fake-router-web/html/index.html");
                 snprintf(current->camera_html_path, MAX_PATH_SIZE, "services/fake-camera-web/html/index.html");
+                snprintf(current->kernel_version, MAX_KERNEL_VERSION, "3.2.0");
+                snprintf(current->arch, MAX_PROFILE_NAME, "armv7l");
                 
                 profile_count++;
             }
@@ -83,6 +85,10 @@ int load_profiles(const char* config_file) {
                     strncpy(current->router_html_path, value, MAX_PATH_SIZE - 1);
                 } else if (strcmp(key, "camera_html") == 0) {
                     strncpy(current->camera_html_path, value, MAX_PATH_SIZE - 1);
+                } else if (strcmp(key, "kernel_version") == 0) {
+                    strncpy(current->kernel_version, value, MAX_KERNEL_VERSION - 1);
+                } else if (strcmp(key, "arch") == 0) {
+                    strncpy(current->arch, value, MAX_PROFILE_NAME - 1);
                 }
             }
         }
@@ -108,6 +114,8 @@ static int create_default_profiles(void) {
     strcpy(profiles[0].telnet_banner, "Welcome to TP-Link Router");
     strcpy(profiles[0].router_html_path, "services/fake-router-web/html/themes/tplink.html");
     strcpy(profiles[0].camera_html_path, "services/fake-camera-web/html/themes/default.html");
+    strcpy(profiles[0].kernel_version, "3.10.49");
+    strcpy(profiles[0].arch, "mips");
     
     // Profile 2: D-Link DIR-615 Router
     strcpy(profiles[1].name, "D-Link_DIR-615");
@@ -115,6 +123,8 @@ static int create_default_profiles(void) {
     strcpy(profiles[1].telnet_banner, "D-Link System");
     strcpy(profiles[1].router_html_path, "services/fake-router-web/html/themes/dlink.html");
     strcpy(profiles[1].camera_html_path, "services/fake-camera-web/html/themes/default.html");
+    strcpy(profiles[1].kernel_version, "2.6.30");
+    strcpy(profiles[1].arch, "mips");
     
     // Profile 3: Netgear R7000 Router
     strcpy(profiles[2].name, "Netgear_R7000");
@@ -122,6 +132,8 @@ static int create_default_profiles(void) {
     strcpy(profiles[2].telnet_banner, "NETGEAR ReadyNAS");
     strcpy(profiles[2].router_html_path, "services/fake-router-web/html/themes/netgear.html");
     strcpy(profiles[2].camera_html_path, "services/fake-camera-web/html/themes/default.html");
+    strcpy(profiles[2].kernel_version, "2.6.36.4brcmarm");
+    strcpy(profiles[2].arch, "armv7l");
     
     // Profile 4: Hikvision DS-2CD2 Camera
     strcpy(profiles[3].name, "Hikvision_DS-2CD2");
@@ -129,6 +141,8 @@ static int create_default_profiles(void) {
     strcpy(profiles[3].telnet_banner, "Hikvision IP Camera");
     strcpy(profiles[3].router_html_path, "services/fake-router-web/html/themes/default.html");
     strcpy(profiles[3].camera_html_path, "services/fake-camera-web/html/themes/hikvision.html");
+    strcpy(profiles[3].kernel_version, "3.0.8");
+    strcpy(profiles[3].arch, "armv7l");
     
     // Profile 5: Dahua IPC-HDW Camera
     strcpy(profiles[4].name, "Dahua_IPC-HDW");
@@ -136,6 +150,8 @@ static int create_default_profiles(void) {
     strcpy(profiles[4].telnet_banner, "Dahua Technology");
     strcpy(profiles[4].router_html_path, "services/fake-router-web/html/themes/default.html");
     strcpy(profiles[4].camera_html_path, "services/fake-camera-web/html/themes/dahua.html");
+    strcpy(profiles[4].kernel_version, "3.4.35");
+    strcpy(profiles[4].arch, "armv7l");
     
     // Profile 6: Generic Router (fallback)
     strcpy(profiles[5].name, "Generic_Router");
@@ -143,6 +159,8 @@ static int create_default_profiles(void) {
     strcpy(profiles[5].telnet_banner, "Welcome to Router Admin");
     strcpy(profiles[5].router_html_path, "services/fake-router-web/html/themes/generic.html");
     strcpy(profiles[5].camera_html_path, "services/fake-camera-web/html/themes/default.html");
+    strcpy(profiles[5].kernel_version, "4.4.0");
+    strcpy(profiles[5].arch, "armv7l");
     
     return profile_count;
 }
@@ -201,13 +219,22 @@ int morph_cowrie_banners(const device_profile_t* profile) {
         "# Telnet banner\n"
         "banner = %s\n\n"
         "[honeypot]\n"
-        "# Honeypot hostname (appears in logs)\n"
-        "hostname = %s\n",
+        "# Honeypot hostname (appears in logs and prompt)\n"
+        "hostname = %s\n"
+        "# Kernel version shown by uname command\n"
+        "kernel_version = %s\n"
+        "# Kernel build string\n"
+        "kernel_build_string = %s\n"
+        "# System architecture shown by uname -m\n"
+        "arch = %s\n",
         profile->name,
         profile->ssh_banner,
         profile->ssh_banner,
         profile->telnet_banner,
-        profile->name);
+        profile->name,
+        profile->kernel_version,
+        profile->kernel_version,
+        profile->arch);
     
     // Write to both files (Cowrie checks both)
     if (write_file(cowrie_cfg_local, config_content) != 0) {
