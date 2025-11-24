@@ -332,7 +332,8 @@ int generate_top_output(process_list_t* processes, char* output, size_t output_s
         snprintf(buffer, sizeof(buffer),
                  "%5u %-8u %2d   0 %7u %6u  %3u  %3u   0:00.25 %s\n",
                  p->pid, p->uid, 20, p->memory_kb * 2, p->memory_kb,
-                 p->cpu_percent, (uint32_t)(((float)p->memory_kb / processes->total_memory_kb) * 100));
+                 p->cpu_percent, (uint32_t)(((float)p->memory_kb / processes->total_memory_kb) * 100),
+                 p->name);
 
         if (strlen(output) + strlen(buffer) < output_size) {
             strcat(output, buffer);

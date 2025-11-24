@@ -120,10 +120,10 @@ void detect_coordination(attacker_profile_t** attackers, int attacker_count) {
                 attackers[i]->is_coordinated = true;
                 attackers[j]->is_coordinated = true;
 
-                log_event_level(LOG_WARN,
-                    "Coordinated attack detected: %s and %s",
-                    attackers[i]->ip_address,
-                    attackers[j]->ip_address);
+                char msg[256];
+                snprintf(msg, sizeof(msg), "Coordinated attack detected: %s and %s",
+                         attackers[i]->ip_address, attackers[j]->ip_address);
+                log_event_level(LOG_WARN, msg);
             }
         }
     }
@@ -224,7 +224,9 @@ void update_attack_pattern(attack_pattern_t* pattern, const char* log_entry) {
  * Trigger emergency morphing
  */
 void trigger_emergency_morph(void) {
-    log_event_level(LOG_ALERT, "Emergency morphing triggered due to coordinated attack");
+    char msg[256];
+    snprintf(msg, sizeof(msg), "Emergency morphing triggered due to coordinated attack");
+    log_event_level(LOG_WARN, msg);
     
     // In real implementation, would:
     // 1. Immediately call morph engine
@@ -243,9 +245,10 @@ void increase_morphing_frequency(uint32_t new_frequency_minutes) {
     
     current_morph_frequency_minutes = new_frequency_minutes;
     
-    log_event_level(LOG_WARN,
-        "Morphing frequency increased to every %u minutes",
-        new_frequency_minutes);
+    char msg[256];
+    snprintf(msg, sizeof(msg), "Morphing frequency increased to every %u minutes",
+             new_frequency_minutes);
+    log_event_level(LOG_WARN, msg);
 
     // In real implementation, would update systemd timer
 }
@@ -256,9 +259,9 @@ void increase_morphing_frequency(uint32_t new_frequency_minutes) {
 void add_command_delays(uint32_t delay_ms) {
     current_command_delay_ms = delay_ms;
     
-    log_event_level(LOG_WARN,
-        "Adding %u ms delays to all command responses",
-        delay_ms);
+    char msg[256];
+    snprintf(msg, sizeof(msg), "Adding %u ms delays to all command responses", delay_ms);
+    log_event_level(LOG_WARN, msg);
 }
 
 /**
@@ -267,9 +270,9 @@ void add_command_delays(uint32_t delay_ms) {
 void simulate_errors_for_attacker(const char* ip) {
     if (!ip) return;
 
-    log_event_level(LOG_WARN,
-        "Enabling error simulation for attacker: %s",
-        ip);
+    char msg[256];
+    snprintf(msg, sizeof(msg), "Enabling error simulation for attacker: %s", ip);
+    log_event_level(LOG_WARN, msg);
 
     // In real implementation, would:
     // 1. Track attacker IP
@@ -341,5 +344,7 @@ void reset_emergency_mode(void) {
     emergency_mode = false;
     current_morph_frequency_minutes = 360;  // Back to 6 hours
     current_command_delay_ms = 0;
-    log_event_level(LOG_INFO, "Emergency mode disabled, returning to normal operation");
+    char msg[256];
+    snprintf(msg, sizeof(msg), "Emergency mode disabled, returning to normal operation");
+    log_event_level(LOG_INFO, msg);
 }

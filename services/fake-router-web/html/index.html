@@ -3,90 +3,99 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NETGEAR Router</title>
+    <title>D-Link Router Configuration</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: Arial, sans-serif;
-            background: #1a1a1a;
-            color: #fff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #e8e8e8;
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
         }
         .container {
-            background: #2d2d2d;
-            border: 1px solid #444;
-            border-radius: 8px;
-            padding: 40px;
-            max-width: 550px;
+            background: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 30px;
+            max-width: 600px;
             width: 100%;
         }
-        .logo {
-            color: #00b8d4;
-            font-size: 32px;
-            font-weight: bold;
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        .device-info {
-            background: #1a1a1a;
+        .header {
+            background: #0066cc;
+            color: white;
             padding: 20px;
-            border-radius: 5px;
-            margin-bottom: 20px;
+            margin: -30px -30px 20px -30px;
+            border-radius: 5px 5px 0 0;
         }
-        .info-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px 0;
-            border-bottom: 1px solid #333;
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
         }
-        .info-row:last-child { border-bottom: none; }
-        .label { color: #888; }
-        .value { color: #00b8d4; font-weight: bold; }
-        .status {
-            text-align: center;
-            color: #4CAF50;
+        .status-badge {
+            display: inline-block;
+            background: #4CAF50;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+        .config-table {
+            width: 100%;
+            border-collapse: collapse;
             margin-top: 20px;
-            font-size: 14px;
+        }
+        .config-table td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+        }
+        .config-table td:first-child {
+            font-weight: bold;
+            color: #0066cc;
+            width: 40%;
         }
         .footer {
             text-align: center;
-            color: #666;
+            color: #999;
             font-size: 11px;
-            margin-top: 30px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="logo">NETGEAR</div>
-        <div class="device-info">
-            <div class="info-row">
-                <span class="label">Model:</span>
-                <span class="value">R7000</span>
-            </div>
-            <div class="info-row">
-                <span class="label">Firmware:</span>
-                <span class="value">V1.0.9.88_10.2.88</span>
-            </div>
-            <div class="info-row">
-                <span class="label">Serial Number:</span>
-                <span class="value">5K1234A5678</span>
-            </div>
-            <div class="info-row">
-                <span class="label">IP Address:</span>
-                <span class="value">192.168.1.1</span>
-            </div>
-            <div class="info-row">
-                <span class="label">Uptime:</span>
-                <span class="value">22 days</span>
-            </div>
+        <div class="header">
+            <h1>D-Link Router</h1>
+            <div>DIR-615 Configuration</div>
+            <div class="status-badge">Online</div>
         </div>
-        <div class="status">● System Operational</div>
+        <table class="config-table">
+            <tr>
+                <td>Firmware Version</td>
+                <td>3.13 B01</td>
+            </tr>
+            <tr>
+                <td>Hardware Version</td>
+                <td>A1</td>
+            </tr>
+            <tr>
+                <td>MAC Address</td>
+                <td>00:1B:11:XX:XX:XX</td>
+            </tr>
+            <tr>
+                <td>LAN IP Address</td>
+                <td>192.168.0.1</td>
+            </tr>
+            <tr>
+                <td>System Uptime</td>
+                <td>8 days 12 hours</td>
+            </tr>
+        </table>
         <div class="footer">
-            NETGEAR, Inc.<br>
+            D-Link Systems, Inc.<br>
             <em>This is a honeypot emulation</em>
         </div>
     </div>
