@@ -46,9 +46,13 @@ int load_profiles(const char* config_file) {
         if (line[0] == '[' && line[strlen(line) - 1] == ']') {
             if (profile_count < MAX_PROFILES) {
                 current = &profiles[profile_count];
-                strncpy(current->name, line + 1, MAX_PROFILE_NAME - 1);
-                current->name[strlen(current->name) - 1] = '\0'; // Remove closing ]
-                current->name[MAX_PROFILE_NAME - 1] = '\0';
+                // Remove [ and ] brackets
+                size_t name_len = strlen(line) - 2; // Exclude [ and ]
+                if (name_len > MAX_PROFILE_NAME - 1) {
+                    name_len = MAX_PROFILE_NAME - 1;
+                }
+                strncpy(current->name, line + 1, name_len);
+                current->name[name_len] = '\0';
                 
                 // Set defaults
                 snprintf(current->ssh_banner, MAX_BANNER_SIZE, "SSH-2.0-OpenSSH_7.4");

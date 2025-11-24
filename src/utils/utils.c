@@ -156,6 +156,10 @@ void trim_string(char* str) {
     }
 }
 
+// WARNING: This function has limitations and is not currently used
+// - The destination buffer must be large enough to hold the result
+// - Uses a fixed 4096-byte internal buffer which could overflow
+// - Consider using a safer alternative for production code
 void replace_string(char* str, const char* old, const char* new_str) {
     if (!str || !old || !new_str) return;
     
