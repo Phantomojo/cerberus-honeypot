@@ -19,8 +19,9 @@ bool is_valid_ip(const char* ip) {
     if (!ip || strlen(ip) < 7) return false;
     
     int parts[4];
-    int count = sscanf(ip, "%d.%d.%d.%d", &parts[0], &parts[1], &parts[2], &parts[3]);
-    if (count != 4) return false;
+    char extra;
+    int count = sscanf(ip, "%d.%d.%d.%d%c", &parts[0], &parts[1], &parts[2], &parts[3], &extra);
+    if (count != 4) return false; // Should match exactly 4 numbers, no extra characters
     
     for (int i = 0; i < 4; i++) {
         if (parts[i] < 0 || parts[i] > 255) return false;
@@ -220,7 +221,7 @@ int generate_alert(const ip_tracking_t* ip_track) {
         "  IP: %s\n"
         "  Services hit: %s (%d services)\n"
         "  Total hits: %d\n"
-        "  First seen: %s"
+        "  First seen: %s\n"
         "  Last seen: %s\n"
         "---\n",
         ip_track->ip,
