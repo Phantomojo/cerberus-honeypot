@@ -1,0 +1,57 @@
+# MediaMTX configuration for Cerberus honeypot RTSP server
+
+# General settings
+logLevel: info
+logDestinations: [stdout]
+
+# API
+api: yes
+apiAddress: 0.0.0.0:9997
+
+# Metrics
+metrics: yes
+metricsAddress: 0.0.0.0:9998
+
+# RTSP server
+rtsp: yes
+rtspTransports: [tcp, udp]
+rtspAddress: :8554
+rtp: yes
+rtpAddress: :8000
+rtcp: yes
+rtcpAddress: :8001
+
+# RTMP server
+rtmp: yes
+rtmpAddress: :1935
+
+# HLS server
+hls: yes
+hlsAddress: :8888
+
+# WebRTC server
+webrtc: yes
+webrtcAddress: :8889
+
+# Authentication (basic for honeypot - logs credentials)
+rtspAuthMethods: [basic]
+
+# Default path settings (accept any stream requests for honeypot)
+paths:
+  # Fake camera streams
+  cam1:
+    source: publisher
+    sourceOnDemand: no
+    
+  cam2:
+    source: publisher
+    sourceOnDemand: no
+    
+  live:
+    source: publisher
+    sourceOnDemand: no
+
+  # Catch-all path for any other stream requests
+  all:
+    source: publisher
+    sourceOnDemand: yes
