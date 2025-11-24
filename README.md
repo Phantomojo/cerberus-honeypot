@@ -70,9 +70,16 @@ honeynet/
 6. **View logs:**  
    Service logs in `logs/` and `services/*/logs/`, morph/quorum events in `build/`.
 
+7. **Run tests:**
+   ```sh
+   make test    # Run automated test suite
+   ```
+   See `TESTING.md` for comprehensive testing guide.
+
 **For detailed setup instructions, see:**
 - `DEPENDENCIES.md` - System requirements and dependencies
 - `SETUP_PLAN.md` - Architecture and implementation plan
+- `TESTING.md` - Comprehensive testing guide
 
 ---
 
@@ -101,6 +108,7 @@ honeynet/
 **For setup details, see:**
 - `DEPENDENCIES.md` - System requirements and dependencies
 - `SETUP_PLAN.md` - Architecture and implementation plan
+- `TESTING.md` - Comprehensive testing guide
 - `docs/` - Project concept PDFs and design diagrams
 
 ---

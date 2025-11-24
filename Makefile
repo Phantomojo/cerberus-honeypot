@@ -18,4 +18,17 @@ $(BUILD)/quorum: $(SRC_QUORUM) $(SRC_UTILS) $(INCLUDES)
 clean:
 	rm -rf $(BUILD)/*
 
-.PHONY: all clean
+test: test-morph test-quorum
+
+test-morph: $(BUILD)/morph
+	@echo "=== Testing Morphing Engine ==="
+	@./tests/test_morph.sh
+
+test-quorum: $(BUILD)/quorum
+	@echo "=== Testing Quorum Engine ==="
+	@./tests/test_quorum.sh
+
+test-all: all test
+	@echo "=== All tests completed ==="
+
+.PHONY: all clean test test-morph test-quorum test-all
