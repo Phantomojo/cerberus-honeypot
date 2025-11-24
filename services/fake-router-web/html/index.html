@@ -1,3 +1,95 @@
 <!DOCTYPE html>
-<html><head><title>Router Admin - Dahua_IPC-HDW</title></head>
-<body><h1>Router Administration</h1><p>Device: Dahua_IPC-HDW</p></body></html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NETGEAR Router</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: Arial, sans-serif;
+            background: #1a1a1a;
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            background: #2d2d2d;
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 40px;
+            max-width: 550px;
+            width: 100%;
+        }
+        .logo {
+            color: #00b8d4;
+            font-size: 32px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .device-info {
+            background: #1a1a1a;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #333;
+        }
+        .info-row:last-child { border-bottom: none; }
+        .label { color: #888; }
+        .value { color: #00b8d4; font-weight: bold; }
+        .status {
+            text-align: center;
+            color: #4CAF50;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+        .footer {
+            text-align: center;
+            color: #666;
+            font-size: 11px;
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">NETGEAR</div>
+        <div class="device-info">
+            <div class="info-row">
+                <span class="label">Model:</span>
+                <span class="value">R7000</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Firmware:</span>
+                <span class="value">V1.0.9.88_10.2.88</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Serial Number:</span>
+                <span class="value">5K1234A5678</span>
+            </div>
+            <div class="info-row">
+                <span class="label">IP Address:</span>
+                <span class="value">192.168.1.1</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Uptime:</span>
+                <span class="value">22 days</span>
+            </div>
+        </div>
+        <div class="status">● System Operational</div>
+        <div class="footer">
+            NETGEAR, Inc.<br>
+            <em>This is a honeypot emulation</em>
+        </div>
+    </div>
+</body>
+</html>
+
