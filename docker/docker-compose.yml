@@ -97,7 +97,3 @@ networks:
     driver: bridge
     name: cerberus-honeynet
 
-volumes:
-  cowrie-data:
-  cowrie-logs:
-

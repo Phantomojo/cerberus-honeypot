@@ -67,7 +67,7 @@ check_dependencies() {
         print_status "Docker found: $(docker --version)"
     fi
     
-    if ! command_exists docker; then
+    if command_exists docker; then
         if docker compose version >/dev/null 2>&1; then
             print_status "Docker Compose found: $(docker compose version)"
         else

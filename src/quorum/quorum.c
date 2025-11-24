@@ -220,7 +220,7 @@ int generate_alert(const ip_tracking_t* ip_track) {
         "  IP: %s\n"
         "  Services hit: %s (%d services)\n"
         "  Total hits: %d\n"
-        "  First seen: %s"
+        "  First seen: %s\n"
         "  Last seen: %s\n"
         "---\n",
         ip_track->ip,

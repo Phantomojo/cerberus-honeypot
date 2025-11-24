@@ -2,6 +2,7 @@
 #define QUORUM_H
 
 #include <stdbool.h>
+#include <time.h>
 
 #define MAX_IPS 1000
 #define MAX_IP_STRING 46  // IPv6 max length
