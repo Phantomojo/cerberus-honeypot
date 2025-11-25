@@ -19,7 +19,7 @@
  */
 int create_cowrie_dynamic_dir(void) {
     char cmd[512];
-    snprintf(cmd, sizeof(cmd), "mkdir -p %s", COWRIE_DYNAMIC_DIR);
+    snprintf(cmd, sizeof(cmd), "mkdir -p %s/bin %s/sbin", COWRIE_DYNAMIC_DIR, COWRIE_DYNAMIC_DIR);
     return system(cmd) == 0 ? 0 : -1;
 }
 
