@@ -414,6 +414,7 @@ int morph_phase1_network(const char* base_ip) {
  * Creates varying filesystem structures with randomized timestamps
  */
 int morph_phase2_filesystem(const char* device_type) {
+    (void)device_type;  // Reserved for future device-specific filesystem variations
     log_event_level(LOG_INFO, "Phase 2: Filesystem Dynamics");
     
     filesystem_snapshot_t* fs = create_filesystem_snapshot("/");
@@ -475,7 +476,6 @@ int morph_phase4_behavior(const char* device_profile) {
     log_event_level(LOG_INFO, "Phase 4: Behavioral Adaptation");
     
     // Generate behavioral profiles for various commands
-    command_behavior_t ssh_behavior = generate_command_behavior("ssh");
     session_behavior_t session = generate_session_behavior(device_profile ? device_profile : "Generic_Router");
     
     // Log behavior characteristics

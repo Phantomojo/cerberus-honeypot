@@ -87,6 +87,7 @@ process_list_t* create_process_list(const char* device_profile) {
  * Generate core kernel processes
  */
 void generate_core_processes(process_list_t* processes, const char* device_profile) {
+    (void)device_profile;  // Reserved for device-specific kernel process variations
     if (!processes) return;
 
     for (int i = 0; i < core_processes_count && processes->process_count < MAX_PROCESSES; i++) {
@@ -347,6 +348,7 @@ int generate_top_output(process_list_t* processes, char* output, size_t output_s
  * Generate /proc/stat output
  */
 int generate_proc_stat_output(process_list_t* processes, char* output, size_t output_size) {
+    (void)processes;  // Reserved for process-based stat generation
     if (!output || output_size < 512) return -1;
 
     snprintf(output, output_size,

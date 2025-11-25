@@ -223,6 +223,7 @@ const char* get_realistic_error(const char* command) {
  * Get timeout error
  */
 const char* get_timeout_error(const char* command) {
+    (void)command;  // Reserved for command-specific timeout messages
     static const char* timeouts[] = {
         "Connection timed out",
         "Operation timed out",
@@ -237,6 +238,7 @@ const char* get_timeout_error(const char* command) {
  * Get permission error
  */
 const char* get_permission_error(const char* command, const char* path) {
+    (void)command;  // Reserved for command-specific permission messages
     static const char* perm_errors[] = {
         "Permission denied",
         "Operation not permitted",
@@ -314,6 +316,8 @@ float get_jitter_factor(session_behavior_t* behavior) {
 int add_behavioral_delays(char* output, size_t output_size, 
                           command_behavior_t* behavior,
                           session_behavior_t* session) {
+    (void)output;       // Reserved for output modification
+    (void)output_size;  // Reserved for buffer size validation
     if (!behavior || !session) return 0;
 
     // In a real implementation, this would:
