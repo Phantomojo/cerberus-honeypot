@@ -47,6 +47,7 @@ static void generate_ip_in_subnet(const char* base_ip, char* ip_out, size_t size
 
 // Helper: Generate subnet mask variations
 static void get_subnet_mask(int prefix_len, char* mask_out, size_t size) {
+    (void)prefix_len;  // Reserved for CIDR-based mask selection
     // Common subnet masks
     static const char* masks[] = {
         "255.0.0.0",           // /8
@@ -135,15 +136,21 @@ void generate_routing_variations(network_config_t* config) {
     if (!config || config->interface_count == 0) return;
 
     config->routing_count = 0;
+    
+    // Use temporary buffers to avoid aliasing warnings with snprintf
+    char tmp_gateway[MAX_IP_ADDR];
+    char tmp_interface[MAX_INTERFACE_NAME];
+    snprintf(tmp_gateway, sizeof(tmp_gateway), "%s", config->interfaces[0].gateway);
+    snprintf(tmp_interface, sizeof(tmp_interface), "%s", config->interfaces[0].name);
 
     // Default gateway route
     if (config->routing_count < MAX_ROUTING_ENTRIES) {
-        strncpy(config->routing_table[config->routing_count].destination,
-                "0.0.0.0/0", sizeof(config->routing_table[0].destination) - 1);
-        strncpy(config->routing_table[config->routing_count].gateway,
-                config->interfaces[0].gateway, sizeof(config->routing_table[0].gateway) - 1);
-        strncpy(config->routing_table[config->routing_count].interface,
-                config->interfaces[0].name, sizeof(config->routing_table[0].interface) - 1);
+        snprintf(config->routing_table[config->routing_count].destination,
+                 sizeof(config->routing_table[0].destination), "%s", "0.0.0.0/0");
+        snprintf(config->routing_table[config->routing_count].gateway,
+                 sizeof(config->routing_table[0].gateway), "%s", tmp_gateway);
+        snprintf(config->routing_table[config->routing_count].interface,
+                 sizeof(config->routing_table[0].interface), "%s", tmp_interface);
         config->routing_table[config->routing_count].metric = 0;
         config->routing_count++;
     }
@@ -158,8 +165,8 @@ void generate_routing_variations(network_config_t* config) {
         snprintf(config->routing_table[config->routing_count].gateway,
                  sizeof(config->routing_table[0].gateway),
                  "%d.%d.%d.1", octets[0], octets[1], octets[2]);
-        strncpy(config->routing_table[config->routing_count].interface,
-                config->interfaces[0].name, sizeof(config->routing_table[0].interface) - 1);
+        snprintf(config->routing_table[config->routing_count].interface,
+                 sizeof(config->routing_table[0].interface), "%s", tmp_interface);
         config->routing_table[config->routing_count].metric = 1;
         config->routing_count++;
     }
@@ -173,9 +180,8 @@ void generate_routing_variations(network_config_t* config) {
             snprintf(config->routing_table[config->routing_count].gateway,
                      sizeof(config->routing_table[0].gateway),
                      "%d.%d.%d.254", rand() % 256, rand() % 256, rand() % 256);
-            strncpy(config->routing_table[config->routing_count].interface,
-                    config->interfaces[0].name,
-                    sizeof(config->routing_table[0].interface) - 1);
+            snprintf(config->routing_table[config->routing_count].interface,
+                     sizeof(config->routing_table[0].interface), "%s", tmp_interface);
             config->routing_table[config->routing_count].metric = 2 + i;
             config->routing_count++;
         }
@@ -187,17 +193,25 @@ void generate_arp_variations(network_config_t* config) {
     if (!config || config->interface_count == 0) return;
 
     config->arp_count = 0;
+    
+    // Use temporary buffers to avoid aliasing warnings with snprintf
+    char tmp_gateway[MAX_IP_ADDR];
+    char tmp_interface[MAX_INTERFACE_NAME];
+    char tmp_ip[MAX_IP_ADDR];
+    snprintf(tmp_gateway, sizeof(tmp_gateway), "%s", config->interfaces[0].gateway);
+    snprintf(tmp_interface, sizeof(tmp_interface), "%s", config->interfaces[0].name);
+    snprintf(tmp_ip, sizeof(tmp_ip), "%s", config->interfaces[0].ip_address);
 
     // Add gateway to ARP (always present)
     if (config->arp_count < MAX_ARP_ENTRIES) {
-        strncpy(config->arp_cache[config->arp_count].ip,
-                config->interfaces[0].gateway, MAX_IP_ADDR - 1);
+        snprintf(config->arp_cache[config->arp_count].ip,
+                 sizeof(config->arp_cache[0].ip), "%s", tmp_gateway);
         snprintf(config->arp_cache[config->arp_count].mac, 32,
                  "%02x:%02x:%02x:%02x:%02x:%02x",
                  rand() % 256, rand() % 256, rand() % 256,
                  rand() % 256, rand() % 256, rand() % 256);
-        strncpy(config->arp_cache[config->arp_count].interface,
-                config->interfaces[0].name, MAX_INTERFACE_NAME - 1);
+        snprintf(config->arp_cache[config->arp_count].interface,
+                 sizeof(config->arp_cache[0].interface), "%s", tmp_interface);
         config->arp_cache[config->arp_count].is_permanent = true;
         config->arp_count++;
     }
@@ -206,7 +220,7 @@ void generate_arp_variations(network_config_t* config) {
     int random_entries = 2 + (rand() % 5);
     for (int i = 0; i < random_entries && config->arp_count < MAX_ARP_ENTRIES; i++) {
         uint8_t octets[4];
-        parse_ip(config->interfaces[0].ip_address, octets);
+        parse_ip(tmp_ip, octets);
         octets[3] = (rand() % 253) + 1;  // Avoid .0 and .255
 
         format_ip(octets, config->arp_cache[config->arp_count].ip,
@@ -215,8 +229,8 @@ void generate_arp_variations(network_config_t* config) {
                  "%02x:%02x:%02x:%02x:%02x:%02x",
                  rand() % 256, rand() % 256, rand() % 256,
                  rand() % 256, rand() % 256, rand() % 256);
-        strncpy(config->arp_cache[config->arp_count].interface,
-                config->interfaces[0].name, MAX_INTERFACE_NAME - 1);
+        snprintf(config->arp_cache[config->arp_count].interface,
+                 sizeof(config->arp_cache[0].interface), "%s", tmp_interface);
         config->arp_cache[config->arp_count].is_permanent = false;
         config->arp_count++;
     }
@@ -226,7 +240,8 @@ void generate_arp_variations(network_config_t* config) {
 void randomize_interface_names(network_config_t* config) {
     if (!config) return;
     for (int i = 0; i < config->interface_count; i++) {
-        strncpy(config->interfaces[i].name, get_random_interface_name(), MAX_INTERFACE_NAME - 1);
+        snprintf(config->interfaces[i].name, sizeof(config->interfaces[0].name), 
+                 "%s", get_random_interface_name());
     }
 }
 

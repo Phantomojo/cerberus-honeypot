@@ -16,6 +16,11 @@ services:
     environment:
       - COWRIE_SSH_PORT=2222
       - COWRIE_TELNET_PORT=2323
+      # Shell settings for uname command - these override config file values
+      # Update these after running ./build/morph, then restart cowrie
+      # Or use the env file approach below for dynamic morphing
+    env_file:
+      - ../services/cowrie/etc/cowrie.env
     networks:
       - cerberus-net
     logging:

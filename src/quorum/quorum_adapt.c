@@ -15,7 +15,8 @@
 #include "quorum_adapt.h"
 #include "utils.h"
 
-// Known attack signatures
+// Known attack signatures (reserved for future pattern matching)
+__attribute__((unused))
 static const char* brute_force_signatures[] = {
     "Failed password for",
     "Invalid user",
@@ -23,6 +24,7 @@ static const char* brute_force_signatures[] = {
     "Connection refused"
 };
 
+__attribute__((unused))
 static const char* exploitation_signatures[] = {
     "buffer overflow",
     "injection",
@@ -31,6 +33,7 @@ static const char* exploitation_signatures[] = {
     "privilege escalation"
 };
 
+__attribute__((unused))
 static const char* reconnaissance_signatures[] = {
     "nmap",
     "masscan",
