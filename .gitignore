@@ -40,3 +40,12 @@ env/
 *.bak
 *.log
 
+# Generated service configs (created at runtime by morph engine)
+services/cowrie/etc/cowrie.cfg.local
+services/cowrie/honeyfs/
+services/fake-router-web/html/index.html
+services/fake-camera-web/html/index.html
+
+# Service logs
+services/*/logs/
+

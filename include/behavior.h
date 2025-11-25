@@ -1,6 +1,7 @@
 #ifndef BEHAVIOR_H
 #define BEHAVIOR_H
 
+#include <stdbool.h>
 #include <stdint.h>
 #include <time.h>
 

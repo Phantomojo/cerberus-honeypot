@@ -1,6 +1,7 @@
 #ifndef PROCESSES_H
 #define PROCESSES_H
 
+#include <stdbool.h>
 #include <time.h>
 #include <stdint.h>
 
