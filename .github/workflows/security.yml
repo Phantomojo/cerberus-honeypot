@@ -43,7 +43,7 @@ jobs:
         flawfinder --minlevel=2 src/ include/
 
     - name: Upload analysis reports
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       if: always()
       with:
         name: security-reports
@@ -95,7 +95,7 @@ jobs:
                  ./build/state_engine_test 2>&1 | tee valgrind-report.txt
 
     - name: Upload Valgrind report
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       if: always()
       with:
         name: valgrind-report
