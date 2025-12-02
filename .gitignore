@@ -2,6 +2,12 @@
 build/*
 !build/.gitkeep
 
+# Progress notes (internal team docs, not for repo)
+progress/
+
+# Plans and ideas parking lot (for ADHD brain dumps)
+plans/
+
 # Logs
 logs/*
 !logs/.gitkeep
@@ -50,4 +56,3 @@ services/fake-camera-web/html/index.html
 
 # Service logs
 services/*/logs/
-

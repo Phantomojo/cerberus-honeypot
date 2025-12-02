@@ -19,12 +19,16 @@ SRC_BEHAVIOR=src/behavior/behavior.c
 SRC_TEMPORAL=src/temporal/temporal.c
 SRC_QUORUM_ADAPT=src/quorum/quorum_adapt.c
 
+# State engine
+SRC_STATE=src/state/state_engine.c
+
 # All includes
 INCLUDES=include/morph.h include/quorum.h include/utils.h \
          include/network.h include/filesystem.h include/processes.h \
-         include/behavior.h include/temporal.h include/quorum_adapt.h
+         include/behavior.h include/temporal.h include/quorum_adapt.h \
+         include/state_engine.h
 
-all: $(BUILD)/morph $(BUILD)/quorum
+all: $(BUILD)/morph $(BUILD)/quorum $(BUILD)/state_engine_test
 
 # Morphing engine with all phase modules
 $(BUILD)/morph: $(SRC_MORPH) $(SRC_UTILS) $(SRC_NETWORK) $(SRC_MORPH_NETWORK) \
@@ -32,10 +36,15 @@ $(BUILD)/morph: $(SRC_MORPH) $(SRC_UTILS) $(SRC_NETWORK) $(SRC_MORPH_NETWORK) \
 	$(CC) $(CFLAGS) -o $(BUILD)/morph \
 		$(SRC_MORPH) $(SRC_UTILS) $(SRC_NETWORK) $(SRC_MORPH_NETWORK) \
 		$(SRC_FILESYSTEM) $(SRC_PROCESSES) $(SRC_BEHAVIOR) $(SRC_TEMPORAL)
+	@./scripts/add_dynamic_commands.sh
 
 # Quorum engine with adaptation module
 $(BUILD)/quorum: $(SRC_QUORUM) $(SRC_UTILS) $(SRC_QUORUM_ADAPT) $(INCLUDES)
 	$(CC) $(CFLAGS) -o $(BUILD)/quorum $(SRC_QUORUM) $(SRC_UTILS) $(SRC_QUORUM_ADAPT)
+
+# State engine test binary
+$(BUILD)/state_engine_test: $(SRC_STATE) $(SRC_UTILS) tests/test_state_engine.c $(INCLUDES)
+	$(CC) $(CFLAGS) -o $(BUILD)/state_engine_test tests/test_state_engine.c $(SRC_STATE) $(SRC_UTILS)
 
 # Debug builds with sanitizers
 debug: CFLAGS=$(CFLAGS_DEBUG)
@@ -56,7 +65,7 @@ memcheck: $(BUILD)/morph $(BUILD)/quorum
 clean:
 	rm -rf $(BUILD)/*
 
-test: test-morph test-quorum
+test: test-morph test-quorum test-state
 
 test-morph: $(BUILD)/morph
 	@echo "=== Testing Morphing Engine ==="
@@ -66,7 +75,11 @@ test-quorum: $(BUILD)/quorum
 	@echo "=== Testing Quorum Engine ==="
 	@./tests/test_quorum.sh
 
+test-state: $(BUILD)/state_engine_test
+	@echo "=== Testing State Engine ==="
+	@./$(BUILD)/state_engine_test
+
 test-all: all test
 	@echo "=== All tests completed ==="
 
-.PHONY: all debug analyze memcheck clean test test-morph test-quorum test-all
+.PHONY: all debug analyze memcheck clean test test-morph test-quorum test-state test-all
