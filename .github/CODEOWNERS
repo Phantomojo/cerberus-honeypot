@@ -1,0 +1,32 @@
+# CODEOWNERS - Automatic review assignment
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owner for everything in the repo
+* @Phantomojo
+
+# Core engine code - requires careful review
+/src/state/ @Phantomojo
+/src/morph/ @Phantomojo
+/src/quorum/ @Phantomojo
+/include/ @Phantomojo
+
+# Security-sensitive files
+/.github/workflows/ @Phantomojo
+/.github/SECURITY.md @Phantomojo
+/docker/ @Phantomojo
+
+# Service configurations
+/services/cowrie/ @Phantomojo
+/services/fake-router-web/ @Phantomojo
+/services/fake-camera-web/ @Phantomojo
+
+# Documentation
+/docs/ @Phantomojo
+*.md @Phantomojo
+
+# Tests
+/tests/ @Phantomojo
+
+# Build system
+Makefile @Phantomojo
+profiles.conf @Phantomojo
