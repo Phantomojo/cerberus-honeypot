@@ -1,0 +1,87 @@
+# Pre-commit configuration for CERBERUS Honeypot
+# Ensures consistent style, catches common issues, and runs lightweight QA locally.
+# Install and enable:
+#   pip install pre-commit
+#   pre-commit install --install-hooks
+#   pre-commit run --all-files
+
+minimum_pre_commit_version: "2.20.0"
+fail_fast: false
+
+default_stages:
+  - commit
+  - push
+
+default_install_hook_types:
+  - pre-commit
+  - pre-push
+
+# Exclude generated, vendored, and virtual env content from hooks by default.
+exclude: >
+  ^(
+    build/|
+    venv/|
+    logs/|
+    test-results/|
+    experimentation/cowrie/  # external/captured content
+  )
+
+repos:
+  # Core hygiene hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+        # Preserve two-space markdown line breaks
+        args: ["--markdown-linebreak-ext=md"]
+      - id: end-of-file-fixer
+      - id: check-merge-conflict
+      - id: check-yaml
+        files: ^(.github/workflows/|.*\.ya?ml)$
+
+  # C/C++ formatting (uses .clang-format in repo root)
+  - repo: https://github.com/pre-commit/mirrors-clang-format
+    rev: v18.1.4
+    hooks:
+      - id: clang-format
+        name: clang-format (C/C++)
+        files: \.(c|cc|cpp|cxx|h|hpp)$
+        # Avoid touching external or generated code explicitly
+        exclude: >
+          ^(
+            experimentation/cowrie/|
+            build/|
+            venv/
+          )
+
+  # Shell script linting
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.10.0.1
+    hooks:
+      - id: shellcheck
+        name: shellcheck (bash/sh)
+        files: (\.sh$|/entrypoint.*$)
+        args:
+          # -x: follow 'source' directives
+          # SC1091: allow non-local sourced files in CI contexts
+          - "-x"
+          - "-e"
+          - "SC1091"
+
+  # Spell checking (source and docs)
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.3.0
+    hooks:
+      - id: codespell
+        name: codespell (docs & code comments)
+        additional_dependencies: []
+        args:
+          # Ignore common false positives and project-specific terms
+          - "-L"
+          - "crate,nd,fo,iff,formated,teh,Cerberus,CERBERUS"
+          # Skip external/generated/vendor paths explicitly
+          - "-S"
+          - "docs/vendor,experimentation/cowrie,venv,build,.git"
+        types_or:
+          - text
+          - markdown

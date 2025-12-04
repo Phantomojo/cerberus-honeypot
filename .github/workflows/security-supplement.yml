@@ -1,0 +1,181 @@
+name: Security Supplement
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+  checks: write
+  pull-requests: write
+
+concurrency:
+  group: security-supplement-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  trivy-dockerfile-config:
+    name: Trivy Dockerfile Misconfig Scan
+    runs-on: ubuntu-latest
+    env:
+      TRIVY_CACHE_DIR: .trivycache
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Cache Trivy DB
+        uses: actions/cache@v4
+        with:
+          path: .trivycache
+          key: trivy-db-${{ runner.os }}-${{ hashFiles('**/Dockerfile*') }}
+          restore-keys: |
+            trivy-db-${{ runner.os }}-
+
+      - name: Trivy config scan (docker/Dockerfile)
+        if: hashFiles('docker/Dockerfile') != ''
+        uses: aquasecurity/trivy-action@v0
+        with:
+          scan-type: config
+          scan-ref: docker/Dockerfile
+          format: sarif
+          output: trivy-dockerfile.sarif
+          ignore-unfixed: true
+          severity: MEDIUM,HIGH,CRITICAL
+
+      - name: Upload SARIF (docker/Dockerfile)
+        if: hashFiles('docker/Dockerfile') != ''
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-dockerfile.sarif
+
+      - name: Trivy config scan (docker/Dockerfile.cerberus)
+        if: hashFiles('docker/Dockerfile.cerberus') != ''
+        uses: aquasecurity/trivy-action@v0
+        with:
+          scan-type: config
+          scan-ref: docker/Dockerfile.cerberus
+          format: sarif
+          output: trivy-dockerfile-cerberus.sarif
+          ignore-unfixed: true
+          severity: MEDIUM,HIGH,CRITICAL
+
+      - name: Upload SARIF (docker/Dockerfile.cerberus)
+        if: hashFiles('docker/Dockerfile.cerberus') != ''
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-dockerfile-cerberus.sarif
+
+  trivy-image:
+    name: Trivy Image Vulnerability Scan
+    runs-on: ubuntu-latest
+    env:
+      TRIVY_CACHE_DIR: .trivycache
+      IMAGE_TAG: localbuild/cerberus:${{ github.sha }}
+      DOCKERFILE_PATH: docker/Dockerfile
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Ensure Dockerfile path (fallback to Dockerfile at repo root)
+        id: df
+        shell: bash
+        run: |
+          if [[ ! -f "$DOCKERFILE_PATH" && -f "Dockerfile" ]]; then
+            echo "Using root Dockerfile"
+            echo "path=Dockerfile" >> "$GITHUB_OUTPUT"
+          else
+            echo "Using $DOCKERFILE_PATH"
+            echo "path=$DOCKERFILE_PATH" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image (no push, load local)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ${{ steps.df.outputs.path }}
+          push: false
+          load: true
+          tags: ${{ env.IMAGE_TAG }}
+
+      - name: Cache Trivy DB
+        uses: actions/cache@v4
+        with:
+          path: .trivycache
+          key: trivy-db-image-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            trivy-db-image-${{ runner.os }}-
+
+      - name: Trivy image scan
+        uses: aquasecurity/trivy-action@v0
+        with:
+          image-ref: ${{ env.IMAGE_TAG }}
+          format: sarif
+          output: trivy-image.sarif
+          ignore-unfixed: true
+          vuln-type: "os,library"
+          severity: HIGH,CRITICAL
+          exit-code: 1
+
+      - name: Upload SARIF (image)
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-image.sarif
+
+  coverage-lcov:
+    name: lcov Coverage (C tests)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install build and coverage tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential gcc make lcov
+
+      - name: Build with coverage flags
+        env:
+          COVERAGE_FLAGS: "-Iinclude -O0 -g -fprofile-arcs -ftest-coverage --coverage"
+        run: |
+          make clean || true
+          make CFLAGS="${COVERAGE_FLAGS}"
+
+      - name: Run tests (best effort)
+        run: |
+          set -e
+          if [[ -x "./build/state_engine_test" ]]; then
+            ./build/state_engine_test || true
+          fi
+          # Use make test if available; don't fail coverage on test failures
+          make test || true
+
+      - name: Capture coverage (lcov)
+        run: |
+          # Initialize and capture coverage
+          lcov --quiet --capture --directory . --output-file coverage.info --rc lcov_branch_coverage=1
+          # Remove system and irrelevant paths
+          lcov --quiet --remove coverage.info '/usr/*' '*/venv/*' '*/test-results/*' '*/build/*' '*/.git/*' \
+               -o coverage.info --rc lcov_branch_coverage=1
+          # Keep only project sources
+          lcov --quiet --extract coverage.info "$(pwd)/*" -o coverage.info --rc lcov_branch_coverage=1
+          # Summary
+          lcov --quiet --list coverage.info
+
+      - name: Generate HTML report
+        run: |
+          genhtml coverage.info --output-directory coverage_html --title "CERBERUS Coverage" --legend --branch-coverage
+
+      - name: Upload coverage artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: lcov-coverage
+          path: |
+            coverage.info
+            coverage_html

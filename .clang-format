@@ -1,0 +1,66 @@
+# .clang-format
+# Base C/C++ formatting for CERBERUS Honeypot
+# Reference: https://clang.llvm.org/docs/ClangFormatStyleOptions.html
+
+BasedOnStyle: LLVM
+Standard: Cpp11
+DisableFormat: false
+
+# Line length and wrapping
+ColumnLimit: 100
+ReflowComments: true
+SortIncludes: true
+IncludeBlocks: Regroup
+
+# Indentation
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+ContinuationIndentWidth: 4
+IndentCaseLabels: true
+IndentCaseBlocks: false
+IndentGotoLabels: false
+NamespaceIndentation: All
+AccessModifierOffset: -2
+EmptyLineBeforeAccessModifier: LogicalBlock
+KeepEmptyLinesAtTheStartOfBlocks: false
+
+# Braces and wrapping
+BreakBeforeBraces: Attach
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortCaseLabelsOnASingleLine: false
+AlwaysBreakTemplateDeclarations: Yes
+BreakConstructorInitializers: BeforeComma
+
+# Alignment and spacing
+AlignAfterOpenBracket: Align
+AlignOperands: true
+AlignTrailingComments: true
+SpacesInParentheses: false
+SpaceBeforeParens: ControlStatements
+SpaceAfterCStyleCast: false
+SpaceInEmptyParentheses: false
+SpaceBeforeAssignmentOperators: true
+PointerAlignment: Left
+DerivePointerAlignment: false
+
+# Include ordering (system headers first, then project/local)
+IncludeCategories:
+  - Regex: '^<[^"]+>$'
+    Priority: 1
+    SortPriority: 0
+    CaseSensitive: false
+  - Regex: '^"[^"]+"$'
+    Priority: 2
+    SortPriority: 1
+    CaseSensitive: false
+
+# Comment handling
+SpacesBeforeTrailingComments: 1
+
+# Misc
+BinPackArguments: false
+BinPackParameters: false
+Cpp11BracedListStyle: true
