@@ -36,7 +36,7 @@ $(BUILD)/morph: $(SRC_MORPH) $(SRC_UTILS) $(SRC_NETWORK) $(SRC_MORPH_NETWORK) \
 	$(CC) $(CFLAGS) -o $(BUILD)/morph \
 		$(SRC_MORPH) $(SRC_UTILS) $(SRC_NETWORK) $(SRC_MORPH_NETWORK) \
 		$(SRC_FILESYSTEM) $(SRC_PROCESSES) $(SRC_BEHAVIOR) $(SRC_TEMPORAL)
-	@./scripts/add_dynamic_commands.sh
+	@test -x ./scripts/add_dynamic_commands.sh && ./scripts/add_dynamic_commands.sh || true
 
 # Quorum engine with adaptation module
 $(BUILD)/quorum: $(SRC_QUORUM) $(SRC_UTILS) $(SRC_QUORUM_ADAPT) $(INCLUDES)
