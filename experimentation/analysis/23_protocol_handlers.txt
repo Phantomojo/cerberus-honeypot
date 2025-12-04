@@ -1,0 +1,31 @@
+=== SSH MESSAGE HANDLERS ===
+experimentation/cowrie/src/cowrie/ssh/connection.py:    def ssh_CHANNEL_REQUEST(self, packet):
+experimentation/cowrie/src/cowrie/ssh/factory.py:from twisted.conch.openssh_compat import primes
+experimentation/cowrie/src/cowrie/ssh/factory.py:from cowrie.ssh_proxy import server_transport as proxyTransport
+experimentation/cowrie/src/cowrie/ssh/factory.py:from cowrie.ssh_proxy.userauth import ProxySSHAuthServer
+experimentation/cowrie/src/cowrie/ssh/transport.py:    def ssh_KEXINIT(self, packet: bytes) -> Any:
+experimentation/cowrie/src/cowrie/ssh/transport.py:        return transport.SSHServerTransport.ssh_KEXINIT(self, packet)
+experimentation/cowrie/src/cowrie/ssh/userauth.py:    def ssh_USERAUTH_REQUEST(self, packet: bytes) -> Any:
+experimentation/cowrie/src/cowrie/ssh/userauth.py:        return userauth.SSHUserAuthServer.ssh_USERAUTH_REQUEST(self, packet)
+experimentation/cowrie/src/cowrie/ssh/userauth.py:    def ssh_USERAUTH_INFO_RESPONSE(self, packet: bytes) -> None:
+
+=== TELNET NEGOTIATION ===
+experimentation/cowrie/src/cowrie/telnet/factory.py:from cowrie.telnet.transport import CowrieTelnetTransport
+experimentation/cowrie/src/cowrie/telnet/factory.py:from cowrie.telnet.userauth import HoneyPotTelnetAuthProtocol
+experimentation/cowrie/src/cowrie/telnet/factory.py:from cowrie.telnet_proxy.server_transport import FrontendTelnetTransport
+experimentation/cowrie/src/cowrie/telnet/session.py:from twisted.conch.telnet import ECHO, SGA, TelnetBootstrapProtocol
+experimentation/cowrie/src/cowrie/telnet/session.py:    id = 0  # telnet can only have 1 simultaneous session, unlike SSH
+experimentation/cowrie/src/cowrie/telnet/session.py:        # EXTENDED_DATA_STDERR is from ssh, no equivalent in telnet?
+experimentation/cowrie/src/cowrie/telnet/session.py:        here SSH is doing signal handling, I don't think telnet supports that so
+experimentation/cowrie/src/cowrie/telnet/transport.py:from twisted.conch.telnet import AlreadyNegotiating, TelnetTransport
+experimentation/cowrie/src/cowrie/telnet/transport.py:            protocol="telnet",
+experimentation/cowrie/src/cowrie/telnet/transport.py:        http://stackoverflow.com/questions/35087250/twisted-telnet-server-how-to-avoid-nested-crlf
+experimentation/cowrie/src/cowrie/telnet/transport.py:            # The telnetd package on Ubuntu (netkit-telnet) does all negotiation before sending the login prompt,
+experimentation/cowrie/src/cowrie/telnet/userauth.py:from twisted.conch.telnet import (
+experimentation/cowrie/src/cowrie/telnet/userauth.py:        # self.transport.negotiationMap[NAWS] = self.telnet_NAWS
+experimentation/cowrie/src/cowrie/telnet/userauth.py:    def telnet_User(self, line):
+experimentation/cowrie/src/cowrie/telnet/userauth.py:        Overridden to conditionally kill 'WILL ECHO' which confuses clients
+experimentation/cowrie/src/cowrie/telnet/userauth.py:    def telnet_Password(self, line):
+experimentation/cowrie/src/cowrie/telnet/userauth.py:    def telnet_Command(self, command):
+experimentation/cowrie/src/cowrie/telnet/userauth.py:    def telnet_NAWS(self, data):
+experimentation/cowrie/src/cowrie/telnet/userauth.py:        From TelnetBootstrapProtocol in twisted/conch/telnet.py

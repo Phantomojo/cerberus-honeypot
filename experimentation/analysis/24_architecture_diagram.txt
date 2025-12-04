@@ -1,0 +1,66 @@
+=== COWRIE ARCHITECTURE (Text Diagram) ===
+
+┌─────────────────────────────────────────────────────────────┐
+│                    EXTERNAL CONNECTIONS                      │
+│                    (Attacker connects)                       │
+└─────────────┬───────────────────────────┬───────────────────┘
+              │                           │
+              │ SSH (port 2222)           │ Telnet (port 2323)
+              │                           │
+    ┌─────────▼─────────┐       ┌────────▼─────────┐
+    │  SSH Transport    │       │ Telnet Transport │
+    │  (transport.py)   │       │  (transport.py)  │
+    └─────────┬─────────┘       └────────┬─────────┘
+              │                           │
+    ┌─────────▼─────────┐       ┌────────▼─────────┐
+    │  SSH UserAuth     │       │ Telnet UserAuth  │
+    │  (userauth.py)    │       │  (userauth.py)   │
+    └─────────┬─────────┘       └────────┬─────────┘
+              │                           │
+              └───────────┬───────────────┘
+                          │
+                ┌─────────▼─────────┐
+                │   Session Manager │
+                │   (session.py)    │
+                └─────────┬─────────┘
+                          │
+                ┌─────────▼─────────┐
+                │  Shell Protocol   │
+                │  (protocol.py)    │
+                │  - lineReceived() │
+                │  - call_command() │
+                └─────────┬─────────┘
+                          │
+         ┌────────────────┼────────────────┐
+         │                │                │
+┌────────▼────────┐ ┌────▼────┐  ┌───────▼────────┐
+│ Command Handler │ │ VirtFS  │  │ File Transfer  │
+│ (commands/*.py) │ │ (fs.py) │  │ (filetransfer) │
+└────────┬────────┘ └────┬────┘  └───────┬────────┘
+         │               │                │
+         └───────────────┼────────────────┘
+                         │
+                ┌────────▼────────┐
+                │  Output Plugins │
+                │  (output/*.py)  │
+                │  - JSON log     │
+                │  - Text log     │
+                │  - MySQL        │
+                │  - Splunk       │
+                └─────────────────┘
+
+DATA FLOW:
+1. Connection → Transport → Auth → Session
+2. Command Input → Protocol → Command Handler
+3. Command Output → Protocol → Transport → Attacker
+4. Logging → Output Plugins → Storage
+
+KEY FILES:
+- ssh/transport.py     : SSH protocol negotiation
+- ssh/userauth.py      : SSH authentication
+- telnet/transport.py  : Telnet protocol
+- shell/protocol.py    : Command line handling
+- shell/honeypot.py    : Main shell logic (21K lines!)
+- shell/fs.py          : Virtual filesystem
+- commands/*.py        : Individual command impls
+- output/*.py          : Logging backends

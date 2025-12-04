@@ -1,0 +1,20 @@
+=== SESSION LIFECYCLE ===
+experimentation/cowrie/src/cowrie/ssh/transport.py:    def connectionMade(self) -> None:
+experimentation/cowrie/src/cowrie/ssh/transport.py-        """
+experimentation/cowrie/src/cowrie/ssh/transport.py-        Called when the connection is made from the other side.
+experimentation/cowrie/src/cowrie/ssh/transport.py-        We send our version, but wait with sending KEXINIT
+experimentation/cowrie/src/cowrie/ssh/transport.py-        """
+experimentation/cowrie/src/cowrie/ssh/transport.py-        self.buf = b""
+--
+experimentation/cowrie/src/cowrie/ssh/transport.py:    def connectionLost(self, reason: failure.Failure | None = connectionDone) -> None:
+experimentation/cowrie/src/cowrie/ssh/transport.py-        """
+experimentation/cowrie/src/cowrie/ssh/transport.py-        This seems to be the only reliable place of catching lost connection
+experimentation/cowrie/src/cowrie/ssh/transport.py-        """
+experimentation/cowrie/src/cowrie/ssh/transport.py-        self.setTimeout(None)
+experimentation/cowrie/src/cowrie/ssh/transport.py:        transport.SSHServerTransport.connectionLost(self, reason)
+experimentation/cowrie/src/cowrie/ssh/transport.py:        self.transport.connectionLost(reason)
+experimentation/cowrie/src/cowrie/ssh/transport.py-        self.transport = None
+experimentation/cowrie/src/cowrie/ssh/transport.py-        duration = f"{time.time() - self.startTime:.1f}"
+experimentation/cowrie/src/cowrie/ssh/transport.py-        log.msg(
+experimentation/cowrie/src/cowrie/ssh/transport.py-            eventid="cowrie.session.closed",
+experimentation/cowrie/src/cowrie/ssh/transport.py-            format="Connection lost after %(duration)s seconds",

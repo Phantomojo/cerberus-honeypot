@@ -1,0 +1,266 @@
+=== AVAILABLE COMMANDS ===
+adduser.py
+apt.py
+awk.py
+base64.py
+base.py
+bash.py
+busybox.py
+cat.py
+chmod.py
+chpasswd.py
+crontab.py
+curl.py
+dd.py
+dig.py
+du.py
+env.py
+ethtool.py
+find.py
+finger.py
+free.py
+fs.py
+ftpget.py
+gcc.py
+git.py
+groups.py
+ifconfig.py
+__init__.py
+iptables.py
+last.py
+locate.py
+lspci.py
+ls.py
+nc.py
+netstat.py
+nohup.py
+perl.py
+ping.py
+python.py
+scp.py
+service.py
+sleep.py
+ssh.py
+sudo.py
+tar.py
+tee.py
+tftp.py
+ulimit.py
+uname.py
+uniq.py
+unzip.py
+uptime.py
+wc.py
+wget.py
+which.py
+yum.py
+
+=== COMMAND IMPLEMENTATION SAMPLES ===
+--- ls command ---
+# Copyright (c) 2009 Upi Tamminen <desaster@gmail.com>
+# See the COPYRIGHT file for more information
+
+from __future__ import annotations
+
+import getopt
+import os.path
+import stat
+import time
+
+from cowrie.shell import fs
+from cowrie.shell.command import HoneyPotCommand
+from cowrie.shell.pwd import Group, Passwd
+
+commands = {}
+
+
+class Command_ls(HoneyPotCommand):
+    def uid2name(self, uid: int) -> str:
+        try:
+            name: str = Passwd().getpwuid(uid)["pw_name"]
+        except Exception:
+            return str(uid)
+        else:
+            return name
+
+    def gid2name(self, gid: int) -> str:
+        try:
+            group: str = Group().getgrgid(gid)["gr_name"]
+        except Exception:
+            return str(gid)
+        else:
+            return group
+
+    def call(self) -> None:
+        path = self.protocol.cwd
+        paths = []
+        self.showHidden = False
+        self.showDirectories = False
+        self.showHumanReadable = False
+        func = self.do_ls_normal
+
+        # Parse options or display no files
+        try:
+            opts, args = getopt.gnu_getopt(
+                self.args,
+                "1@ABCFGHLOPRSTUWabcdefghiklmnopqrstuvwx",
+                ["help", "version", "param"],
+            )
+        except getopt.GetoptError as err:
+
+--- cat command ---
+# Copyright (c) 2010 Upi Tamminen <desaster@gmail.com>
+# See the COPYRIGHT file for more information
+
+"""
+cat command
+
+"""
+
+from __future__ import annotations
+
+
+import getopt
+
+from twisted.python import log
+
+from cowrie.shell.command import HoneyPotCommand
+from cowrie.shell.fs import FileNotFound
+
+commands = {}
+
+
+class Command_cat(HoneyPotCommand):
+    """
+    cat command
+    """
+
+    number = False
+    linenumber = 1
+
+    def start(self) -> None:
+        try:
+            optlist, args = getopt.gnu_getopt(
+                self.args, "AbeEnstTuv", ["help", "number", "version"]
+            )
+        except getopt.GetoptError as err:
+            self.errorWrite(
+                f"cat: invalid option -- '{err.opt}'\nTry 'cat --help' for more information.\n"
+            )
+            self.exit()
+            return
+
+        for o, _a in optlist:
+            if o in ("--help"):
+                self.help()
+                self.exit()
+                return
+            elif o in ("-n", "--number"):
+                self.number = True
+
+        if len(args) > 0:
+
+--- wget command ---
+# Copyright (c) 2009 Upi Tamminen <desaster@gmail.com>
+# See the COPYRIGHT file for more information
+
+from __future__ import annotations
+
+import getopt
+import os
+import time
+import posixpath
+from typing import Any
+from urllib import parse
+
+from twisted.internet import defer, error, reactor
+from twisted.internet.defer import inlineCallbacks, CancelledError
+from twisted.internet.protocol import ClientCreator, Protocol
+from twisted.python import log
+from twisted.protocols.ftp import CommandFailed, FTPClient
+from twisted.web.iweb import UNKNOWN_LENGTH
+
+import treq
+
+from cowrie.core.artifact import Artifact
+from cowrie.core.config import CowrieConfig
+from cowrie.core.network import communication_allowed
+from cowrie.core.rate_limiter import RateLimiter
+from cowrie.shell.command import HoneyPotCommand
+
+commands = {}
+
+# Initialize rate limiter
+wget_rate_limiter = RateLimiter(
+    enabled=CowrieConfig.getboolean("honeypot", "wget_rate_limit_enabled", fallback=True),
+    max_requests=CowrieConfig.getint("honeypot", "wget_rate_limit_requests", fallback=5),
+    window_seconds=CowrieConfig.getint("honeypot", "wget_rate_limit_window", fallback=60),
+    max_keys=CowrieConfig.getint("honeypot", "wget_rate_limit_max_hosts", fallback=1000)
+)
+
+
+def tdiff(seconds: int) -> str:
+    days, remainder = divmod(seconds, 86400)  # 86400 = 24*60*60
+    hours, remainder = divmod(remainder, 3600)  # 3600 = 60*60
+    minutes, secs = divmod(remainder, 60)
+
+    parts = []
+    if days >= 1:
+        parts.append(f"{days}d")
+    if hours >= 1:
+        parts.append(f"{hours}h")
+    if minutes >= 1:
+        parts.append(f"{minutes}m")
+
+--- curl command ---
+# Copyright (c) 2022 Michel Oosterhof <michel@oosterhof.net>
+# See the COPYRIGHT file for more information
+
+from __future__ import annotations
+from http.client import responses
+
+import getopt
+import os
+from urllib import parse
+
+from twisted.internet import error
+from twisted.internet.defer import inlineCallbacks
+from twisted.python import log
+
+import treq
+
+from cowrie.core.artifact import Artifact
+from cowrie.core.config import CowrieConfig
+from cowrie.core.network import communication_allowed
+from cowrie.core.rate_limiter import RateLimiter
+from cowrie.shell.command import HoneyPotCommand
+
+
+commands = {}
+
+# Initialize rate limiter
+curl_rate_limiter = RateLimiter(
+    enabled=CowrieConfig.getboolean("honeypot", "curl_rate_limit_enabled", fallback=True),
+    max_requests=CowrieConfig.getint("honeypot", "curl_rate_limit_requests", fallback=5),
+    window_seconds=CowrieConfig.getint("honeypot", "curl_rate_limit_window", fallback=60),
+    max_keys=CowrieConfig.getint("honeypot", "curl_rate_limit_max_hosts", fallback=1000)
+)
+
+CURL_HELP = """Usage: curl [options...] <url>
+Options: (H) means HTTP/HTTPS only, (F) means FTP only
+     --anyauth       Pick "any" authentication method (H)
+ -a, --append        Append to target file when uploading (F/SFTP)
+     --basic         Use HTTP Basic Authentication (H)
+     --cacert FILE   CA certificate to verify peer against (SSL)
+     --capath DIR    CA directory to verify peer against (SSL)
+ -E, --cert CERT[:PASSWD] Client certificate file and password (SSL)
+     --cert-type TYPE Certificate file type (DER/PEM/ENG) (SSL)
+     --ciphers LIST  SSL ciphers to use (SSL)
+     --compressed    Request compressed response (using deflate or gzip)
+ -K, --config FILE   Specify which config file to read
+     --connect-timeout SECONDS  Maximum time allowed for connection
+ -C, --continue-at OFFSET  Resumed transfer offset
+ -b, --cookie STRING/FILE  String or file to read cookies from (H)
+ -c, --cookie-jar FILE  Write cookies to this file after operation (H)
+     --create-dirs   Create necessary local directory hierarchy
+

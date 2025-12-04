@@ -1,0 +1,143 @@
+=== LOGGING MODULES ===
+total 276
+drwxr-xr-x 1 ph ph   784 Dec  3 02:10 .
+drwxr-xr-x 1 ph ph   230 Dec  3 02:10 ..
+-rw-r--r-- 1 ph ph 18519 Dec  3 02:10 abuseipdb.py
+-rw-r--r-- 1 ph ph  1578 Dec  3 02:10 axiom.py
+-rw-r--r-- 1 ph ph  2006 Dec  3 02:10 crashreporter.py
+-rw-r--r-- 1 ph ph  2726 Dec  3 02:10 csirtg.py
+-rw-r--r-- 1 ph ph  5924 Dec  3 02:10 cuckoo.py
+-rw-r--r-- 1 ph ph  2120 Dec  3 02:10 datadog.py
+-rw-r--r-- 1 ph ph  7703 Dec  3 02:10 discord.py
+-rw-r--r-- 1 ph ph  5980 Dec  3 02:10 dshield.py
+-rw-r--r-- 1 ph ph  4398 Dec  3 02:10 elasticsearch.py
+-rw-r--r-- 1 ph ph  1641 Dec  3 02:10 graylog.py
+-rw-r--r-- 1 ph ph  2750 Dec  3 02:10 greynoise.py
+-rw-r--r-- 1 ph ph  4221 Dec  3 02:10 hpfeeds3.py
+-rw-r--r-- 1 ph ph  7199 Dec  3 02:10 influx.py
+-rw-r--r-- 1 ph ph  3099 Dec  3 02:10 jsonlog.py
+-rw-r--r-- 1 ph ph  2736 Dec  3 02:10 localsyslog.py
+-rw-r--r-- 1 ph ph  3332 Dec  3 02:10 malshare.py
+-rw-r--r-- 1 ph ph 24291 Dec  3 02:10 misp.py
+-rw-r--r-- 1 ph ph  5033 Dec  3 02:10 mongodb.py
+-rw-r--r-- 1 ph ph 11194 Dec  3 02:10 mysql.py
+-rw-r--r-- 1 ph ph  4405 Dec  3 02:10 oraclecloud.py
+-rw-r--r-- 1 ph ph  9909 Dec  3 02:10 postgresql.py
+-rw-r--r-- 1 ph ph  6695 Dec  3 02:10 prometheus.py
+-rw-r--r-- 1 ph ph   354 Dec  3 02:10 README.md
+-rw-r--r-- 1 ph ph  1785 Dec  3 02:10 redis.py
+-rw-r--r-- 1 ph ph  1215 Dec  3 02:10 remotesyslog.py
+-rw-r--r-- 1 ph ph  1504 Dec  3 02:10 rethinkdblog.py
+-rw-r--r-- 1 ph ph  3468 Dec  3 02:10 reversedns.py
+-rw-r--r-- 1 ph ph  4965 Dec  3 02:10 rmq.py
+-rw-r--r-- 1 ph ph  3019 Dec  3 02:10 s3.py
+-rw-r--r-- 1 ph ph  9417 Dec  3 02:10 slack.py
+-rw-r--r-- 1 ph ph  1144 Dec  3 02:10 socketlog.py
+-rw-r--r-- 1 ph ph  3666 Dec  3 02:10 splunk.py
+-rw-r--r-- 1 ph ph  7333 Dec  3 02:10 sqlite.py
+-rw-r--r-- 1 ph ph  2310 Dec  3 02:10 telegram.py
+-rw-r--r-- 1 ph ph  2365 Dec  3 02:10 textlog.py
+-rw-r--r-- 1 ph ph 28081 Dec  3 02:10 virustotal.py
+-rw-r--r-- 1 ph ph  2972 Dec  3 02:10 xmpp.py
+
+=== LOGGING CODE ===
+research/cowrie/src/cowrie/output/abuseipdb.py:Cowrie plugin for reporting login attempts via the AbuseIPDB API.
+research/cowrie/src/cowrie/output/abuseipdb.py:from twisted.python import log
+research/cowrie/src/cowrie/output/abuseipdb.py:        self.logbook = LogBook(self.tolerance_attempts, self.state_dump)
+research/cowrie/src/cowrie/output/abuseipdb.py:        # Pass our instance of LogBook() to Reporter() so we don't end up
+research/cowrie/src/cowrie/output/abuseipdb.py:        self.reporter = Reporter(self.logbook, self.tolerance_attempts)
+research/cowrie/src/cowrie/output/abuseipdb.py:        # We store the LogBook state any time a shutdown occurs. The rest of
+research/cowrie/src/cowrie/output/abuseipdb.py:                self.logbook.update(pickle.load(f))
+research/cowrie/src/cowrie/output/abuseipdb.py:            if self.logbook["sleeping"]:
+research/cowrie/src/cowrie/output/abuseipdb.py:                t_wake: float = self.logbook["sleep_until"]
+research/cowrie/src/cowrie/output/abuseipdb.py:                    # If we're meant to be asleep, we'll set logbook.sleep to
+research/cowrie/src/cowrie/output/abuseipdb.py:                    # true and logbook.sleep_until to the time we can wake-up
+research/cowrie/src/cowrie/output/abuseipdb.py:                    self.logbook.sleeping = True
+research/cowrie/src/cowrie/output/abuseipdb.py:                    self.logbook.sleep_until = t_wake
+research/cowrie/src/cowrie/output/abuseipdb.py:                    reactor.callLater(t_wake - t_now, self.logbook.wakeup)
+research/cowrie/src/cowrie/output/abuseipdb.py:            del self.logbook["sleeping"]
+research/cowrie/src/cowrie/output/abuseipdb.py:            del self.logbook["sleep_until"]
+research/cowrie/src/cowrie/output/abuseipdb.py:            tolerated = self.logbook.pop("tolerated")
+research/cowrie/src/cowrie/output/abuseipdb.py:        self.logbook.cleanup_and_dump_state()
+research/cowrie/src/cowrie/output/abuseipdb.py:                for k in self.logbook:
+research/cowrie/src/cowrie/output/abuseipdb.py:                    if self.logbook[k].__class__() == deque():
+research/cowrie/src/cowrie/output/abuseipdb.py:                        self.logbook[k] = deque(
+research/cowrie/src/cowrie/output/abuseipdb.py:                            [*self.logbook[k]], maxlen=self.tolerance_attempts
+research/cowrie/src/cowrie/output/abuseipdb.py:        log.msg(
+research/cowrie/src/cowrie/output/abuseipdb.py:        self.logbook.cleanup_and_dump_state(mode=1)
+research/cowrie/src/cowrie/output/abuseipdb.py:        if self.logbook.sleeping:
+research/cowrie/src/cowrie/output/abuseipdb.py:        if event["eventid"].rsplit(".", 1)[0] == "cowrie.login":
+research/cowrie/src/cowrie/output/abuseipdb.py:            # keep logs so our handling of the event is different than if > 1
+research/cowrie/src/cowrie/output/abuseipdb.py:        # is not already in logbook, reports it immediately
+research/cowrie/src/cowrie/output/abuseipdb.py:        if ip in self.logbook:
+research/cowrie/src/cowrie/output/abuseipdb.py:            if self.logbook.can_rereport(ip, t):
+research/cowrie/src/cowrie/output/abuseipdb.py:        # Appends the time an IP was seen to it's list in logbook. Once the
+research/cowrie/src/cowrie/output/abuseipdb.py:        if ip in self.logbook:
+research/cowrie/src/cowrie/output/abuseipdb.py:                if self.logbook[ip][0]:
+research/cowrie/src/cowrie/output/abuseipdb.py:                    # logbook entry is of the form (None, time_reported).
+research/cowrie/src/cowrie/output/abuseipdb.py:                    self.logbook[ip].append(t)
+research/cowrie/src/cowrie/output/abuseipdb.py:                    self.logbook.clean_expired_timestamps(ip, t)
+research/cowrie/src/cowrie/output/abuseipdb.py:                    if len(self.logbook[ip]) >= self.tolerance_attempts:
+research/cowrie/src/cowrie/output/abuseipdb.py:                elif self.logbook.can_rereport(ip, t):
+research/cowrie/src/cowrie/output/abuseipdb.py:                    self.logbook[ip] = deque([t], maxlen=self.tolerance_attempts)
+research/cowrie/src/cowrie/output/abuseipdb.py:                # If IP address was in logbook but had no entries then we're
+research/cowrie/src/cowrie/output/abuseipdb.py:                self.logbook[ip].append(t)
+research/cowrie/src/cowrie/output/abuseipdb.py:            self.logbook[ip] = deque([t], maxlen=self.tolerance_attempts)
+research/cowrie/src/cowrie/output/abuseipdb.py:class LogBook(dict):
+research/cowrie/src/cowrie/output/abuseipdb.py:        log.msg(
+research/cowrie/src/cowrie/output/abuseipdb.py:        # Checks if an IP in the logbook that has already been reported is
+research/cowrie/src/cowrie/output/abuseipdb.py:                # we could still be carrying some logs which would evaluate as
+research/cowrie/src/cowrie/output/abuseipdb.py:        # Runs a full clean-up of logbook. Re-calls itself in CLEAN_DUMP_SCHED
+research/cowrie/src/cowrie/output/abuseipdb.py:    def __init__(self, logbook, attempts):
+research/cowrie/src/cowrie/output/abuseipdb.py:        self.logbook = logbook
+research/cowrie/src/cowrie/output/abuseipdb.py:        self.logbook[ip] = (None, t)
+research/cowrie/src/cowrie/output/abuseipdb.py:            "comment": "Cowrie Honeypot: Unauthorised SSH/Telnet login attempt "
+research/cowrie/src/cowrie/output/abuseipdb.py:        t_last = self.logbook[ip].pop()
+research/cowrie/src/cowrie/output/abuseipdb.py:        t_first = self.epoch_to_string_utc(self.logbook[ip].popleft())
+research/cowrie/src/cowrie/output/abuseipdb.py:        self.logbook[ip] = (None, t_last)
+research/cowrie/src/cowrie/output/abuseipdb.py:            "comment": f"Cowrie Honeypot: {self.attempts} unauthorised SSH/Telnet login attempts "
+research/cowrie/src/cowrie/output/abuseipdb.py:    def log_response_failed(ip, response, reason):
+research/cowrie/src/cowrie/output/abuseipdb.py:        log.msg(
+research/cowrie/src/cowrie/output/abuseipdb.py:            log.msg(
+research/cowrie/src/cowrie/output/abuseipdb.py:            self.log_response_failed(params["ip"], response.code, reason)
+research/cowrie/src/cowrie/output/abuseipdb.py:        log.msg(
+research/cowrie/src/cowrie/output/abuseipdb.py:        self.log_response_failed(params["ip"], response.code, reason)
+research/cowrie/src/cowrie/output/abuseipdb.py:                log.msg(
+research/cowrie/src/cowrie/output/abuseipdb.py:            self.logbook.sleeping = True
+research/cowrie/src/cowrie/output/abuseipdb.py:            self.logbook.sleep_until = time() + retry
+research/cowrie/src/cowrie/output/abuseipdb.py:            reactor.callLater(retry, self.logbook.wakeup)
+research/cowrie/src/cowrie/output/abuseipdb.py:            # after logbook.sleeping has been set to True. The clean-up method
+research/cowrie/src/cowrie/output/abuseipdb.py:            self.logbook.cleanup_and_dump_state(mode=1)
+research/cowrie/src/cowrie/output/abuseipdb.py:            self.epoch_to_string_utc(self.logbook.sleep_until)
+research/cowrie/src/cowrie/output/abuseipdb.py:            log.msg(
+research/cowrie/src/cowrie/output/abuseipdb.py:                wake_at=self.epoch_to_string_utc(self.logbook.sleep_until),
+research/cowrie/src/cowrie/output/axiom.py:# Simple Telegram Bot logger
+research/cowrie/src/cowrie/output/axiom.py:from twisted.python import log
+research/cowrie/src/cowrie/output/axiom.py:            if i.startswith("log_") or i == "time" or i == "system":
+research/cowrie/src/cowrie/output/axiom.py:            log.err("jsonlog: Can't serialize: '" + repr(event) + "'")
+research/cowrie/src/cowrie/output/axiom.py:            log.err("jsonlog: Can't submit to Axiom: '" + repr(error) + "'")
+research/cowrie/src/cowrie/output/crashreporter.py:from twisted.logger._levels import LogLevel
+research/cowrie/src/cowrie/output/crashreporter.py:from twisted.python import log
+research/cowrie/src/cowrie/output/crashreporter.py:        if event.get("log_level") == LogLevel.critical:
+research/cowrie/src/cowrie/output/crashreporter.py:                    {"log_text": entry.get("log_text"), "system": entry.get("system")}
+research/cowrie/src/cowrie/output/crashreporter.py:                log.msg("crashreport: " + content)
+research/cowrie/src/cowrie/output/crashreporter.py:            log.msg("crashreporter failed" + repr(e))
+research/cowrie/src/cowrie/output/csirtg.py:from twisted.python import log
+research/cowrie/src/cowrie/output/csirtg.py:    log.msg("output_csirtg: token not found in configuration file")
+research/cowrie/src/cowrie/output/csirtg.py:            log.msg(f"output_csirtg: Submitting {i!r} to CSIRTG")
+research/cowrie/src/cowrie/output/csirtg.py:            log.msg(f"output_csirtg: Submitted {ind!r} to CSIRTG")
+research/cowrie/src/cowrie/output/csirtg.py:        log.msg("output_csirtg: submitted to csirtg at {} ".format(ind["location"]))
+research/cowrie/src/cowrie/output/cuckoo.py:from twisted.python import log
+research/cowrie/src/cowrie/output/cuckoo.py:            log.msg("Sending file to Cuckoo")
+research/cowrie/src/cowrie/output/cuckoo.py:                log.msg("Sending file to Cuckoo")
+research/cowrie/src/cowrie/output/cuckoo.py:            log.msg(f"Looking for tasks for: {sha256}")
+research/cowrie/src/cowrie/output/cuckoo.py:                log.msg(
+research/cowrie/src/cowrie/output/cuckoo.py:            log.msg(e)
+research/cowrie/src/cowrie/output/cuckoo.py:                log.msg(
+research/cowrie/src/cowrie/output/cuckoo.py:                log.msg(f"Cuckoo Request failed: {res.status_code}")
+research/cowrie/src/cowrie/output/cuckoo.py:            log.msg(f"Cuckoo Request failed: {e}")
+research/cowrie/src/cowrie/output/cuckoo.py:                log.msg(
+research/cowrie/src/cowrie/output/cuckoo.py:                log.msg(f"Cuckoo Request failed: {res.status_code}")
+research/cowrie/src/cowrie/output/cuckoo.py:            log.msg(f"Cuckoo Request failed: {e}")
+research/cowrie/src/cowrie/output/datadog.py:Simple Datadog HTTP logger.
+research/cowrie/src/cowrie/output/datadog.py:from twisted.python import log

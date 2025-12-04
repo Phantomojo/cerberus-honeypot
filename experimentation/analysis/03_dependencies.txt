@@ -1,0 +1,46 @@
+=== PYTHON DEPENDENCIES ===
+attrs==25.4.0
+bcrypt==5.0.0
+cryptography==46.0.3
+hyperlink==21.0.0
+idna==3.11
+packaging==25.0
+pyasn1_modules==0.4.2
+requests==2.32.5
+service_identity==24.2.0
+tftpy==0.8.6
+treq==25.5.0
+twisted[conch]==25.5.0
+urllib3==2.5.0
+
+=== IMPORTS ANALYSIS ===
+    172 from __future__ import annotations
+     89 from twisted.python import log
+     86 from cowrie.core.config import CowrieConfig
+     53 import os
+     52 from cowrie.shell.command import HoneyPotCommand
+     36 import time
+     35 import cowrie.core.output
+     29 import getopt
+     27 import re
+     22 from twisted.internet import reactor
+     21 import json
+     20 from typing import Any
+     16 from typing import TYPE_CHECKING
+     15 import unittest
+     15 import sys
+     15 import struct
+     15 from zope.interface import implementer
+     14 from twisted.internet import defer
+     11 from cowrie.test.fake_transport import FakeTransport
+     11 from cowrie.test.fake_server import FakeAvatar, FakeServer
+     11 from cowrie.shell.protocol import HoneyPotInteractiveProtocol
+     10 import socket
+     10 import random
+     10 import hashlib
+     10 from twisted.python import failure, log
+      8 import configparser
+      8 from twisted.protocols.policies import TimeoutMixin
+      8 from twisted.internet.protocol import connectionDone
+      8 from cowrie.shell import fs
+      7 import uuid

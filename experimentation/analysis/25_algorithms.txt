@@ -1,0 +1,76 @@
+=== KEY ALGORITHMS ===
+
+--- Command Parser ---
+    def lineReceived(self, line: str) -> None:
+        log.msg(eventid="cowrie.command.input", input=line, format="CMD: %(input)s")
+        self.lexer = shlex.shlex(instream=line, punctuation_chars=True, posix=True)
+        # Add these special characters that are not in the default lexer
+        self.lexer.wordchars += "@%{}=$:+^,()`"
+
+        tokens: list[str] = []
+
+        while True:
+            try:
+                tokkie: str | None = self.lexer.get_token()
+                # log.msg("tok: %s" % (repr(tok)))
+
+                if tokkie is None:  # self.lexer.eof put None for mypy
+                    if tokens:
+                        self.cmdpending.append(tokens)
+                    break
+                else:
+                    tok: str = tokkie
+
+                # For now, treat && and || same as ;, just execute without checking return code
+                if tok == "&&" or tok == "||":
+                    if tokens:
+                        self.cmdpending.append(tokens)
+                        tokens = []
+                        continue
+                    else:
+                        self.protocol.terminal.write(
+                            f"-bash: syntax error near unexpected token `{tok}'\n".encode()
+                        )
+                        break
+
+--- Path Resolution ---
+    def resolve_path(self, pathspec: str, cwd: str) -> str:
+        """
+        This function does not need to be in this class, it has no dependencies
+        """
+        cwdpieces: list[str] = []
+
+        # If a path within home directory is specified, convert it to an absolute path
+        if pathspec.startswith("~/"):
+            path = self.home + pathspec[1:]
+        else:
+            path = pathspec
+
+        pieces = path.rstrip("/").split("/")
+
+        if path[0] == "/":
+            cwdpieces = []
+        else:
+            cwdpieces = [x for x in cwd.split("/") if len(x) and x is not None]
+
+        while 1:
+            if not pieces:
+--
+    def resolve_path_wc(self, path: str, cwd: str) -> list[str]:
+        """
+        Resolve_path with wildcard support (globbing)
+        """
+        pieces: list[str] = path.rstrip("/").split("/")
+        cwdpieces: list[str]
+        if len(pieces[0]):
+            cwdpieces = [x for x in cwd.split("/") if len(x) and x is not None]
+            path = path[1:]
+        else:
+            cwdpieces, pieces = [], pieces[1:]
+        found: list[str] = []
+
+        def foo(p, cwd):
+            if not p:
+                found.append("/{}".format("/".join(cwd)))
+            elif p[0] == ".":
+                foo(p[1:], cwd)

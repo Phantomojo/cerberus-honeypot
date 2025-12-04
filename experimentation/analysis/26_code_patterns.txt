@@ -1,0 +1,78 @@
+=== INTERESTING CODE PATTERNS ===
+
+--- Twisted Deferred Usage ---
+experimentation/cowrie/src/cowrie/ssh/connection.py:from twisted.internet import defer
+experimentation/cowrie/src/cowrie/ssh/connection.py-from twisted.python import log
+experimentation/cowrie/src/cowrie/ssh/connection.py-
+experimentation/cowrie/src/cowrie/ssh/connection.py-
+--
+experimentation/cowrie/src/cowrie/ssh/connection.py:        d = defer.maybeDeferred(
+experimentation/cowrie/src/cowrie/ssh/connection.py-            log.callWithLogger, channel, channel.requestReceived, requestType, rest[1:]
+experimentation/cowrie/src/cowrie/ssh/connection.py-        )
+experimentation/cowrie/src/cowrie/ssh/connection.py-        if wantReply:
+--
+experimentation/cowrie/src/cowrie/ssh/userauth.py:from twisted.internet import defer
+experimentation/cowrie/src/cowrie/ssh/userauth.py-from twisted.python.failure import Failure
+experimentation/cowrie/src/cowrie/ssh/userauth.py-from twisted.python import log
+experimentation/cowrie/src/cowrie/ssh/userauth.py-
+--
+experimentation/cowrie/src/cowrie/ssh/userauth.py:    _pamDeferred: defer.Deferred | None
+experimentation/cowrie/src/cowrie/ssh/userauth.py-
+experimentation/cowrie/src/cowrie/ssh/userauth.py-    def serviceStarted(self) -> None:
+experimentation/cowrie/src/cowrie/ssh/userauth.py-        self.interfaceToMethod[credentials.IUsername] = b"none"
+--
+experimentation/cowrie/src/cowrie/ssh/userauth.py:        self._pamDeferred: defer.Deferred | None = None
+experimentation/cowrie/src/cowrie/ssh/userauth.py-        userauth.SSHUserAuthServer.serviceStarted(self)
+experimentation/cowrie/src/cowrie/ssh/userauth.py-
+experimentation/cowrie/src/cowrie/ssh/userauth.py-    def sendBanner(self):
+--
+experimentation/cowrie/src/cowrie/ssh/userauth.py:    #         return defer.fail(error.ConchError("Incorrect signature"))
+experimentation/cowrie/src/cowrie/ssh/userauth.py-    #     return userauth.SSHUserAuthServer.auth_publickey(self, packet)
+experimentation/cowrie/src/cowrie/ssh/userauth.py-
+experimentation/cowrie/src/cowrie/ssh/userauth.py-    def auth_none(self, _packet: bytes) -> Any:
+--
+experimentation/cowrie/src/cowrie/ssh/userauth.py:        if self._pamDeferred is not None:
+experimentation/cowrie/src/cowrie/ssh/userauth.py-            self.transport.sendDisconnect(  # type: ignore
+experimentation/cowrie/src/cowrie/ssh/userauth.py-                DISCONNECT_PROTOCOL_ERROR,
+experimentation/cowrie/src/cowrie/ssh/userauth.py-                "only one keyboard interactive attempt at a time",
+--
+experimentation/cowrie/src/cowrie/ssh/userauth.py:            return defer.fail(error.IgnoreAuthentication())
+experimentation/cowrie/src/cowrie/ssh/userauth.py-        src_ip = self.transport.transport.getPeer().host  # type: ignore
+experimentation/cowrie/src/cowrie/ssh/userauth.py-        c = credentials.PluggableAuthenticationModulesIP(
+experimentation/cowrie/src/cowrie/ssh/userauth.py-            self.user, self._pamConv, src_ip
+--
+experimentation/cowrie/src/cowrie/ssh/userauth.py:    def _pamConv(self, items: list[tuple[Any, int]]) -> defer.Deferred:
+experimentation/cowrie/src/cowrie/ssh/userauth.py-        """
+experimentation/cowrie/src/cowrie/ssh/userauth.py-        Convert a list of PAM authentication questions into a
+experimentation/cowrie/src/cowrie/ssh/userauth.py:        MSG_USERAUTH_INFO_REQUEST.  Returns a Deferred that will be called
+experimentation/cowrie/src/cowrie/ssh/userauth.py-        back when the user has responses to the questions.
+experimentation/cowrie/src/cowrie/ssh/userauth.py-
+experimentation/cowrie/src/cowrie/ssh/userauth.py-        @param items: a list of 2-tuples (message, kind).  We only care about
+--
+experimentation/cowrie/src/cowrie/ssh/userauth.py:        @rtype: L{defer.Deferred}
+experimentation/cowrie/src/cowrie/ssh/userauth.py-        """
+
+--- Error Handling ---
+            try:
+                tokkie: str | None = self.lexer.get_token()
+                # log.msg("tok: %s" % (repr(tok)))
+--
+            except Exception as e:
+                self.protocol.terminal.write(
+                    b"-bash: syntax error: unexpected end of file\n"
+--
+                log.msg(f"exception: {e}")
+                self.cmdpending = []
+                self.showPrompt()
+--
+        try:
+            output: str = res.protocol.pp.redirected_data.decode()
+        except AttributeError:
+            return ""
+        else:
+--
+        try:
+            r = self.protocol.fs.resolve_path(tmppath, self.protocol.cwd)
+        except Exception:
+            return
+

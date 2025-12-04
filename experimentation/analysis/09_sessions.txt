@@ -1,0 +1,200 @@
+research/cowrie/src/backend_pool/ssh_exec.py:    name = b"session"
+research/cowrie/src/backend_pool/ssh_exec.py-
+research/cowrie/src/backend_pool/ssh_exec.py-    def __init__(self, command, done_deferred, callback, *args, **kwargs):
+research/cowrie/src/backend_pool/ssh_exec.py-        super().__init__(*args, **kwargs)
+research/cowrie/src/backend_pool/ssh_exec.py-        self.command = command
+research/cowrie/src/backend_pool/ssh_exec.py-        self.done_deferred = done_deferred
+--
+research/cowrie/src/cowrie/commands/awk.py:            eventid="cowrie.session.input",
+research/cowrie/src/cowrie/commands/awk.py-            realm="awk",
+research/cowrie/src/cowrie/commands/awk.py-            input=line,
+research/cowrie/src/cowrie/commands/awk.py-            format="INPUT (%(realm)s): %(input)s",
+research/cowrie/src/cowrie/commands/awk.py-        )
+research/cowrie/src/cowrie/commands/awk.py-
+--
+research/cowrie/src/cowrie/commands/base64.py:            eventid="cowrie.session.input",
+research/cowrie/src/cowrie/commands/base64.py-            realm="base64",
+research/cowrie/src/cowrie/commands/base64.py-            input=line,
+research/cowrie/src/cowrie/commands/base64.py-            format="INPUT (%(realm)s): %(input)s",
+research/cowrie/src/cowrie/commands/base64.py-        )
+research/cowrie/src/cowrie/commands/base64.py-
+--
+research/cowrie/src/cowrie/commands/cat.py:            eventid="cowrie.session.input",
+research/cowrie/src/cowrie/commands/cat.py-            realm="cat",
+research/cowrie/src/cowrie/commands/cat.py-            input=line,
+research/cowrie/src/cowrie/commands/cat.py-            format="INPUT (%(realm)s): %(input)s",
+research/cowrie/src/cowrie/commands/cat.py-        )
+research/cowrie/src/cowrie/commands/cat.py-
+--
+research/cowrie/src/cowrie/commands/curl.py: -j, --junk-session-cookies Ignore session cookies read from file (H)
+research/cowrie/src/cowrie/commands/curl.py-     --keepalive-time SECONDS  Interval between keepalive probes
+research/cowrie/src/cowrie/commands/curl.py-     --key KEY       Private key file name (SSL/SSH)
+research/cowrie/src/cowrie/commands/curl.py-     --key-type TYPE Private key file type (DER/PEM/ENG) (SSL)
+research/cowrie/src/cowrie/commands/curl.py-     --krb LEVEL     Enable Kerberos with specified security level (F)
+research/cowrie/src/cowrie/commands/curl.py-     --libcurl FILE  Dump libcurl equivalent code of this command line
+--
+research/cowrie/src/cowrie/commands/curl.py:     --no-sessionid  Disable SSL session-ID reusing (SSL)
+research/cowrie/src/cowrie/commands/curl.py-     --noproxy       List of hosts which do not use proxy
+research/cowrie/src/cowrie/commands/curl.py-     --ntlm          Use HTTP NTLM authentication (H)
+research/cowrie/src/cowrie/commands/curl.py- -o, --output FILE   Write output to <file> instead of stdout
+research/cowrie/src/cowrie/commands/curl.py-     --pass PASS     Pass phrase for the private key (SSL/SSH)
+research/cowrie/src/cowrie/commands/curl.py-     --post301       Do not switch to GET after following a 301 redirect (H)
+--
+research/cowrie/src/cowrie/commands/curl.py:            eventid="cowrie.session.file_download",
+research/cowrie/src/cowrie/commands/curl.py-            format="Downloaded URL (%(url)s) with SHA-256 %(shasum)s to %(outfile)s",
+research/cowrie/src/cowrie/commands/curl.py-            url=self.url.decode(),
+research/cowrie/src/cowrie/commands/curl.py-            outfile=self.artifact.shasumFilename,
+research/cowrie/src/cowrie/commands/curl.py-            shasum=self.artifact.shasum,
+research/cowrie/src/cowrie/commands/curl.py-        )
+--
+research/cowrie/src/cowrie/commands/curl.py:            eventid="cowrie.session.file_download",
+research/cowrie/src/cowrie/commands/curl.py-            format="Downloaded URL (%(url)s) with SHA-256 %(shasum)s to %(outfile)s",
+research/cowrie/src/cowrie/commands/curl.py-            url=self.url.decode(),
+research/cowrie/src/cowrie/commands/curl.py-            outfile=self.artifact.shasumFilename,
+research/cowrie/src/cowrie/commands/curl.py-            shasum=self.artifact.shasum,
+research/cowrie/src/cowrie/commands/curl.py-        )
+--
+research/cowrie/src/cowrie/commands/curl.py:            eventid="cowrie.session.file_download.failed",
+research/cowrie/src/cowrie/commands/curl.py-            format="Attempt to download file(s) from URL (%(url)s) failed",
+research/cowrie/src/cowrie/commands/curl.py-            url=self.url.decode(),
+research/cowrie/src/cowrie/commands/curl.py-        )
+research/cowrie/src/cowrie/commands/curl.py-        log.msg(
+research/cowrie/src/cowrie/commands/curl.py:            eventid="cowrie.session.file_download.failed",
+research/cowrie/src/cowrie/commands/curl.py-            format="Attempt to download file(s) from URL (%(url)s) failed",
+research/cowrie/src/cowrie/commands/curl.py-            url=self.url.decode(),
+research/cowrie/src/cowrie/commands/curl.py-        )
+research/cowrie/src/cowrie/commands/curl.py-
+research/cowrie/src/cowrie/commands/curl.py-        if response.check(error.DNSLookupError) is not None:
+--
+research/cowrie/src/cowrie/commands/dd.py:            eventid="cowrie.session.input",
+research/cowrie/src/cowrie/commands/dd.py-            realm="dd",
+research/cowrie/src/cowrie/commands/dd.py-            input=line,
+research/cowrie/src/cowrie/commands/dd.py-            format="INPUT (%(realm)s): %(input)s",
+research/cowrie/src/cowrie/commands/dd.py-        )
+research/cowrie/src/cowrie/commands/dd.py-
+--
+research/cowrie/src/cowrie/commands/ftpget.py:            eventid="cowrie.session.file_download",
+research/cowrie/src/cowrie/commands/ftpget.py-            format="Downloaded URL (%(url)s) with SHA-256 %(shasum)s to %(outfile)s",
+research/cowrie/src/cowrie/commands/ftpget.py-            url=self.url_log,
+research/cowrie/src/cowrie/commands/ftpget.py-            outfile=self.artifactFile.shasumFilename,
+research/cowrie/src/cowrie/commands/ftpget.py-            shasum=self.artifactFile.shasum,
+research/cowrie/src/cowrie/commands/ftpget.py-            destfile=self.local_file,
+--
+research/cowrie/src/cowrie/commands/ftpget.py:            eventid="cowrie.session.file_download.failed",
+research/cowrie/src/cowrie/commands/ftpget.py-            format="Attempt to download file(s) from URL (%(url)s) failed",
+research/cowrie/src/cowrie/commands/ftpget.py-            url=self.url_log,
+research/cowrie/src/cowrie/commands/ftpget.py-        )
+research/cowrie/src/cowrie/commands/ftpget.py-
+research/cowrie/src/cowrie/commands/ftpget.py-        self.errorWrite(f"ftpget: {error_msg}\n")
+--
+research/cowrie/src/cowrie/commands/gcc.py:            self.protocol.terminal.transport.session.id,
+research/cowrie/src/cowrie/commands/gcc.py-            re.sub("[^A-Za-z0-9]", "_", outfile),
+research/cowrie/src/cowrie/commands/gcc.py-        )
+research/cowrie/src/cowrie/commands/gcc.py-        safeoutfile = os.path.join(
+research/cowrie/src/cowrie/commands/gcc.py-            CowrieConfig.get("honeypot", "download_path", fallback="."), tmp_fname
+research/cowrie/src/cowrie/commands/gcc.py-        )
+--
+research/cowrie/src/cowrie/commands/ifconfig.py:        session_uptime = time.time() - self.protocol.logintime
+research/cowrie/src/cowrie/commands/ifconfig.py:        session_rx = int(session_uptime * rx_rate)
+research/cowrie/src/cowrie/commands/ifconfig.py-
+research/cowrie/src/cowrie/commands/ifconfig.py:        rx_bytes = base_rx_bytes + session_rx
+research/cowrie/src/cowrie/commands/ifconfig.py-        return rx_bytes, self.convert_bytes_to_mx(rx_bytes)
+research/cowrie/src/cowrie/commands/ifconfig.py-
+research/cowrie/src/cowrie/commands/ifconfig.py-    def calculate_tx(self) -> tuple[int, str]:
+research/cowrie/src/cowrie/commands/ifconfig.py:        session_uptime = time.time() - self.protocol.logintime
+research/cowrie/src/cowrie/commands/ifconfig.py:        session_tx = int(session_uptime * tx_rate)
+research/cowrie/src/cowrie/commands/ifconfig.py-
+research/cowrie/src/cowrie/commands/ifconfig.py:        tx_bytes = base_tx_bytes + session_tx
+research/cowrie/src/cowrie/commands/ifconfig.py-        return tx_bytes, self.convert_bytes_to_mx(tx_bytes)
+research/cowrie/src/cowrie/commands/ifconfig.py-
+research/cowrie/src/cowrie/commands/ifconfig.py-    def calculate_lo(self) -> tuple[int, str]:
+research/cowrie/src/cowrie/commands/ifconfig.py:        session_uptime = time.time() - self.protocol.logintime
+research/cowrie/src/cowrie/commands/ifconfig.py:        session_lo = int(session_uptime * lo_rate)
+research/cowrie/src/cowrie/commands/ifconfig.py-
+research/cowrie/src/cowrie/commands/ifconfig.py:        lo_bytes = base_lo_bytes + session_lo
+research/cowrie/src/cowrie/commands/ifconfig.py-        return lo_bytes, self.convert_bytes_to_mx(lo_bytes)
+research/cowrie/src/cowrie/commands/ifconfig.py-
+research/cowrie/src/cowrie/commands/ifconfig.py-    def call(self) -> None:
+research/cowrie/src/cowrie/commands/ifconfig.py-        rx_bytes_eth0, rx_mb_eth0 = self.calculate_rx()
+research/cowrie/src/cowrie/commands/ifconfig.py-        tx_bytes_eth0, tx_mb_eth0 = self.calculate_tx()
+--
+research/cowrie/src/cowrie/commands/scp.py:            eventid="cowrie.session.file_download",
+research/cowrie/src/cowrie/commands/scp.py-            realm="scp",
+research/cowrie/src/cowrie/commands/scp.py-            input=line,
+research/cowrie/src/cowrie/commands/scp.py-            format="INPUT (%(realm)s): %(input)s",
+research/cowrie/src/cowrie/commands/scp.py-        )
+research/cowrie/src/cowrie/commands/scp.py-        self.protocol.terminal.write("\x00")
+--
+research/cowrie/src/cowrie/commands/scp.py:            self.protocol.terminal.transport.session.id,
+research/cowrie/src/cowrie/commands/scp.py-            re.sub("[^A-Za-z0-9]", "_", name),
+research/cowrie/src/cowrie/commands/scp.py-        )
+research/cowrie/src/cowrie/commands/scp.py-
+research/cowrie/src/cowrie/commands/scp.py-        self.safeoutfile = os.path.join(self.download_path, tmp_fname)
+research/cowrie/src/cowrie/commands/scp.py-
+--
+research/cowrie/src/cowrie/commands/scp.py:                eventid="cowrie.session.file_upload",
+research/cowrie/src/cowrie/commands/scp.py-                filename=os.path.basename(fname),
+research/cowrie/src/cowrie/commands/scp.py-                duplicate=duplicate,
+research/cowrie/src/cowrie/commands/scp.py-                url=fname,
+research/cowrie/src/cowrie/commands/scp.py-                outfile=shasum,
+research/cowrie/src/cowrie/commands/scp.py-                shasum=shasum,
+--
+research/cowrie/src/cowrie/commands/tee.py:            eventid="cowrie.session.input",
+research/cowrie/src/cowrie/commands/tee.py-            realm="tee",
+research/cowrie/src/cowrie/commands/tee.py-            input=line,
+research/cowrie/src/cowrie/commands/tee.py-            format="INPUT (%(realm)s): %(input)s",
+research/cowrie/src/cowrie/commands/tee.py-        )
+research/cowrie/src/cowrie/commands/tee.py-
+--
+research/cowrie/src/cowrie/commands/tftp.py:            eventid="cowrie.session.file_download",
+research/cowrie/src/cowrie/commands/tftp.py-            format="Downloaded URL (%(url)s) with SHA-256 %(shasum)s to %(outfile)s",
+research/cowrie/src/cowrie/commands/tftp.py-            url=url,
+research/cowrie/src/cowrie/commands/tftp.py-            outfile=self.artifactFile.shasumFilename,
+research/cowrie/src/cowrie/commands/tftp.py-            shasum=self.artifactFile.shasum,
+research/cowrie/src/cowrie/commands/tftp.py-            destfile=self.file_to_get,
+--
+research/cowrie/src/cowrie/commands/tftp.py:            eventid="cowrie.session.file_download.failed",
+research/cowrie/src/cowrie/commands/tftp.py-            format="Attempt to download file(s) from URL (%(url)s) failed",
+research/cowrie/src/cowrie/commands/tftp.py-            url=url,
+research/cowrie/src/cowrie/commands/tftp.py-        )
+research/cowrie/src/cowrie/commands/tftp.py-
+research/cowrie/src/cowrie/commands/tftp.py-        self.write(f"tftp: {error_msg}\n")
+--
+research/cowrie/src/cowrie/commands/wget.py:            eventid="cowrie.session.file_download",
+research/cowrie/src/cowrie/commands/wget.py-            format="Downloaded URL (%(url)s) with SHA-256 %(shasum)s to %(outfile)s",
+research/cowrie/src/cowrie/commands/wget.py-            url=self.url.decode(),
+research/cowrie/src/cowrie/commands/wget.py-            outfile=self.artifact.shasumFilename,
+research/cowrie/src/cowrie/commands/wget.py-            shasum=self.artifact.shasum,
+research/cowrie/src/cowrie/commands/wget.py-        )
+--
+research/cowrie/src/cowrie/commands/wget.py:            eventid="cowrie.session.file_download",
+research/cowrie/src/cowrie/commands/wget.py-            format="Downloaded URL (%(url)s) with SHA-256 %(shasum)s to %(outfile)s",
+research/cowrie/src/cowrie/commands/wget.py-            url=self.url.decode(),
+research/cowrie/src/cowrie/commands/wget.py-            outfile=self.artifact.shasumFilename,
+research/cowrie/src/cowrie/commands/wget.py-            shasum=self.artifact.shasum,
+research/cowrie/src/cowrie/commands/wget.py-        )
+--
+research/cowrie/src/cowrie/commands/wget.py:            eventid="cowrie.session.file_download.failed",
+research/cowrie/src/cowrie/commands/wget.py-            format="Attempt to download file(s) from URL (%(url)s) failed",
+research/cowrie/src/cowrie/commands/wget.py-            url=self.url.decode(),
+research/cowrie/src/cowrie/commands/wget.py-        )
+research/cowrie/src/cowrie/commands/wget.py-
+research/cowrie/src/cowrie/commands/wget.py-        if response.check(error.DNSLookupError) is not None:
+--
+research/cowrie/src/cowrie/core/cef.py:#  cowrie.session.closed
+research/cowrie/src/cowrie/core/cef.py:#  cowrie.session.connect
+research/cowrie/src/cowrie/core/cef.py:#  cowrie.session.file_download
+research/cowrie/src/cowrie/core/cef.py:#  cowrie.session.file_upload
+research/cowrie/src/cowrie/core/cef.py-
+research/cowrie/src/cowrie/core/cef.py-from __future__ import annotations
+research/cowrie/src/cowrie/core/cef.py-
+research/cowrie/src/cowrie/core/cef.py-
+research/cowrie/src/cowrie/core/cef.py-def formatCef(logentry: dict[str, str]) -> str:
+--
+research/cowrie/src/cowrie/core/cef.py:    if logentry["eventid"] == "cowrie.session.connect":
+research/cowrie/src/cowrie/core/cef.py-        cefExtensions["spt"] = logentry["src_port"]
+research/cowrie/src/cowrie/core/cef.py-        cefExtensions["dpt"] = logentry["dst_port"]
+research/cowrie/src/cowrie/core/cef.py-        cefExtensions["src"] = logentry["src_ip"]
+research/cowrie/src/cowrie/core/cef.py-        cefExtensions["dst"] = logentry["dst_ip"]
+research/cowrie/src/cowrie/core/cef.py-    elif logentry["eventid"] == "cowrie.login.success":
+--

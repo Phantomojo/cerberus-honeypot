@@ -1,0 +1,271 @@
+=== SSH IMPLEMENTATION ===
+File: research/cowrie/src/cowrie/ssh/__init__.py
+
+File: research/cowrie/src/cowrie/ssh/channel.py
+# Copyright (c) 2017 Michel Oosterhof <michel@oosterhof.net>
+# See the COPYRIGHT file for more information
+
+"""
+This module contains a subclass of SSHChannel with additional logging
+and session size limiting
+"""
+
+from __future__ import annotations
+
+
+import time
+
+from twisted.conch.ssh import channel
+from twisted.python import log
+
+from cowrie.core import ttylog
+from cowrie.core.config import CowrieConfig
+
+
+
+File: research/cowrie/src/cowrie/ssh/connection.py
+# Copyright (c) 2015 Michel Oosterhof <michel@oosterhof.net>
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+# 3. The names of the author(s) may not be used to endorse or promote
+#    products derived from this software without specific prior written
+#    permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHORS ``AS IS'' AND ANY EXPRESS OR
+# IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+# OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+# IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+
+File: research/cowrie/src/cowrie/ssh/factory.py
+# Copyright (c) 2009-2014 Upi Tamminen <desaster@gmail.com>
+# See the COPYRIGHT file for more information
+
+"""
+This module contains ...
+"""
+
+from __future__ import annotations
+
+from configparser import NoOptionError, NoSectionError
+import time
+
+from twisted.conch.openssh_compat import primes
+from twisted.conch.ssh import factory, keys, transport
+from twisted.python import log
+
+from cowrie.core.config import CowrieConfig
+from cowrie.ssh import connection
+from cowrie.ssh import keys as cowriekeys
+from cowrie.ssh import transport as shellTransport
+
+File: research/cowrie/src/cowrie/ssh/forwarding.py
+# Copyright (c) 2009-2014 Michel Oosterhof <michel@oosterhof.net>
+# See the COPYRIGHT file for more information
+
+"""
+This module contains code for handling SSH direct-tcpip connection requests
+"""
+
+from __future__ import annotations
+
+from twisted.conch.ssh import forwarding
+from twisted.python import log
+
+from cowrie.core.config import CowrieConfig
+from cowrie.core.fingerprint import (
+    generate_ja4,
+    generate_ja4h,
+    parse_tls_client_hello,
+    parse_http_request,
+)
+
+
+File: research/cowrie/src/cowrie/ssh/keys.py
+# Copyright (c) 2009-2014 Upi Tamminen <desaster@gmail.com>
+# See the COPYRIGHT file for more information
+
+"""
+This module contains ...
+"""
+
+from __future__ import annotations
+
+import os
+from configparser import NoOptionError, NoSectionError
+
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+
+from twisted.conch.ssh import keys
+
+from cowrie.core.config import CowrieConfig
+
+File: research/cowrie/src/cowrie/ssh/session.py
+# Copyright (c) 2009-2014 Upi Tamminen <desaster@gmail.com>
+# See the COPYRIGHT file for more information
+
+"""
+This module contains ...
+"""
+
+from __future__ import annotations
+
+from typing import Literal
+
+from twisted.conch.ssh import session
+from twisted.conch.ssh.common import getNS
+from twisted.python import log
+
+
+class HoneyPotSSHSession(session.SSHSession):
+    """
+    This is an SSH channel that's used for SSH sessions
+    """
+
+File: research/cowrie/src/cowrie/ssh/transport.py
+# Copyright (c) 2009-2014 Upi Tamminen <desaster@gmail.com>
+# See the COPYRIGHT file for more information
+
+"""
+The lowest level SSH protocol. This handles the key negotiation, the
+encryption and the compression. The transport layer is described in
+RFC 4253.
+"""
+
+from __future__ import annotations
+
+import re
+import struct
+import time
+import uuid
+import zlib
+from hashlib import md5
+from typing import Any
+
+from twisted.conch.ssh import transport
+
+File: research/cowrie/src/cowrie/ssh/userauth.py
+# Copyright (c) 2009-2014 Upi Tamminen <desaster@gmail.com>
+# See the COPYRIGHT file for more information
+
+
+from __future__ import annotations
+
+import configparser
+import importlib.resources
+import struct
+from typing import Any
+
+from twisted.conch import error
+from twisted.conch.interfaces import IConchUser
+from twisted.conch.ssh import userauth
+from twisted.conch.ssh.common import NS, getNS
+from twisted.conch.ssh.transport import DISCONNECT_PROTOCOL_ERROR
+from twisted.internet import defer
+from twisted.python.failure import Failure
+from twisted.python import log
+
+
+
+=== TELNET IMPLEMENTATION ===
+File: research/cowrie/src/cowrie/telnet/__init__.py
+
+File: research/cowrie/src/cowrie/telnet/factory.py
+# Copyright (C) 2015, 2016 GoSecure Inc.
+"""
+Telnet Transport and Authentication for the Honeypot
+
+@author: Olivier Bilodeau <obilodeau@gosecure.ca>
+"""
+
+from __future__ import annotations
+
+import configparser
+import importlib.resources
+import time
+from typing import TYPE_CHECKING
+
+from twisted.internet import protocol
+from twisted.python import log
+
+from cowrie.core.config import CowrieConfig
+from cowrie.telnet.transport import CowrieTelnetTransport
+from cowrie.telnet.userauth import HoneyPotTelnetAuthProtocol
+
+File: research/cowrie/src/cowrie/telnet/session.py
+# Copyright (C) 2015, 2016 GoSecure Inc.
+"""
+Telnet User Session management for the Honeypot
+
+@author: Olivier Bilodeau <obilodeau@gosecure.ca>
+"""
+
+from __future__ import annotations
+
+import traceback
+
+from zope.interface import implementer
+
+from twisted.conch.ssh import session
+from twisted.conch.telnet import ECHO, SGA, TelnetBootstrapProtocol
+from twisted.internet import interfaces, protocol
+from twisted.internet.protocol import connectionDone
+from twisted.python import failure, log
+
+from cowrie.insults import insults
+
+File: research/cowrie/src/cowrie/telnet/transport.py
+# Copyright (C) 2015, 2016 GoSecure Inc.
+"""
+Telnet Transport and Authentication for the Honeypot
+
+@author: Olivier Bilodeau <obilodeau@gosecure.ca>
+"""
+
+from __future__ import annotations
+
+
+import time
+import uuid
+
+from twisted.conch.telnet import AlreadyNegotiating, TelnetTransport
+from twisted.internet.protocol import connectionDone
+from twisted.protocols.policies import TimeoutMixin
+from twisted.python import failure, log
+
+from cowrie.core.config import CowrieConfig
+
+
+File: research/cowrie/src/cowrie/telnet/userauth.py
+# Copyright (C) 2015, 2016 GoSecure Inc.
+"""
+Telnet Transport and Authentication for the Honeypot
+
+@author: Olivier Bilodeau <obilodeau@gosecure.ca>
+"""
+
+from __future__ import annotations
+
+
+import struct
+
+from twisted.conch.telnet import (
+    ECHO,
+    LINEMODE,
+    NAWS,
+    SGA,
+    AuthenticatingTelnetProtocol,
+    ITelnetProtocol,
+)
+

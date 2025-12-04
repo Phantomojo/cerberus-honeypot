@@ -1,0 +1,55 @@
+=== DATA FLOW: AUTH -> SHELL -> COMMAND ===
+
+--- Authentication Flow ---
+
+--- Shell Initialization ---
+experimentation/cowrie/src/cowrie/shell/command.py:    def lineReceived(self, line: str) -> None:
+experimentation/cowrie/src/cowrie/shell/command.py-        log.msg(f"QUEUED INPUT: {line}")
+experimentation/cowrie/src/cowrie/shell/command.py:        # FIXME: naive command parsing, see lineReceived below
+experimentation/cowrie/src/cowrie/shell/command.py-        # line = "".join(line)
+experimentation/cowrie/src/cowrie/shell/command.py-        self.protocol.cmdstack[0].cmdpending.append(shlex.split(line, posix=True))
+experimentation/cowrie/src/cowrie/shell/command.py-
+experimentation/cowrie/src/cowrie/shell/command.py-    def resume(self) -> None:
+experimentation/cowrie/src/cowrie/shell/command.py-        pass
+experimentation/cowrie/src/cowrie/shell/command.py-
+experimentation/cowrie/src/cowrie/shell/command.py-    def handle_TAB(self) -> None:
+experimentation/cowrie/src/cowrie/shell/command.py-        pass
+experimentation/cowrie/src/cowrie/shell/command.py-
+experimentation/cowrie/src/cowrie/shell/command.py-    def handle_CTRL_D(self) -> None:
+--
+experimentation/cowrie/src/cowrie/shell/honeypot.py:    def lineReceived(self, line: str) -> None:
+experimentation/cowrie/src/cowrie/shell/honeypot.py-        log.msg(eventid="cowrie.command.input", input=line, format="CMD: %(input)s")
+experimentation/cowrie/src/cowrie/shell/honeypot.py-        self.lexer = shlex.shlex(instream=line, punctuation_chars=True, posix=True)
+experimentation/cowrie/src/cowrie/shell/honeypot.py-        # Add these special characters that are not in the default lexer
+experimentation/cowrie/src/cowrie/shell/honeypot.py-        self.lexer.wordchars += "@%{}=$:+^,()`"
+experimentation/cowrie/src/cowrie/shell/honeypot.py-
+experimentation/cowrie/src/cowrie/shell/honeypot.py-        tokens: list[str] = []
+experimentation/cowrie/src/cowrie/shell/honeypot.py-
+experimentation/cowrie/src/cowrie/shell/honeypot.py-        while True:
+experimentation/cowrie/src/cowrie/shell/honeypot.py-            try:
+experimentation/cowrie/src/cowrie/shell/honeypot.py-                tokkie: str | None = self.lexer.get_token()
+--
+experimentation/cowrie/src/cowrie/shell/honeypot.py:        # call lineReceived method that indicates that we have some commands to parse
+experimentation/cowrie/src/cowrie/shell/honeypot.py:        self.protocol.cmdstack[-1].lineReceived(cmd)
+experimentation/cowrie/src/cowrie/shell/honeypot.py-        # and remove the shell
+experimentation/cowrie/src/cowrie/shell/honeypot.py-        res = self.protocol.cmdstack.pop()
+experimentation/cowrie/src/cowrie/shell/honeypot.py-
+experimentation/cowrie/src/cowrie/shell/honeypot.py-        try:
+experimentation/cowrie/src/cowrie/shell/honeypot.py-            output: str = res.protocol.pp.redirected_data.decode()
+experimentation/cowrie/src/cowrie/shell/honeypot.py-        except AttributeError:
+experimentation/cowrie/src/cowrie/shell/honeypot.py-            return ""
+experimentation/cowrie/src/cowrie/shell/honeypot.py-        else:
+experimentation/cowrie/src/cowrie/shell/honeypot.py-            return output
+experimentation/cowrie/src/cowrie/shell/honeypot.py-
+--
+experimentation/cowrie/src/cowrie/shell/protocol.py:    def lineReceived(self, line: bytes) -> None:
+experimentation/cowrie/src/cowrie/shell/protocol.py-        """
+experimentation/cowrie/src/cowrie/shell/protocol.py-        IMPORTANT
+experimentation/cowrie/src/cowrie/shell/protocol.py-        Before this, all data is 'bytes'. Here it converts to 'string' and
+experimentation/cowrie/src/cowrie/shell/protocol.py-        commands work with string rather than bytes.
+experimentation/cowrie/src/cowrie/shell/protocol.py-        """
+experimentation/cowrie/src/cowrie/shell/protocol.py-        string = line.decode("utf8")
+experimentation/cowrie/src/cowrie/shell/protocol.py-
+experimentation/cowrie/src/cowrie/shell/protocol.py-        if self.cmdstack:
+experimentation/cowrie/src/cowrie/shell/protocol.py:            self.cmdstack[-1].lineReceived(string)
+experimentation/cowrie/src/cowrie/shell/protocol.py-        else:

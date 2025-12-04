@@ -1,0 +1,298 @@
+research/cowrie/src/cowrie
+├── commands
+│   ├── adduser.py
+│   ├── apt.py
+│   ├── awk.py
+│   ├── base64.py
+│   ├── base.py
+│   ├── bash.py
+│   ├── busybox.py
+│   ├── cat.py
+│   ├── chmod.py
+│   ├── chpasswd.py
+│   ├── crontab.py
+│   ├── curl.py
+│   ├── dd.py
+│   ├── dig.py
+│   ├── du.py
+│   ├── env.py
+│   ├── ethtool.py
+│   ├── find.py
+│   ├── finger.py
+│   ├── free.py
+│   ├── fs.py
+│   ├── ftpget.py
+│   ├── gcc.py
+│   ├── git.py
+│   ├── groups.py
+│   ├── ifconfig.py
+│   ├── __init__.py
+│   ├── iptables.py
+│   ├── last.py
+│   ├── locate.py
+│   ├── lspci.py
+│   ├── ls.py
+│   ├── nc.py
+│   ├── netstat.py
+│   ├── nohup.py
+│   ├── perl.py
+│   ├── ping.py
+│   ├── python.py
+│   ├── scp.py
+│   ├── service.py
+│   ├── sleep.py
+│   ├── ssh.py
+│   ├── sudo.py
+│   ├── tar.py
+│   ├── tee.py
+│   ├── tftp.py
+│   ├── ulimit.py
+│   ├── uname.py
+│   ├── uniq.py
+│   ├── unzip.py
+│   ├── uptime.py
+│   ├── wc.py
+│   ├── wget.py
+│   ├── which.py
+│   └── yum.py
+├── core
+│   ├── artifact.py
+│   ├── auth.py
+│   ├── cef.py
+│   ├── checkers.py
+│   ├── config.py
+│   ├── credentials.py
+│   ├── fingerprint.py
+│   ├── __init__.py
+│   ├── network.py
+│   ├── output.py
+│   ├── rate_limiter.py
+│   ├── ttylog.py
+│   ├── utils.py
+│   └── uuid.py
+├── data
+│   ├── arch
+│   │   ├── bsd-aarch64-lsb
+│   │   ├── bsd-aarch64-msb
+│   │   ├── bsd-bfin-msb
+│   │   ├── bsd-mips64-lsb
+│   │   ├── bsd-mips64-msb
+│   │   ├── bsd-mips-lsb
+│   │   ├── bsd-mips-msb
+│   │   ├── bsd-powepc64-lsb
+│   │   ├── bsd-powepc-msb
+│   │   ├── bsd-riscv64-lsb
+│   │   ├── bsd-sparc64-msb
+│   │   ├── bsd-sparc-msb
+│   │   ├── bsd-x32-lsb
+│   │   ├── bsd-x64-lsb
+│   │   ├── linux-aarch64-lsb
+│   │   ├── linux-aarch64-msb
+│   │   ├── linux-alpha-lsb
+│   │   ├── linux-am33-lsb
+│   │   ├── linux-arc-lsb
+│   │   ├── linux-arc-msb
+│   │   ├── linux-arm-lsb
+│   │   ├── linux-arm-msb
+│   │   ├── linux-avr32-lsb
+│   │   ├── linux-bfin-lsb
+│   │   ├── linux-c6x-lsb
+│   │   ├── linux-c6x-msb
+│   │   ├── linux-cris-lsb
+│   │   ├── linux-frv-msb
+│   │   ├── linux-h8300-msb
+│   │   ├── linux-hppa64-msb
+│   │   ├── linux-hppa-msb
+│   │   ├── linux-ia64-lsb
+│   │   ├── linux-m32r-msb
+│   │   ├── linux-m68k-msb
+│   │   ├── linux-microblaze-msb
+│   │   ├── linux-mips64-lsb
+│   │   ├── linux-mips64-msb
+│   │   ├── linux-mips-lsb
+│   │   ├── linux-mips-msb
+│   │   ├── linux-mn10300-lsb
+│   │   ├── linux-nios-lsb
+│   │   ├── linux-nios-msb
+│   │   ├── linux-powerpc64-lsb
+│   │   ├── linux-powerpc64-msb
+│   │   ├── linux-powerpc-lsb
+│   │   ├── linux-powerpc-msb
+│   │   ├── linux-riscv64-lsb
+│   │   ├── linux-s390x-msb
+│   │   ├── linux-sh-lsb
+│   │   ├── linux-sh-msb
+│   │   ├── linux-sparc64-msb
+│   │   ├── linux-sparc-msb
+│   │   ├── linux-tilegx64-lsb
+│   │   ├── linux-tilegx64-msb
+│   │   ├── linux-tilegx-lsb
+│   │   ├── linux-tilegx-msb
+│   │   ├── linux-x64-lsb
+│   │   ├── linux-x86-lsb
+│   │   ├── linux-xtensa-msb
+│   │   ├── osx-x32-lsb
+│   │   ├── osx-x64-lsb
+│   │   └── src
+│   ├── cmdoutput.json
+│   ├── fs.pickle
+│   ├── __init__.py
+│   ├── pool_configs
+│   │   ├── aarch64_guest.xml
+│   │   ├── default_filter.xml
+│   │   ├── default_guest.xml
+│   │   ├── default_network.xml
+│   │   ├── wrt_arm_guest.xml
+│   │   └── wrt_x86_guest.xml
+│   └── txtcmds
+│       ├── bin
+│       └── usr
+├── __init__.py
+├── insults
+│   ├── __init__.py
+│   └── insults.py
+├── llm
+│   ├── avatar.py
+│   ├── __init__.py
+│   ├── llm.py
+│   ├── protocol.py
+│   ├── realm.py
+│   ├── server.py
+│   ├── session.py
+│   └── telnet.py
+├── output
+│   ├── abuseipdb.py
+│   ├── axiom.py
+│   ├── crashreporter.py
+│   ├── csirtg.py
+│   ├── cuckoo.py
+│   ├── datadog.py
+│   ├── discord.py
+│   ├── dshield.py
+│   ├── elasticsearch.py
+│   ├── graylog.py
+│   ├── greynoise.py
+│   ├── hpfeeds3.py
+│   ├── influx.py
+│   ├── jsonlog.py
+│   ├── localsyslog.py
+│   ├── malshare.py
+│   ├── misp.py
+│   ├── mongodb.py
+│   ├── mysql.py
+│   ├── oraclecloud.py
+│   ├── postgresql.py
+│   ├── prometheus.py
+│   ├── README.md
+│   ├── redis.py
+│   ├── remotesyslog.py
+│   ├── rethinkdblog.py
+│   ├── reversedns.py
+│   ├── rmq.py
+│   ├── s3.py
+│   ├── slack.py
+│   ├── socketlog.py
+│   ├── splunk.py
+│   ├── sqlite.py
+│   ├── telegram.py
+│   ├── textlog.py
+│   ├── virustotal.py
+│   └── xmpp.py
+├── pool_interface
+│   ├── client.py
+│   ├── handler.py
+│   └── __init__.py
+├── python
+│   ├── __init__.py
+│   └── logfile.py
+├── scripts
+│   ├── asciinema.py
+│   ├── cowrie.py
+│   ├── createdynamicprocess.py
+│   ├── createfs.py
+│   ├── fsctl.py
+│   ├── __init__.py
+│   └── playlog.py
+├── shell
+│   ├── avatar.py
+│   ├── command.py
+│   ├── customparser.py
+│   ├── filetransfer.py
+│   ├── fs.py
+│   ├── honeypot.py
+│   ├── __init__.py
+│   ├── protocol.py
+│   ├── pwd.py
+│   ├── README.md
+│   ├── realm.py
+│   ├── server.py
+│   └── session.py
+├── ssh
+│   ├── channel.py
+│   ├── connection.py
+│   ├── factory.py
+│   ├── forwarding.py
+│   ├── __init__.py
+│   ├── keys.py
+│   ├── session.py
+│   ├── transport.py
+│   └── userauth.py
+├── ssh_proxy
+│   ├── client_transport.py
+│   ├── __init__.py
+│   ├── protocols
+│   │   ├── base_protocol.py
+│   │   ├── exec_term.py
+│   │   ├── __init__.py
+│   │   ├── port_forward.py
+│   │   ├── sftp.py
+│   │   ├── ssh.py
+│   │   └── term.py
+│   ├── README.md
+│   ├── server_transport.py
+│   ├── userauth.py
+│   └── util.py
+├── telnet
+│   ├── factory.py
+│   ├── __init__.py
+│   ├── session.py
+│   ├── transport.py
+│   └── userauth.py
+├── telnet_proxy
+│   ├── client_transport.py
+│   ├── handler.py
+│   ├── __init__.py
+│   ├── README.md
+│   └── server_transport.py
+├── test
+│   ├── fake_server.py
+│   ├── fake_transport.py
+│   ├── __init__.py
+│   ├── proxy_compare.py
+│   ├── test_awk.py
+│   ├── test_base64.py
+│   ├── test_base_commands.py
+│   ├── test_cat.py
+│   ├── test_chmod.py
+│   ├── test_echo.py
+│   ├── test_ftpget.py
+│   ├── test_ls.py
+│   ├── test_network.py
+│   ├── test_proxy.py
+│   ├── test_tee.py
+│   ├── test_tftp.py
+│   ├── test_uniq.py
+│   ├── test_utils.py
+│   └── test_virustotal.py
+└── vendor
+    ├── __init__.py
+    └── ja4
+        ├── common.py
+        ├── __init__.py
+        ├── ja4h.py
+        ├── ja4.py
+        ├── ja4ssh.py
+        ├── ja4x.py
+        └── README.md
+
+25 directories, 271 files

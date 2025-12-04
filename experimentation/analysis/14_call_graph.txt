@@ -1,0 +1,101 @@
+=== FUNCTION CALL GRAPH ===
+experimentation/cowrie/src/cowrie/ssh/channel.py:    def __repr__(self) -> str:
+experimentation/cowrie/src/cowrie/ssh/channel.py:    def __init__(self, *args, **kw):
+experimentation/cowrie/src/cowrie/ssh/channel.py:    def channelOpen(self, specificData: bytes) -> None:
+experimentation/cowrie/src/cowrie/ssh/channel.py:        self.startTime = time.time()
+experimentation/cowrie/src/cowrie/ssh/channel.py:        self.ttylogFile = "{}/tty/{}-{}-{}.log".format(
+experimentation/cowrie/src/cowrie/ssh/channel.py:            self.ttylogPath,
+experimentation/cowrie/src/cowrie/ssh/channel.py:            self.conn.transport.transportId,
+experimentation/cowrie/src/cowrie/ssh/channel.py:            self.id,
+experimentation/cowrie/src/cowrie/ssh/channel.py:    def closed(self) -> None:
+experimentation/cowrie/src/cowrie/ssh/channel.py:    def dataReceived(self, data: bytes) -> None:
+experimentation/cowrie/src/cowrie/ssh/channel.py:        self.bytesReceived += len(data)
+experimentation/cowrie/src/cowrie/ssh/channel.py:            self.eofReceived()
+experimentation/cowrie/src/cowrie/ssh/channel.py:                self.ttylogFile, len(data), ttylog.TYPE_INPUT, time.time(), data
+experimentation/cowrie/src/cowrie/ssh/channel.py:    def write(self, data: bytes) -> None:
+experimentation/cowrie/src/cowrie/ssh/channel.py:                self.ttylogFile, len(data), ttylog.TYPE_OUTPUT, time.time(), data
+experimentation/cowrie/src/cowrie/ssh/channel.py:            self.bytesWritten += len(data)
+experimentation/cowrie/src/cowrie/ssh/connection.py:    def ssh_CHANNEL_REQUEST(self, packet):
+experimentation/cowrie/src/cowrie/ssh/connection.py:            self.transport.sendPacket(
+experimentation/cowrie/src/cowrie/ssh/factory.py:    def __init__(self, backend, pool_handler):
+experimentation/cowrie/src/cowrie/ssh/factory.py:        self.pool_handler = pool_handler
+experimentation/cowrie/src/cowrie/ssh/factory.py:        self.backend: str = backend
+experimentation/cowrie/src/cowrie/ssh/factory.py:        self.privateKeys = {}
+experimentation/cowrie/src/cowrie/ssh/factory.py:        self.publicKeys = {}
+experimentation/cowrie/src/cowrie/ssh/factory.py:        self.services = {
+experimentation/cowrie/src/cowrie/ssh/factory.py:    def logDispatch(self, **args):
+experimentation/cowrie/src/cowrie/ssh/factory.py:    def startFactory(self) -> None:
+experimentation/cowrie/src/cowrie/ssh/factory.py:        self.starttime = time.time()
+experimentation/cowrie/src/cowrie/ssh/factory.py:                self.publicKeys[key] = keys.Key.fromString(data=rsaPubKeyString)
+experimentation/cowrie/src/cowrie/ssh/factory.py:                self.privateKeys[key] = keys.Key.fromString(data=rsaPrivKeyString)
+experimentation/cowrie/src/cowrie/ssh/factory.py:                self.publicKeys[key] = keys.Key.fromString(data=ecdsaPuKeyString)
+experimentation/cowrie/src/cowrie/ssh/factory.py:                self.privateKeys[key] = keys.Key.fromString(data=ecdsaPrivKeyString)
+experimentation/cowrie/src/cowrie/ssh/factory.py:                self.publicKeys[key] = keys.Key.fromString(data=ed25519PubKeyString)
+experimentation/cowrie/src/cowrie/ssh/factory.py:                self.privateKeys[key] = keys.Key.fromString(data=ed25519PrivKeyString)
+experimentation/cowrie/src/cowrie/ssh/factory.py:                self.primes = primes.parseModuliFile(_moduli)
+experimentation/cowrie/src/cowrie/ssh/factory.py:        self.ourVersionString = CowrieConfig.get(
+experimentation/cowrie/src/cowrie/ssh/factory.py:    def stopFactory(self) -> None:
+experimentation/cowrie/src/cowrie/ssh/factory.py:    def buildProtocol(self, addr):
+experimentation/cowrie/src/cowrie/ssh/forwarding.py:def cowrieOpenConnectForwardingClient(remoteWindow, remoteMaxPacket, data, avatar):
+experimentation/cowrie/src/cowrie/ssh/forwarding.py:    def eofReceived(self) -> None:
+experimentation/cowrie/src/cowrie/ssh/forwarding.py:        self.loseConnection()
+experimentation/cowrie/src/cowrie/ssh/forwarding.py:    def channelOpen(self, specificData: bytes) -> None:
+experimentation/cowrie/src/cowrie/ssh/forwarding.py:    def dataReceived(self, data: bytes) -> None:
+experimentation/cowrie/src/cowrie/ssh/forwarding.py:        self._close("Connection refused")
+experimentation/cowrie/src/cowrie/ssh/forwarding.py:    def __init__(self, hostport, dstport, *args, **kw):
+experimentation/cowrie/src/cowrie/ssh/forwarding.py:        self.dstport = dstport
+experimentation/cowrie/src/cowrie/ssh/forwarding.py:        self.tunnel_established = False
+experimentation/cowrie/src/cowrie/ssh/forwarding.py:    def channelOpen(self, specificData: bytes) -> None:
+experimentation/cowrie/src/cowrie/ssh/forwarding.py:    def dataReceived(self, data: bytes) -> None:
+experimentation/cowrie/src/cowrie/ssh/forwarding.py:    def write(self, data: bytes) -> None:
+experimentation/cowrie/src/cowrie/ssh/forwarding.py:                self._close("Connection refused")
+experimentation/cowrie/src/cowrie/ssh/forwarding.py:                self._close("Connection refused")
+experimentation/cowrie/src/cowrie/ssh/forwarding.py:            self.tunnel_established = True
+experimentation/cowrie/src/cowrie/ssh/forwarding.py:    def eofReceived(self) -> None:
+experimentation/cowrie/src/cowrie/ssh/forwarding.py:        self.loseConnection()
+experimentation/cowrie/src/cowrie/ssh/keys.py:def getRSAKeys() -> tuple[bytes, bytes]:
+experimentation/cowrie/src/cowrie/ssh/keys.py:def getECDSAKeys() -> tuple[bytes, bytes]:
+experimentation/cowrie/src/cowrie/ssh/keys.py:def geted25519Keys() -> tuple[bytes, bytes]:
+experimentation/cowrie/src/cowrie/ssh/session.py:    def __init__(self, *args, **kw):
+experimentation/cowrie/src/cowrie/ssh/session.py:    def request_env(self, data: bytes) -> Literal[0, 1]:
+experimentation/cowrie/src/cowrie/ssh/session.py:            self.session.environ[name.decode("utf-8")] = value.decode("utf-8")
+experimentation/cowrie/src/cowrie/ssh/session.py:    def request_agent(self, data: bytes) -> int:
+experimentation/cowrie/src/cowrie/ssh/session.py:    def request_x11_req(self, data: bytes) -> int:
+experimentation/cowrie/src/cowrie/ssh/session.py:    def closed(self) -> None:
+experimentation/cowrie/src/cowrie/ssh/session.py:        self.client = None
+experimentation/cowrie/src/cowrie/ssh/session.py:    def eofReceived(self) -> None:
+experimentation/cowrie/src/cowrie/ssh/session.py:            self.session.eofReceived()
+experimentation/cowrie/src/cowrie/ssh/session.py:            self.loseConnection()
+experimentation/cowrie/src/cowrie/ssh/session.py:    def sendEOF(self) -> None:
+experimentation/cowrie/src/cowrie/ssh/session.py:        self.conn.sendEOF(self)
+experimentation/cowrie/src/cowrie/ssh/session.py:    def sendClose(self) -> None:
+experimentation/cowrie/src/cowrie/ssh/session.py:        self.conn.sendClose(self)
+experimentation/cowrie/src/cowrie/ssh/session.py:    def channelClosed(self) -> None:
+experimentation/cowrie/src/cowrie/ssh/transport.py:    def __repr__(self) -> str:
+experimentation/cowrie/src/cowrie/ssh/transport.py:    def connectionMade(self) -> None:
+experimentation/cowrie/src/cowrie/ssh/transport.py:        self.buf = b""
+experimentation/cowrie/src/cowrie/ssh/transport.py:        self.transportId = uuid.uuid4().hex[:12]
+experimentation/cowrie/src/cowrie/ssh/transport.py:        self.transport.write(self.ourVersionString + b"\r\n")
+experimentation/cowrie/src/cowrie/ssh/transport.py:        self.currentEncryptions = transport.SSHCiphers(
+experimentation/cowrie/src/cowrie/ssh/transport.py:        self.currentEncryptions.setKeys(b"", b"", b"", b"", b"", b"")
+experimentation/cowrie/src/cowrie/ssh/transport.py:        self.startTime: float = time.time()
+experimentation/cowrie/src/cowrie/ssh/transport.py:        self.setTimeout(self.auth_timeout)
+experimentation/cowrie/src/cowrie/ssh/transport.py:    def sendKexInit(self) -> None:
+experimentation/cowrie/src/cowrie/ssh/transport.py:    def _unsupportedVersionReceived(self, remoteVersion: bytes) -> None:
+experimentation/cowrie/src/cowrie/ssh/transport.py:        self.transport.write(b"Protocol major versions differ.\n")
+experimentation/cowrie/src/cowrie/ssh/transport.py:        self.transport.loseConnection()
+experimentation/cowrie/src/cowrie/ssh/transport.py:    def dataReceived(self, data: bytes) -> None:
+experimentation/cowrie/src/cowrie/ssh/transport.py:        self.buf = self.buf + data
+experimentation/cowrie/src/cowrie/ssh/transport.py:            self.otherVersionString: bytes = self.buf.split(b"\n")[0].strip()
+experimentation/cowrie/src/cowrie/ssh/transport.py:                self.transport.write(b"Invalid SSH identification string.\n")
+experimentation/cowrie/src/cowrie/ssh/transport.py:                self.transport.loseConnection()
+experimentation/cowrie/src/cowrie/ssh/transport.py:            self.gotVersion = True
+experimentation/cowrie/src/cowrie/ssh/transport.py:                self._unsupportedVersionReceived(self.otherVersionString)
+experimentation/cowrie/src/cowrie/ssh/transport.py:            self.buf = self.buf[i + 1 :]
+experimentation/cowrie/src/cowrie/ssh/transport.py:            self.sendKexInit()
+experimentation/cowrie/src/cowrie/ssh/transport.py:            self.dispatchMessage(messageNum, packet[1:])
+experimentation/cowrie/src/cowrie/ssh/transport.py:    def dispatchMessage(self, messageNum: int, payload: bytes) -> None:
+experimentation/cowrie/src/cowrie/ssh/transport.py:    def sendPacket(self, messageType: int, payload: bytes) -> None:
+experimentation/cowrie/src/cowrie/ssh/transport.py:                self._blockedByKeyExchange.append((messageType, payload))
+experimentation/cowrie/src/cowrie/ssh/transport.py:        self.transport.write(encPacket)
+experimentation/cowrie/src/cowrie/ssh/transport.py:        self.outgoingPacketSequence += 1

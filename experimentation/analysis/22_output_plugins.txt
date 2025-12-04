@@ -1,0 +1,1194 @@
+=== OUTPUT PLUGINS ===
+total 276
+drwxr-xr-x 1 ph ph   784 Dec  3 02:10 .
+drwxr-xr-x 1 ph ph   230 Dec  3 02:10 ..
+-rw-r--r-- 1 ph ph 18519 Dec  3 02:10 abuseipdb.py
+-rw-r--r-- 1 ph ph  1578 Dec  3 02:10 axiom.py
+-rw-r--r-- 1 ph ph  2006 Dec  3 02:10 crashreporter.py
+-rw-r--r-- 1 ph ph  2726 Dec  3 02:10 csirtg.py
+-rw-r--r-- 1 ph ph  5924 Dec  3 02:10 cuckoo.py
+-rw-r--r-- 1 ph ph  2120 Dec  3 02:10 datadog.py
+-rw-r--r-- 1 ph ph  7703 Dec  3 02:10 discord.py
+-rw-r--r-- 1 ph ph  5980 Dec  3 02:10 dshield.py
+-rw-r--r-- 1 ph ph  4398 Dec  3 02:10 elasticsearch.py
+-rw-r--r-- 1 ph ph  1641 Dec  3 02:10 graylog.py
+-rw-r--r-- 1 ph ph  2750 Dec  3 02:10 greynoise.py
+-rw-r--r-- 1 ph ph  4221 Dec  3 02:10 hpfeeds3.py
+-rw-r--r-- 1 ph ph  7199 Dec  3 02:10 influx.py
+-rw-r--r-- 1 ph ph  3099 Dec  3 02:10 jsonlog.py
+-rw-r--r-- 1 ph ph  2736 Dec  3 02:10 localsyslog.py
+-rw-r--r-- 1 ph ph  3332 Dec  3 02:10 malshare.py
+-rw-r--r-- 1 ph ph 24291 Dec  3 02:10 misp.py
+-rw-r--r-- 1 ph ph  5033 Dec  3 02:10 mongodb.py
+-rw-r--r-- 1 ph ph 11194 Dec  3 02:10 mysql.py
+-rw-r--r-- 1 ph ph  4405 Dec  3 02:10 oraclecloud.py
+-rw-r--r-- 1 ph ph  9909 Dec  3 02:10 postgresql.py
+-rw-r--r-- 1 ph ph  6695 Dec  3 02:10 prometheus.py
+-rw-r--r-- 1 ph ph   354 Dec  3 02:10 README.md
+-rw-r--r-- 1 ph ph  1785 Dec  3 02:10 redis.py
+-rw-r--r-- 1 ph ph  1215 Dec  3 02:10 remotesyslog.py
+-rw-r--r-- 1 ph ph  1504 Dec  3 02:10 rethinkdblog.py
+-rw-r--r-- 1 ph ph  3468 Dec  3 02:10 reversedns.py
+-rw-r--r-- 1 ph ph  4965 Dec  3 02:10 rmq.py
+-rw-r--r-- 1 ph ph  3019 Dec  3 02:10 s3.py
+-rw-r--r-- 1 ph ph  9417 Dec  3 02:10 slack.py
+-rw-r--r-- 1 ph ph  1144 Dec  3 02:10 socketlog.py
+-rw-r--r-- 1 ph ph  3666 Dec  3 02:10 splunk.py
+-rw-r--r-- 1 ph ph  7333 Dec  3 02:10 sqlite.py
+-rw-r--r-- 1 ph ph  2310 Dec  3 02:10 telegram.py
+-rw-r--r-- 1 ph ph  2365 Dec  3 02:10 textlog.py
+-rw-r--r-- 1 ph ph 28081 Dec  3 02:10 virustotal.py
+-rw-r--r-- 1 ph ph  2972 Dec  3 02:10 xmpp.py
+
+--- abuseipdb.py ---
+# MIT License
+#
+# Copyright (c) 2020 Benjamin Stephens <premier_contact@ben-stephens.net>
+#
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+# DEALINGS IN THE SOFTWARE.
+
+
+"""
+Cowrie plugin for reporting login attempts via the AbuseIPDB API.
+
+"AbuseIPDB is a project dedicated to helping combat the spread of hackers,
+spammers, and abusive activity on the internet." <https://www.abuseipdb.com/>
+"""
+
+
+--- axiom.py ---
+# Simple Telegram Bot logger
+
+import json
+
+from twisted.internet import defer
+from twisted.python import log
+from twisted.web import http_headers
+
+import treq
+
+import cowrie.core.output
+from cowrie.core.config import CowrieConfig
+
+
+AXIOM_URL = "https://api.axiom.co/v1"
+
+
+class Output(cowrie.core.output.Output):
+    """
+    axiom.co output
+    """
+
+    def start(self) -> None:
+        self.api_token = CowrieConfig.get("output_axiom", "api_token")
+        self.dataset = CowrieConfig.get("output_axiom", "dataset")
+        self.headers = http_headers.Headers(
+            {
+                b"Content-Type": [b"application/json"],
+                b"Authorization": [f"Bearer {self.api_token}".encode()],
+            }
+
+--- crashreporter.py ---
+"""
+Cowrie Crashreport
+
+This output plugin is not like the others.
+It has its own emit() function and does not use cowrie eventid's
+to avoid circular calls
+"""
+
+from __future__ import annotations
+
+
+import json
+
+import treq
+
+from twisted.internet import defer
+from twisted.logger._levels import LogLevel
+from twisted.python import log
+
+import cowrie.core.output
+from cowrie._version import __version__
+from cowrie.core.config import CowrieConfig
+
+COWRIE_USER_AGENT = f"Cowrie Honeypot {__version__}".encode("ascii")
+COWRIE_URL = "https://api.cowrie.org/v1/crash"
+
+
+class Output(cowrie.core.output.Output):
+    """
+    Cowrie Crashreporter output
+
+--- csirtg.py ---
+from __future__ import annotations
+import os
+import sys
+from datetime import datetime
+
+from twisted.python import log
+
+import cowrie.core.output
+from cowrie.core.config import CowrieConfig
+
+token = CowrieConfig.get("output_csirtg", "token", fallback="a1b2c3d4")
+if token == "a1b2c3d4":
+    log.msg("output_csirtg: token not found in configuration file")
+    sys.exit(1)
+
+os.environ["CSIRTG_TOKEN"] = token
+import csirtgsdk  # noqa: E402
+
+
+class Output(cowrie.core.output.Output):
+    """
+    CSIRTG output
+    """
+
+    def start(self):
+        """
+        Start the output module.
+        Note that csirtsdk is imported here because it reads CSIRTG_TOKEN on import
+        Cowrie sets this environment variable.
+        """
+
+--- cuckoo.py ---
+# Copyright (c) 2015 Michel Oosterhof <michel@oosterhof.net>
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+# 3. The names of the author(s) may not be used to endorse or promote
+#    products derived from this software without specific prior written
+#    permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHORS ``AS IS`` AND ANY EXPRESS OR
+# IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+# OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+# IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+# OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+# SUCH DAMAGE.
+
+"""
+Send downloaded/uplaoded files to Cuckoo
+
+--- datadog.py ---
+"""
+Simple Datadog HTTP logger.
+"""
+
+from __future__ import annotations
+
+import json
+import platform
+
+from io import BytesIO
+from twisted.internet import reactor
+from twisted.python import log
+from twisted.web import client, http_headers
+from twisted.web.client import FileBodyProducer
+
+import cowrie.core.output
+from cowrie.core.config import CowrieConfig
+
+
+class Output(cowrie.core.output.Output):
+    def start(self) -> None:
+        self.url = CowrieConfig.get("output_datadog", "url").encode("utf8")
+        self.api_key = CowrieConfig.get(
+            "output_datadog", "api_key", fallback=""
+        ).encode("utf8")
+        if len(self.api_key) == 0:
+            log.msg("Datadog output module: API key is not defined.")
+        self.ddsource = CowrieConfig.get(
+            "output_datadog", "ddsource", fallback="cowrie"
+        )
+
+--- discord.py ---
+"""
+Modern Discord webhook output plugin with queued sending.
+
+Responsibilities:
+- Queue events and send Discord webhook POST requests sequentially.
+- Respect rate limits (HTTP 429) and retry transient server/network errors.
+- Format each event as a single Discord embed with clipped fields.
+"""
+
+import json
+from collections import deque
+from io import BytesIO
+import zlib as _zlib
+from typing import Any, cast, TYPE_CHECKING
+from twisted.internet import reactor, defer
+from twisted.internet.defer import Deferred
+from twisted.web import client, http_headers
+from twisted.web.client import FileBodyProducer, readBody
+
+import cowrie.core.output
+from cowrie.core.config import CowrieConfig
+
+if TYPE_CHECKING:
+    from twisted.web.iweb import IBodyProducer
+
+# -----------------
+# Constants (Discord limits and plugin defaults)
+# -----------------
+EMBED_TITLE_MAX = 256
+EMBED_DESC_MAX = 4096
+
+--- dshield.py ---
+"""
+Send SSH logins to SANS DShield.
+See https://isc.sans.edu/ssh.html
+"""
+
+from __future__ import annotations
+
+
+import base64
+import hashlib
+import hmac
+import re
+import time
+
+import dateutil.parser
+
+# TODO: use `treq`
+import requests
+
+from twisted.internet import reactor
+from twisted.internet import threads
+from twisted.python import log
+
+import cowrie.core.output
+from cowrie.core.config import CowrieConfig
+
+HTTP_TIMEOUT = 10
+
+
+class Output(cowrie.core.output.Output):
+
+--- elasticsearch.py ---
+# Simple elasticsearch logger
+
+from __future__ import annotations
+
+from typing import Any
+
+from elasticsearch import Elasticsearch, NotFoundError
+
+import cowrie.core.output
+from cowrie.core.config import CowrieConfig
+
+
+class Output(cowrie.core.output.Output):
+    """
+    elasticsearch output
+    """
+
+    index: str
+    pipeline: str
+    es: Any
+
+    def start(self):
+        host = CowrieConfig.get("output_elasticsearch", "host")
+        port = CowrieConfig.get("output_elasticsearch", "port")
+        self.index = CowrieConfig.get("output_elasticsearch", "index")
+        self.type = CowrieConfig.get("output_elasticsearch", "type", fallback="_doc")
+        self.pipeline = CowrieConfig.get("output_elasticsearch", "pipeline")
+        # new options (creds + https)
+        username = CowrieConfig.get("output_elasticsearch", "username", fallback=None)
+        password = CowrieConfig.get("output_elasticsearch", "password", fallback=None)
+
+--- graylog.py ---
+"""
+Simple Graylog HTTP Graylog Extended Log Format (GELF) logger.
+"""
+
+from __future__ import annotations
+
+from io import BytesIO
+import json
+import time
+
+from zope.interface import implementer
+
+from twisted.internet import reactor, ssl
+from twisted.web import client, http_headers
+from twisted.web.client import FileBodyProducer
+from twisted.web.iweb import IPolicyForHTTPS
+
+import cowrie.core.output
+from cowrie.core.config import CowrieConfig
+
+
+class Output(cowrie.core.output.Output):
+    def start(self) -> None:
+        self.url = CowrieConfig.get("output_graylog", "url").encode("utf8")
+        contextFactory = WhitelistContextFactory()
+        self.agent = client.Agent(reactor, contextFactory)
+
+    def stop(self) -> None:
+        pass
+
+
+--- greynoise.py ---
+"""
+Send attackers IP to GreyNoise
+"""
+
+from __future__ import annotations
+
+import treq
+
+from twisted.internet import defer, error
+from twisted.python import log
+
+import cowrie.core.output
+from cowrie.core.config import CowrieConfig
+
+COWRIE_USER_AGENT = "Cowrie Honeypot"
+GNAPI_URL = "https://api.greynoise.io/v3/community/"
+
+
+class Output(cowrie.core.output.Output):
+    """
+    greynoise output
+    """
+
+    def start(self):
+        """
+        Start output plugin
+        """
+        self.apiKey = CowrieConfig.get("output_greynoise", "api_key", fallback=None)
+        self.debug = CowrieConfig.getboolean(
+            "output_greynoise", "debug", fallback=False
+
+--- hpfeeds3.py ---
+"""
+Output plugin for HPFeeds
+"""
+
+from __future__ import annotations
+
+import json
+import logging
+
+from hpfeeds.twisted import ClientSessionService
+
+from twisted.internet import endpoints, ssl
+from twisted.internet import reactor
+from twisted.python import log
+
+import cowrie.core.output
+from cowrie.core.config import CowrieConfig
+
+
+class Output(cowrie.core.output.Output):
+    """
+    Output plugin for HPFeeds
+    """
+
+    channel = "cowrie.sessions"
+
+    def start(self):
+        if CowrieConfig.has_option("output_hpfeeds3", "channel"):
+            self.channel = CowrieConfig.get("output_hpfeeds3", "channel")
+
+
+--- influx.py ---
+from __future__ import annotations
+import re
+
+from influxdb import InfluxDBClient
+from influxdb.exceptions import InfluxDBClientError
+
+from twisted.python import log
+
+import cowrie.core.output
+from cowrie.core.config import CowrieConfig
+
+
+class Output(cowrie.core.output.Output):
+    """
+    influx output
+    """
+
+    def start(self):
+        host = CowrieConfig.get("output_influx", "host", fallback="")
+        port = CowrieConfig.getint("output_influx", "port", fallback=8086)
+        ssl = CowrieConfig.getboolean("output_influx", "ssl", fallback=False)
+
+        self.client = None
+        try:
+            self.client = InfluxDBClient(host=host, port=port, ssl=ssl, verify_ssl=ssl)
+        except InfluxDBClientError as e:
+            log.msg(f"output_influx: I/O error({e.code}): '{e.message}'")
+            return
+
+        if self.client is None:
+
+--- jsonlog.py ---
+# Copyright (c) 2015 Michel Oosterhof <michel@oosterhof.net>
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+# 3. The names of the author(s) may not be used to endorse or promote
+#    products derived from this software without specific prior written
+#    permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHORS ``AS IS'' AND ANY EXPRESS OR
+# IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+# OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+# IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+# OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+# SUCH DAMAGE.
+
+from __future__ import annotations
+
+
+--- localsyslog.py ---
+# Copyright (c) 2015 Michel Oosterhof <michel@oosterhof.net>
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+# 3. The names of the author(s) may not be used to endorse or promote
+#    products derived from this software without specific prior written
+#    permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHORS ``AS IS'' AND ANY EXPRESS OR
+# IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+# OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+# IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+# OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+# SUCH DAMAGE.
+
+
+from __future__ import annotations
+
+--- malshare.py ---
+# Copyright (c) 2015 Michel Oosterhof <michel@oosterhof.net>
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+# 3. The names of the author(s) may not be used to endorse or promote
+#    products derived from this software without specific prior written
+#    permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHORS ``AS IS`` AND ANY EXPRESS OR
+# IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+# OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+# IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+# OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+# SUCH DAMAGE.
+
+"""
+Send files to https://malshare.com/
+
+--- misp.py ---
+from __future__ import annotations
+import os
+from pathlib import Path
+from typing import Any
+
+from pymisp import MISPAttribute, MISPEvent, MISPSighting, MISPObject
+
+from twisted.python import log
+
+import cowrie.core.output
+from cowrie.core.config import CowrieConfig
+
+try:
+    from pymisp import ExpandedPyMISP as PyMISP
+except ImportError:
+    from pymisp import PyMISP as PyMISP
+
+
+class Output(cowrie.core.output.Output):
+    """
+    MISP Upload Plugin for Cowrie.
+
+    This Plugin creates events for:
+    1. File uploads/downloads
+    2. SSH/Telnet login attempts (brute force)
+    3. Command execution
+
+    Events are now consolidated to create one comprehensive event per session
+    """
+
+
+--- mongodb.py ---
+from __future__ import annotations
+import pymongo
+
+from twisted.python import log
+
+import cowrie.core.output
+from cowrie.core.config import CowrieConfig
+
+
+class Output(cowrie.core.output.Output):
+    """
+    mongodb output
+    """
+
+    def insert_one(self, collection, event):
+        try:
+            object_id = collection.insert_one(event).inserted_id
+        except Exception as e:
+            log.msg(f"mongo error - {e}")
+        else:
+            return object_id
+
+    def update_one(self, collection, session, doc):
+        try:
+            object_id = collection.update_one({"session": session}, {"$set": doc})
+        except Exception as e:
+            log.msg(f"mongo error - {e}")
+        else:
+            return object_id
+
+
+--- mysql.py ---
+"""
+MySQL output connector. Writes audit logs to MySQL database
+"""
+
+from __future__ import annotations
+
+from twisted.enterprise import adbapi
+from twisted.internet import defer
+from twisted.python import log
+
+import cowrie.core.output
+from cowrie.core.config import CowrieConfig
+
+# For exceptions: https://dev.mysql.com/doc/connector-python/en/connector-python-api-errors-error.html
+import mysql.connector
+
+
+class ReconnectingConnectionPool(adbapi.ConnectionPool):
+    """
+    Reconnecting adbapi connection pool for MySQL.
+
+    This class improves on the solution posted at
+    http://www.gelens.org/2008/09/12/reinitializing-twisted-connectionpool/
+    by checking exceptions by error code and only disconnecting the current
+    connection instead of all of them.
+
+     CR_CONN_HOST_ERROR: 2003: Cant connect to MySQL server on server (10061)
+     CR_SERVER_GONE_ERROR: 2006: MySQL server has gone away
+     CR_SERVER_LOST 2013: Lost connection to MySQL server
+     ER_LOCK_DEADLOCK 1213: Deadlock found when trying to get lock)
+
+--- oraclecloud.py ---
+from __future__ import annotations
+
+import datetime
+import json
+import secrets
+import string
+
+import oci
+
+from twisted.python import log
+
+import cowrie.core.output
+from cowrie.core.config import CowrieConfig
+
+
+class Output(cowrie.core.output.Output):
+    """
+    Oracle Cloud output
+    """
+
+    def generate_random_log_id(self):
+        charset = string.ascii_letters + string.digits
+        random_log_id = "".join(secrets.choice(charset) for _ in range(32))
+        return f"cowrielog-{random_log_id}"
+
+    def sendLogs(self, event):
+        log_id = self.generate_random_log_id()
+        # Initialize service client with default config file
+        current_time = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+        self.log_ocid = CowrieConfig.get("output_oraclecloud", "log_ocid")
+
+--- postgresql.py ---
+from __future__ import annotations
+
+from psycopg2 import OperationalError
+from twisted.enterprise import adbapi
+from twisted.internet import defer
+from twisted.python import log
+
+import cowrie.core.output
+from cowrie.core.config import CowrieConfig
+
+
+class ReconnectingPostgreSQLConnectionPool(adbapi.ConnectionPool):
+    """
+    Reconnecting adbapi connection pool for PostgreSQL.
+
+    This handles reconnections on known transient errors like server disconnects or deadlocks.
+    """
+
+    def _runInteraction(self, interaction, *args, **kw):
+        try:
+            return super()._runInteraction(interaction, *args, **kw)
+        except OperationalError as e:
+            # Typical disconnection or restart issues
+            transient_errors = (
+                "08003",  # connection_does_not_exist
+                "08006",  # connection_failure
+                "40001",  # serialization_failure
+                "57014",  # query_canceled
+                "53300",  # too_many_connections
+            )
+
+--- prometheus.py ---
+"""
+Cowrie Prometheus output.
+
+[output_prometheus]
+enabled = true
+port    = 9000
+"""
+
+from __future__ import annotations
+
+import socket
+import time
+
+from prometheus_client import start_http_server, Counter, Gauge, Histogram
+from twisted.python import log
+
+import cowrie.core.output
+from cowrie.core.config import CowrieConfig
+
+# ────────────────────────────────────────────
+#  Metric objects
+# ────────────────────────────────────────────
+HOST_LABEL = CowrieConfig.get("honeypot", "hostname", fallback=socket.gethostname())
+BUCKETS_LEN = (0, 4, 8, 12, 16, 20, 40)
+BUCKETS_DUR = (1, 5, 15, 30, 60, 120, 300, 900, 1800, 3600)
+
+sessions_total = Counter(
+    "cowrie_sessions_total", "Total SSH/Telnet sessions", ["transport", "sensor"]
+)
+sessions_active = Gauge(
+
+--- redis.py ---
+from __future__ import annotations
+import json
+from configparser import NoOptionError
+
+import redis
+
+import cowrie.core.output
+from cowrie.core.config import CowrieConfig
+
+SEND_METHODS = {
+    "lpush": lambda redis_client, key, message: redis_client.lpush(key, message),
+    "rpush": lambda redis_client, key, message: redis_client.rpush(key, message),
+    "publish": lambda redis_client, key, message: redis_client.publish(key, message),
+}
+
+
+class Output(cowrie.core.output.Output):
+    """
+    redis output
+    """
+
+    def start(self):
+        """
+        Initialize pymisp module and ObjectWrapper (Abstract event and object creation)
+        """
+        host: str = CowrieConfig.get("output_redis", "host")
+        port: int = CowrieConfig.getint("output_redis", "port")
+
+        try:
+            db = CowrieConfig.getint("output_redis", "db")
+
+--- remotesyslog.py ---
+"""
+Simple remote syslog plugin.
+"""
+
+import cowrie.core.output
+
+import logging
+import logging.handlers
+import socket
+from cowrie.core.config import CowrieConfig
+
+
+class Output(cowrie.core.output.Output):
+    def start(self):
+        self.host = CowrieConfig.get(
+            "output_remotesyslog", "host", fallback="127.0.0.1"
+        )
+
+        self.port = int(CowrieConfig.get("output_remotesyslog", "port", fallback="514"))
+
+        protocol = CowrieConfig.get(
+            "output_remotesyslog", "protocol", fallback="udp"
+        ).lower()
+
+        self.logger = logging.getLogger("cowrieLogger")
+
+        self.handler = logging.handlers.SysLogHandler(
+            address=(self.host, self.port),
+            socktype=None if protocol == "udp" else socket.SOCK_STREAM,
+        )
+
+--- rethinkdblog.py ---
+from __future__ import annotations
+import time
+from datetime import datetime
+
+import rethinkdb as r
+
+import cowrie.core.output
+from cowrie.core.config import CowrieConfig
+
+
+def iso8601_to_timestamp(value):
+    return time.mktime(datetime.strptime(value, "%Y-%m-%dT%H:%M:%S.%fZ").timetuple())
+
+
+RETHINK_DB_SEGMENT = "output_rethinkdblog"
+
+
+class Output(cowrie.core.output.Output):
+    # noinspection PyAttributeOutsideInit
+    def start(self):
+        self.host = CowrieConfig.get(RETHINK_DB_SEGMENT, "host")
+        self.port = CowrieConfig.getint(RETHINK_DB_SEGMENT, "port")
+        self.db = CowrieConfig.get(RETHINK_DB_SEGMENT, "db")
+        self.table = CowrieConfig.get(RETHINK_DB_SEGMENT, "table")
+        self.password = CowrieConfig.get(RETHINK_DB_SEGMENT, "password", raw=True)
+        self.connection = r.connect(
+            host=self.host, port=self.port, db=self.db, password=self.password
+        )
+        try:
+            r.db_create(self.db).run(self.connection)
+
+--- reversedns.py ---
+from __future__ import annotations
+
+from functools import lru_cache
+import ipaddress
+
+from twisted.internet import defer
+from twisted.names import client, error
+from twisted.python import log
+
+import cowrie.core.output
+from cowrie.core.config import CowrieConfig
+
+
+class Output(cowrie.core.output.Output):
+    """
+    Output plugin used for reverse DNS lookup
+    """
+
+    timeout: list[int]
+
+    def start(self):
+        """
+        Start Output Plugin
+        """
+        self.timeout = [CowrieConfig.getint("output_reversedns", "timeout", fallback=3)]
+
+    def stop(self):
+        """
+        Stop Output Plugin
+        """
+
+--- rmq.py ---
+from __future__ import annotations
+
+import json
+
+from twisted.internet.address import IPv4Address, IPv6Address
+from twisted.python import log
+from twisted.python.constants import NamedConstant, ValueConstant
+
+import cowrie.core.output
+from cowrie.core.config import CowrieConfig
+
+try:
+    import pika
+    from pika.exceptions import AMQPConnectionError
+except ImportError:
+    log.err("Missing dependency: pika")
+    pika = None
+
+
+class CustomJSONEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, (NamedConstant, ValueConstant)):
+            return str(obj)
+        elif isinstance(obj, (IPv4Address, IPv6Address)):
+            return obj.host  # Extract the IP address as a string
+        elif isinstance(obj, bytes):
+            return obj.decode("utf-8", errors="replace")  # Convert bytes to string
+        else:
+            return super().default(obj)
+
+
+--- s3.py ---
+"""
+Send downloaded/uplaoded files to S3 (or compatible)
+"""
+
+from __future__ import annotations
+
+from typing import Any
+
+from configparser import NoOptionError
+
+from botocore.exceptions import ClientError
+from botocore.session import get_session
+
+from twisted.internet import defer, threads
+from twisted.python import log
+
+import cowrie.core.output
+from cowrie.core.config import CowrieConfig
+
+
+class Output(cowrie.core.output.Output):
+    """
+    s3 output
+    """
+
+    def start(self) -> None:
+        self.bucket = CowrieConfig.get("output_s3", "bucket")
+        self.seen: set[str] = set()
+        self.session = get_session()
+
+
+--- slack.py ---
+# Copyright (c) 2015 Michel Oosterhof <michel@oosterhof.net>
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+# 3. The names of the author(s) may not be used to endorse or promote
+#    products derived from this software without specific prior written
+#    permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHORS ``AS IS'' AND ANY EXPRESS OR
+# IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+# OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+# IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+# OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+# SUCH DAMAGE.
+
+from __future__ import annotations
+
+
+--- socketlog.py ---
+from __future__ import annotations
+import json
+import socket
+
+import cowrie.core.output
+from cowrie.core.config import CowrieConfig
+
+
+class Output(cowrie.core.output.Output):
+    """
+    socketlog output
+    """
+
+    def start(self):
+        self.timeout = CowrieConfig.getint("output_socketlog", "timeout")
+        addr = CowrieConfig.get("output_socketlog", "address")
+        self.host = addr.split(":")[0]
+        self.port = int(addr.split(":")[1])
+
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock.settimeout(self.timeout)
+        self.sock.connect((self.host, self.port))
+
+    def stop(self):
+        self.sock.close()
+
+    def write(self, event):
+        for i in list(event.keys()):
+            # Remove twisted 15 legacy keys
+            if i.startswith("log_"):
+
+--- splunk.py ---
+# Copyright (c) 2015 Michel Oosterhof <michel@oosterhof.net>
+
+"""
+Splunk HTTP Event Collector (HEC) Connector.
+Not ready for production use.
+JSON log file is still recommended way to go
+"""
+
+from __future__ import annotations
+
+import json
+from io import BytesIO
+from typing import Any
+
+from zope.interface import implementer
+
+from twisted.internet import reactor, ssl
+from twisted.python import log
+from twisted.web import client, http_headers
+from twisted.web.client import FileBodyProducer
+from twisted.web.iweb import IPolicyForHTTPS
+
+import cowrie.core.output
+from cowrie.core.config import CowrieConfig
+
+
+class Output(cowrie.core.output.Output):
+    """
+    Splunk HEC output
+    """
+
+--- sqlite.py ---
+from __future__ import annotations
+import sqlite3
+from typing import Any
+
+from twisted.enterprise import adbapi
+from twisted.internet import defer
+from twisted.python import log
+
+import cowrie.core.output
+from cowrie.core.config import CowrieConfig
+
+
+class Output(cowrie.core.output.Output):
+    """
+    sqlite output
+    """
+
+    db: Any
+
+    def start(self):
+        """
+        Start sqlite3 logging module using Twisted ConnectionPool.
+        Need to be started with check_same_thread=False. See
+        https://twistedmatrix.com/trac/ticket/3629.
+        """
+        sqliteFilename = CowrieConfig.get("output_sqlite", "db_file")
+        try:
+            self.db = adbapi.ConnectionPool(
+                "sqlite3", database=sqliteFilename, check_same_thread=False
+            )
+
+--- telegram.py ---
+# Simple Telegram Bot logger
+
+import treq
+from twisted.python import log
+import cowrie.core.output
+from cowrie.core.config import CowrieConfig
+
+
+class Output(cowrie.core.output.Output):
+    """
+    telegram output
+    """
+
+    def start(self):
+        self.bot_token = CowrieConfig.get("output_telegram", "bot_token")
+        self.chat_id = CowrieConfig.get("output_telegram", "chat_id")
+
+    def stop(self):
+        pass
+
+    def write(self, event):
+        for i in list(event.keys()):
+            # remove twisted 15 legacy keys
+            if i.startswith("log_"):
+                del event[i]
+
+        # Prepare logon type
+        # if "HoneyPotSSHTransport" in (event["system"].split(","))[0]:
+        #     logon_type = "SSH"
+        # elif "CowrieTelnetTransport" in (event["system"].split(","))[0]:
+
+--- textlog.py ---
+# Copyright (c) 2015 Michel Oosterhof <michel@oosterhof.net>
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+# 3. The names of the author(s) may not be used to endorse or promote
+#    products derived from this software without specific prior written
+#    permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHORS ``AS IS'' AND ANY EXPRESS OR
+# IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+# OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+# IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+# OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+# SUCH DAMAGE.
+
+
+from __future__ import annotations
+
+--- virustotal.py ---
+# Copyright (c) 2015 Michel Oosterhof <michel@oosterhof.net>
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+# 3. The names of the author(s) may not be used to endorse or promote
+#    products derived from this software without specific prior written
+#    permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHORS ``AS IS'' AND ANY EXPRESS OR
+# IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+# OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+# IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+# OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+# SUCH DAMAGE.
+
+"""
+Send SSH logins to VirusTotal using v3 API
+
+--- xmpp.py ---
+from __future__ import annotations
+import json
+import string
+from random import choice
+
+from wokkel import muc
+from wokkel.client import XMPPClient
+from wokkel.xmppim import AvailablePresence
+
+from twisted.application import service
+from twisted.python import log
+from twisted.words.protocols.jabber import jid
+from twisted.words.protocols.jabber.jid import JID
+
+import cowrie.core.output
+from cowrie.core.config import CowrieConfig
+
+
+class XMPPLoggerProtocol(muc.MUCClient):  # type: ignore
+    def __init__(self, rooms, server, nick):
+        muc.MUCClient.__init__(self)
+        self.server = rooms.host
+        self.jrooms = rooms
+        self._roomOccupantMap = {}
+        log.msg(rooms.user)
+        log.msg(rooms.host)
+        self.nick = nick
+        self.last = {}
+        self.activity = None
+
+

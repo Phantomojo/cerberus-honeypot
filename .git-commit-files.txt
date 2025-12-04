@@ -1,0 +1,17 @@
+# Today's key deliverables
+FILES_TO_READ.txt
+QUICK_START.txt
+TODAY_DONE.md
+MANUAL_TEST_RESULTS.md
+INTERACTIVE_TEST_GUIDE.md
+manual_test.sh
+
+# Modified files
+.gitignore
+docker/docker-compose.yml
+
+# Testing infrastructure
+tests/run_all_tests.sh
+tests/test_integration.sh
+tests/test_performance.sh
+tests/test_security_deep.sh

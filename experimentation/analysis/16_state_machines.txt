@@ -1,0 +1,201 @@
+=== STATE MACHINES ===
+experimentation/cowrie/src/backend_pool/pool_service.py-
+experimentation/cowrie/src/backend_pool/pool_service.py-
+experimentation/cowrie/src/backend_pool/pool_service.py:POOL_STATE_CREATED = "created"
+experimentation/cowrie/src/backend_pool/pool_service.py:POOL_STATE_AVAILABLE = "available"
+experimentation/cowrie/src/backend_pool/pool_service.py:POOL_STATE_USING = "using"
+experimentation/cowrie/src/backend_pool/pool_service.py:POOL_STATE_USED = "used"
+experimentation/cowrie/src/backend_pool/pool_service.py:POOL_STATE_UNAVAILABLE = "unavailable"
+experimentation/cowrie/src/backend_pool/pool_service.py:POOL_STATE_DESTROYED = "destroyed"
+experimentation/cowrie/src/backend_pool/pool_service.py-
+experimentation/cowrie/src/backend_pool/pool_service.py-
+--
+experimentation/cowrie/src/backend_pool/pool_service.py-    client_ips: list[str]
+experimentation/cowrie/src/backend_pool/pool_service.py-    connected: int
+experimentation/cowrie/src/backend_pool/pool_service.py:    state: str
+experimentation/cowrie/src/backend_pool/pool_service.py:    prev_state: str | None
+experimentation/cowrie/src/backend_pool/pool_service.py-    start_timestamp: float
+experimentation/cowrie/src/backend_pool/pool_service.py-    freed_timestamp: float
+--
+experimentation/cowrie/src/backend_pool/pool_service.py-class PoolService:
+experimentation/cowrie/src/backend_pool/pool_service.py-    """
+experimentation/cowrie/src/backend_pool/pool_service.py:    VM States:
+experimentation/cowrie/src/backend_pool/pool_service.py-        created -> available -> using -> used -> unavailable -> destroyed
+experimentation/cowrie/src/backend_pool/pool_service.py-
+--
+experimentation/cowrie/src/backend_pool/pool_service.py-        destroyed:   deleted by qemu, can be removed from list
+experimentation/cowrie/src/backend_pool/pool_service.py-
+experimentation/cowrie/src/backend_pool/pool_service.py:    A lock is required to manipulate VMs in states [available,
+experimentation/cowrie/src/backend_pool/pool_service.py-    using, used], since these are the ones that can be accessed by
+experimentation/cowrie/src/backend_pool/pool_service.py:    several consumers and the producer. All other states are accessed
+experimentation/cowrie/src/backend_pool/pool_service.py-    only by the single producer.
+experimentation/cowrie/src/backend_pool/pool_service.py-    """
+--
+experimentation/cowrie/src/backend_pool/pool_service.py-        self.share_guests = share_guests
+experimentation/cowrie/src/backend_pool/pool_service.py-
+experimentation/cowrie/src/backend_pool/pool_service.py:    def get_guest_states(self, states: list[str]) -> list[Guest]:
+experimentation/cowrie/src/backend_pool/pool_service.py:        return [g for g in self.guests if g.state in states]
+experimentation/cowrie/src/backend_pool/pool_service.py-
+experimentation/cowrie/src/backend_pool/pool_service.py-    def existing_pool_size(self) -> int:
+experimentation/cowrie/src/backend_pool/pool_service.py:        return len([g for g in self.guests if g.state != POOL_STATE_DESTROYED])
+experimentation/cowrie/src/backend_pool/pool_service.py-
+experimentation/cowrie/src/backend_pool/pool_service.py-    def is_ip_free(self, ip: str) -> bool:
+--
+experimentation/cowrie/src/backend_pool/pool_service.py-        with self.guest_lock:
+experimentation/cowrie/src/backend_pool/pool_service.py-            # only mark VMs not in use
+experimentation/cowrie/src/backend_pool/pool_service.py:            used_guests = self.get_guest_states([POOL_STATE_USED])
+experimentation/cowrie/src/backend_pool/pool_service.py-            for guest in used_guests:
+experimentation/cowrie/src/backend_pool/pool_service.py-                timed_out = (
+--
+experimentation/cowrie/src/backend_pool/pool_service.py-                        guest_ip=guest.guest_ip,
+experimentation/cowrie/src/backend_pool/pool_service.py-                    )
+experimentation/cowrie/src/backend_pool/pool_service.py:                    guest.state = POOL_STATE_UNAVAILABLE
+experimentation/cowrie/src/backend_pool/pool_service.py-
+experimentation/cowrie/src/backend_pool/pool_service.py-    def __producer_check_health(self) -> None:
+--
+experimentation/cowrie/src/backend_pool/pool_service.py-        """
+experimentation/cowrie/src/backend_pool/pool_service.py-        with self.guest_lock:
+experimentation/cowrie/src/backend_pool/pool_service.py:            usable_guests = self.get_guest_states(
+experimentation/cowrie/src/backend_pool/pool_service.py:                [POOL_STATE_AVAILABLE, POOL_STATE_USING, POOL_STATE_USED]
+experimentation/cowrie/src/backend_pool/pool_service.py-            )
+experimentation/cowrie/src/backend_pool/pool_service.py-            for guest in usable_guests:
+--
+experimentation/cowrie/src/backend_pool/pool_service.py-                        guest_ip=guest.guest_ip,
+experimentation/cowrie/src/backend_pool/pool_service.py-                    )
+experimentation/cowrie/src/backend_pool/pool_service.py:                    guest.state = POOL_STATE_UNAVAILABLE
+experimentation/cowrie/src/backend_pool/pool_service.py-
+experimentation/cowrie/src/backend_pool/pool_service.py-    def __producer_destroy_timed_out(self) -> None:
+--
+experimentation/cowrie/src/backend_pool/pool_service.py-        Loops over 'unavailable' guests, and invokes qemu to destroy the corresponding domain
+experimentation/cowrie/src/backend_pool/pool_service.py-        """
+experimentation/cowrie/src/backend_pool/pool_service.py:        unavailable_guests = self.get_guest_states([POOL_STATE_UNAVAILABLE])
+experimentation/cowrie/src/backend_pool/pool_service.py-        for guest in unavailable_guests:
+experimentation/cowrie/src/backend_pool/pool_service.py-            try:
+experimentation/cowrie/src/backend_pool/pool_service.py-                self.qemu.destroy_guest(guest.domain, guest.snapshot)
+experimentation/cowrie/src/backend_pool/pool_service.py:                guest.state = POOL_STATE_DESTROYED
+experimentation/cowrie/src/backend_pool/pool_service.py-            except Exception as error:
+experimentation/cowrie/src/backend_pool/pool_service.py-                log.err(
+--
+experimentation/cowrie/src/backend_pool/pool_service.py-        and simply removes their object from the list
+experimentation/cowrie/src/backend_pool/pool_service.py-        """
+experimentation/cowrie/src/backend_pool/pool_service.py:        destroyed_guests = self.get_guest_states([POOL_STATE_DESTROYED])
+experimentation/cowrie/src/backend_pool/pool_service.py-        for guest in destroyed_guests:
+experimentation/cowrie/src/backend_pool/pool_service.py-            self.guests.remove(guest)
+--
+experimentation/cowrie/src/backend_pool/pool_service.py-    def __producer_mark_available(self) -> None:
+experimentation/cowrie/src/backend_pool/pool_service.py-        """
+experimentation/cowrie/src/backend_pool/pool_service.py:        Checks recently-booted guests ('created' state), and whether they are accepting SSH or Telnet connections,
+experimentation/cowrie/src/backend_pool/pool_service.py:        which indicates they are ready to be used ('available' state).
+experimentation/cowrie/src/backend_pool/pool_service.py-
+experimentation/cowrie/src/backend_pool/pool_service.py:        No lock needed since the 'created' state is only accessed by the single-threaded producer
+experimentation/cowrie/src/backend_pool/pool_service.py-        """
+experimentation/cowrie/src/backend_pool/pool_service.py:        created_guests = self.get_guest_states([POOL_STATE_CREATED])
+experimentation/cowrie/src/backend_pool/pool_service.py-        for guest in created_guests:
+experimentation/cowrie/src/backend_pool/pool_service.py-            if self.has_connectivity(guest.guest_ip):
+experimentation/cowrie/src/backend_pool/pool_service.py-                self.any_vm_up = True  # TODO fix for no VM available
+experimentation/cowrie/src/backend_pool/pool_service.py:                guest.state = POOL_STATE_AVAILABLE
+experimentation/cowrie/src/backend_pool/pool_service.py-                boot_time = int(time.time() - guest.start_timestamp)
+experimentation/cowrie/src/backend_pool/pool_service.py-                log.msg(
+--
+experimentation/cowrie/src/backend_pool/pool_service.py-                Guest(
+experimentation/cowrie/src/backend_pool/pool_service.py-                    id=self.guest_id,
+experimentation/cowrie/src/backend_pool/pool_service.py:                    state=POOL_STATE_CREATED,
+experimentation/cowrie/src/backend_pool/pool_service.py:                    prev_state=None,  # used in case a guest is requested and freed immediately, to revert the state
+experimentation/cowrie/src/backend_pool/pool_service.py-                    start_timestamp=time.time(),
+experimentation/cowrie/src/backend_pool/pool_service.py-                    guest_ip=guest_ip,
+--
+experimentation/cowrie/src/backend_pool/pool_service.py-        with self.guest_lock:
+experimentation/cowrie/src/backend_pool/pool_service.py-            # if ip is the same, doesn't matter if being used or not
+experimentation/cowrie/src/backend_pool/pool_service.py:            usable_guests = self.get_guest_states([POOL_STATE_USED, POOL_STATE_USING])
+experimentation/cowrie/src/backend_pool/pool_service.py-            for guest in usable_guests:
+experimentation/cowrie/src/backend_pool/pool_service.py-                if src_ip in guest.client_ips:
+--
+experimentation/cowrie/src/backend_pool/pool_service.py-    def __consumers_get_available_guest(self) -> Guest | None:
+experimentation/cowrie/src/backend_pool/pool_service.py-        with self.guest_lock:
+experimentation/cowrie/src/backend_pool/pool_service.py:            available_guests = self.get_guest_states([POOL_STATE_AVAILABLE])
+experimentation/cowrie/src/backend_pool/pool_service.py-            for guest in available_guests:
+experimentation/cowrie/src/backend_pool/pool_service.py-                return guest
+--
+experimentation/cowrie/src/backend_pool/pool_service.py-        """
+experimentation/cowrie/src/backend_pool/pool_service.py-        with self.guest_lock:
+experimentation/cowrie/src/backend_pool/pool_service.py:            usable_guests = self.get_guest_states([POOL_STATE_USING, POOL_STATE_USED])
+experimentation/cowrie/src/backend_pool/pool_service.py-            if usable_guests:
+experimentation/cowrie/src/backend_pool/pool_service.py-                return min(usable_guests, key=lambda guest: guest.connected)
+--
+experimentation/cowrie/src/backend_pool/pool_service.py-            # TODO fix for no VM available
+experimentation/cowrie/src/backend_pool/pool_service.py-            if self.any_vm_up:
+experimentation/cowrie/src/backend_pool/pool_service.py:                log.msg("Inconsistent state in pool, restarting...")
+experimentation/cowrie/src/backend_pool/pool_service.py-                self.stop_pool()
+experimentation/cowrie/src/backend_pool/pool_service.py-            raise NoAvailableVMs()
+experimentation/cowrie/src/backend_pool/pool_service.py-
+experimentation/cowrie/src/backend_pool/pool_service.py:        guest.prev_state = guest.state
+experimentation/cowrie/src/backend_pool/pool_service.py:        guest.state = POOL_STATE_USING
+experimentation/cowrie/src/backend_pool/pool_service.py-        guest.connected += 1
+experimentation/cowrie/src/backend_pool/pool_service.py-        guest.client_ips.append(src_ip)
+--
+experimentation/cowrie/src/backend_pool/pool_service.py-
+experimentation/cowrie/src/backend_pool/pool_service.py-                    if guest.connected == 0:
+experimentation/cowrie/src/backend_pool/pool_service.py:                        guest.state = POOL_STATE_USED
+experimentation/cowrie/src/backend_pool/pool_service.py-                    return
+experimentation/cowrie/src/backend_pool/pool_service.py-
+--
+experimentation/cowrie/src/backend_pool/pool_service.py-
+experimentation/cowrie/src/backend_pool/pool_service.py-                    if guest.connected == 0:
+experimentation/cowrie/src/backend_pool/pool_service.py:                        # revert machine state to previous
+experimentation/cowrie/src/backend_pool/pool_service.py:                        guest.state = guest.prev_state
+experimentation/cowrie/src/backend_pool/pool_service.py:                        guest.prev_state = None
+experimentation/cowrie/src/backend_pool/pool_service.py-                    return
+--
+experimentation/cowrie/src/backend_pool/telnet_exec.py-import re
+experimentation/cowrie/src/backend_pool/telnet_exec.py-
+experimentation/cowrie/src/backend_pool/telnet_exec.py:from twisted.conch.telnet import StatefulTelnetProtocol, TelnetTransport
+experimentation/cowrie/src/backend_pool/telnet_exec.py-from twisted.internet import defer
+experimentation/cowrie/src/backend_pool/telnet_exec.py-from twisted.internet import reactor
+--
+experimentation/cowrie/src/backend_pool/telnet_exec.py-
+experimentation/cowrie/src/backend_pool/telnet_exec.py-
+experimentation/cowrie/src/backend_pool/telnet_exec.py:class TelnetClient(StatefulTelnetProtocol):
+experimentation/cowrie/src/backend_pool/telnet_exec.py-    """
+experimentation/cowrie/src/backend_pool/telnet_exec.py-    A telnet client
+--
+experimentation/cowrie/src/cowrie/commands/apt.py-        self.write("Reading package lists... Done\n")
+experimentation/cowrie/src/cowrie/commands/apt.py-        self.write("Building dependency tree\n")
+experimentation/cowrie/src/cowrie/commands/apt.py:        self.write("Reading state information... Done\n")
+experimentation/cowrie/src/cowrie/commands/apt.py-        self.write("The following NEW packages will be installed:\n")
+experimentation/cowrie/src/cowrie/commands/apt.py-        self.write("  {} ".format(" ".join(self.packages)) + "\n")
+--
+experimentation/cowrie/src/cowrie/commands/busybox.py-            self.protocol.pp.outConnectionLost()
+experimentation/cowrie/src/cowrie/commands/busybox.py-
+experimentation/cowrie/src/cowrie/commands/busybox.py:            # Place this here so it doesn't write out only if last statement
+experimentation/cowrie/src/cowrie/commands/busybox.py-            if self.input_data:
+experimentation/cowrie/src/cowrie/commands/busybox.py-                self.writeBytes(self.input_data)
+--
+experimentation/cowrie/src/cowrie/commands/git.py-        )
+experimentation/cowrie/src/cowrie/commands/git.py-
+experimentation/cowrie/src/cowrie/commands/git.py:        self.write("examine the history and state (see also: git help revisions)\n")
+experimentation/cowrie/src/cowrie/commands/git.py-        self.write(
+experimentation/cowrie/src/cowrie/commands/git.py-            "   bisect    Use binary search to find the commit that introduced a bug\n"
+--
+experimentation/cowrie/src/cowrie/commands/git.py-        self.write("   merge     Join two or more development histories together\n")
+experimentation/cowrie/src/cowrie/commands/git.py-        self.write("   rebase    Reapply commits on top of another base tip\n")
+experimentation/cowrie/src/cowrie/commands/git.py:        self.write("   reset     Reset current HEAD to the specified state\n")
+experimentation/cowrie/src/cowrie/commands/git.py-        self.write("   switch    Switch branches\n")
+experimentation/cowrie/src/cowrie/commands/git.py-        self.write(
+--
+experimentation/cowrie/src/cowrie/commands/iptables.py-
+experimentation/cowrie/src/cowrie/commands/iptables.py-        Verified examples:
+experimentation/cowrie/src/cowrie/commands/iptables.py:        * iptables -A OUTPUT -o eth0 -p tcp --sport 22 -m state --state ESTABLISHED -j ACCEPT
+experimentation/cowrie/src/cowrie/commands/iptables.py-        * iptables -A INPUT -i eth0 -p tcp -s "127.0.0.1" -j DROP
+experimentation/cowrie/src/cowrie/commands/iptables.py-
+--
+experimentation/cowrie/src/cowrie/commands/iptables.py-        )
+experimentation/cowrie/src/cowrie/commands/iptables.py-        parser.add_option("--ports", dest="ports", action="store")
+experimentation/cowrie/src/cowrie/commands/iptables.py:        parser.add_option("--state", dest="state", action="store")
+experimentation/cowrie/src/cowrie/commands/iptables.py-
+experimentation/cowrie/src/cowrie/commands/iptables.py-        # Parse options or display no files
+--
+experimentation/cowrie/src/cowrie/commands/netstat.py-        self.write(
+experimentation/cowrie/src/cowrie/commands/netstat.py-            """Active Internet connections (w/o servers)
+experimentation/cowrie/src/cowrie/commands/netstat.py:Proto Recv-Q Send-Q Local Address           Foreign Address         State\n"""
+experimentation/cowrie/src/cowrie/commands/netstat.py-        )
+experimentation/cowrie/src/cowrie/commands/netstat.py-        s_name = self.protocol.hostname
