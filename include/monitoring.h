@@ -92,6 +92,16 @@ typedef struct {
     uint64_t last_alert_id;                   // Last generated alert ID
 } monitoring_context_t;
 
+// Result codes for monitoring API
+typedef enum {
+    MONITORING_OK = 0,
+    MONITORING_ERROR = 1,
+    MONITORING_INVALID_ARGUMENT = 2,
+    MONITORING_NOT_FOUND = 3,
+    MONITORING_ALREADY_EXISTS = 4,
+    MONITORING_NOT_RUNNING = 5,
+    MONITORING_INTERNAL_ERROR = 6
+} monitoring_result_t;
 // Function declarations
 monitoring_result_t monitoring_init(monitoring_context_t* ctx, const monitoring_config_t* config);
 monitoring_result_t monitoring_start(monitoring_context_t* ctx);
