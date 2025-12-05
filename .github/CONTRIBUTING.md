@@ -26,6 +26,8 @@ This project and everyone participating in it is governed by our commitment to m
 
 ## Getting Started
 
+Note: We use pre-commit hooks to enforce code style (clang-format), shell lint (shellcheck), and spelling (codespell). Please install and enable them during your local setup so CI passes consistently.
+
 ### Prerequisites
 
 - GCC or Clang compiler
@@ -40,6 +42,12 @@ This project and everyone participating in it is governed by our commitment to m
 # Clone the repository
 git clone https://github.com/Phantomojo/cerberus-honeypot.git
 cd cerberus-honeypot
+
+# (Optional) Install pre-commit and enable hooks
+python3 -m pip install --user pre-commit
+pre-commit install --install-hooks
+# Run hooks once on the whole repo
+pre-commit run --all-files || true
 
 # Build the project
 make all
@@ -111,6 +119,20 @@ make debug
 # Clean build
 make clean && make all
 ```
+
+### Code Quality & Pre-commit
+
+- Formatting: C/C++ is formatted with clang-format (configured via .clang-format). You can auto-format staged files with pre-commit or run clang-format from your IDE.
+- Linting:
+  - C/C++: clang-tidy and cppcheck run in CI (annotations via review tools).
+  - Shell: shellcheck runs on scripts.
+  - Spelling: codespell runs on docs and comments.
+- Pre-commit hooks:
+  - Install: pip install pre-commit; pre-commit install --install-hooks
+  - Run locally: pre-commit run --all-files
+- CI quality gates:
+  - Code Quality workflow checks formatting and annotates lint issues.
+  - Security workflows perform static analysis and additional scans.
 
 ### Project Structure
 

@@ -1,0 +1,27 @@
+[H[2J[3J
+╔════════════════════════════════════════════════════════════════╗
+║   CERBERUS HONEYPOT - DEEP SECURITY PENETRATION TEST SUITE     ║
+╚════════════════════════════════════════════════════════════════╝
+
+[1;33m⚠️  WARNING: This performs aggressive security testing![0m
+[1;33m⚠️  Only run in isolated test environments![0m
+
+
+[0;34m┌────────────────────────────────────────────────────────────────┐[0m
+[0;34m│ Input Validation Attack Tests[0m                                 [0;34m│[0m
+[0;34m└────────────────────────────────────────────────────────────────┘[0m
+  SQL Injection protection                                  [0;32m✓ SECURE[0m
+  Path Traversal protection                                 [0;31m⚠ VULNERABLE[0m
+    [0;31m⚠ VULNERABILITY: Directory traversal not properly blocked[0m
+  Command Injection protection                              [0;32m✓ SECURE[0m
+  XSS protection in generated HTML                          [0;32m✓ SECURE[0m
+  Format String vulnerability protection                    [0;32m✓ SECURE[0m
+
+[0;34m┌────────────────────────────────────────────────────────────────┐[0m
+[0;34m│ Buffer Overflow and Memory Corruption Tests[0m                   [0;34m│[0m
+[0;34m└────────────────────────────────────────────────────────────────┘[0m
+  Buffer overflow protection (long strings)                 [0;32m✓ SECURE[0m
+  Heap overflow protection                                  [0;32m✓ SECURE[0m
+  Stack canary protection enabled                           [0;32m✓ SECURE[0m
+  ASLR compatibility                                        [0;32m✓ SECURE[0m
+  Memory leak check                                         

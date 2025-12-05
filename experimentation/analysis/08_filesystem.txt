@@ -1,0 +1,100 @@
+# Copyright (c) 2009-2014 Upi Tamminen <desaster@gmail.com>
+# See the COPYRIGHT file for more information
+
+# Todo, use os.stat_result, which contains the stat 10-tuple instead of the custom object.
+
+from __future__ import annotations
+
+import configparser
+import errno
+import fnmatch
+import hashlib
+import importlib
+import os
+from pathlib import Path
+import pickle
+import re
+import sys
+import stat
+import time
+from typing import Any
+
+from twisted.python import log
+
+from cowrie.core.config import CowrieConfig
+from cowrie import data
+
+
+(
+    A_NAME,
+    A_TYPE,
+    A_UID,
+    A_GID,
+    A_SIZE,
+    A_MODE,
+    A_CTIME,
+    A_CONTENTS,
+    A_TARGET,
+    A_REALFILE,
+) = list(range(0, 10))
+T_LINK, T_DIR, T_FILE, T_BLK, T_CHR, T_SOCK, T_FIFO = list(range(0, 7))
+
+
+SPECIAL_PATHS: list[str] = ["/sys", "/proc", "/dev/pts"]
+
+
+class _statobj:
+    """
+    Transform a tuple into a stat object
+    """
+
+    def __init__(
+        self,
+        st_mode: int,
+        st_ino: int,
+        st_dev: int,
+        st_nlink: int,
+        st_uid: int,
+        st_gid: int,
+        st_size: int,
+        st_atime: float,
+        st_mtime: float,
+        st_ctime: float,
+    ) -> None:
+        self.st_mode: int = st_mode
+        self.st_ino: int = st_ino
+        self.st_dev: int = st_dev
+        self.st_nlink: int = st_nlink
+        self.st_uid: int = st_uid
+        self.st_gid: int = st_gid
+        self.st_size: int = st_size
+        self.st_atime: float = st_atime
+        self.st_mtime: float = st_mtime
+        self.st_ctime: float = st_ctime
+
+
+class TooManyLevels(Exception):
+    """
+    62 ELOOP Too many levels of symbolic links.  A path name lookup involved more than 8 symbolic links.
+    raise OSError(errno.ELOOP, os.strerror(errno.ENOENT))
+    """
+
+
+class FileNotFound(Exception):
+    """
+    raise OSError(errno.ENOENT, os.strerror(errno.ENOENT))
+    """
+
+
+class PermissionDenied(Exception):
+    """
+    Our implementation is rather naive for now
+
+    * TODO: Top-level /proc should return 'no such file' not 'permission
+            denied'. However this seems to vary based on kernel version.
+
+    $ sudo touch /sys/.nippon
+    touch: cannot touch '/sys/.nippon': Permission denied
+    $ sudo touch /proc/test
+    touch: cannot touch '/proc/test': No such file or directory
+    $ sudo touch /dev/pts/test

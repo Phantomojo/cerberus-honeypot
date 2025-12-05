@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <stddef.h>
 
 #define MAX_IP_ADDR 32
 #define MAX_INTERFACE_NAME 16

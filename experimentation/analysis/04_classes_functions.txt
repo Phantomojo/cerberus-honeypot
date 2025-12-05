@@ -1,0 +1,203 @@
+=== CLASSES ===
+research/cowrie/src/backend_pool/libvirt/backend_service.py:class LibvirtError(Exception):
+research/cowrie/src/backend_pool/libvirt/backend_service.py:class LibvirtBackendService:
+research/cowrie/src/backend_pool/libvirt/guest_handler.py:class QemuGuestError(Exception):
+research/cowrie/src/backend_pool/nat.py:class ClientProtocol(protocol.Protocol):
+research/cowrie/src/backend_pool/nat.py:class ClientFactory(protocol.ClientFactory):
+research/cowrie/src/backend_pool/nat.py:class ServerProtocol(protocol.Protocol):
+research/cowrie/src/backend_pool/nat.py:class ServerFactory(protocol.Factory):
+research/cowrie/src/backend_pool/nat.py:class NATService:
+research/cowrie/src/backend_pool/pool_server.py:class PoolServer(Protocol):
+research/cowrie/src/backend_pool/pool_server.py:class PoolServerFactory(Factory):
+research/cowrie/src/backend_pool/pool_service.py:class Guest:
+research/cowrie/src/backend_pool/pool_service.py:class NoAvailableVMs(Exception):
+research/cowrie/src/backend_pool/pool_service.py:class PoolService:
+research/cowrie/src/backend_pool/ssh_exec.py:class PasswordAuth(userauth.SSHUserAuthClient):
+research/cowrie/src/backend_pool/ssh_exec.py:class CommandChannel(channel.SSHChannel):
+research/cowrie/src/backend_pool/ssh_exec.py:class ClientConnection(connection.SSHConnection):
+research/cowrie/src/backend_pool/ssh_exec.py:class ClientCommandTransport(transport.SSHClientTransport):
+research/cowrie/src/backend_pool/ssh_exec.py:class ClientCommandFactory(protocol.ClientFactory):
+research/cowrie/src/backend_pool/telnet_exec.py:class TelnetConnectionError(Exception):
+research/cowrie/src/backend_pool/telnet_exec.py:class TelnetClient(StatefulTelnetProtocol):
+research/cowrie/src/backend_pool/telnet_exec.py:class TelnetFactory(ClientFactory):
+research/cowrie/src/backend_pool/telnet_exec.py:class TelnetClientCommand:
+research/cowrie/src/cowrie/commands/adduser.py:class Command_adduser(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/apt.py:class Command_faked_package_class_factory:
+research/cowrie/src/cowrie/commands/apt.py:class Command_aptget(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/awk.py:class Command_awk(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/base.py:class Command_whoami(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/base.py:class Command_help(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/base.py:class Command_w(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/base.py:class Command_who(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/base.py:class Command_echo(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/base.py:class Command_printf(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/base.py:class Command_clear(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/base.py:class Command_hostname(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/base.py:class Command_ps(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/base.py:class Command_id(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/base.py:class Command_passwd(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/base.py:class Command_shutdown(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/base.py:class Command_reboot(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/base.py:class Command_history(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/base.py:class Command_date(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/base.py:class Command_yes(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/base.py:class Command_php(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/base.py:class Command_chattr(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/base.py:class Command_set(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/base.py:class Command_nop(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/base64.py:class Command_base64(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/bash.py:class Command_sh(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/bash.py:class Command_exit(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/busybox.py:class Command_busybox(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/cat.py:class Command_cat(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/chmod.py:class Command_chmod(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/chpasswd.py:class Command_chpasswd(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/crontab.py:class Command_crontab(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/curl.py:class Command_curl(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/dd.py:class Command_dd(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/dig.py:class Command_dig(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/du.py:class Command_du(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/env.py:class Command_env(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/ethtool.py:class Command_ethtool(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/find.py:class Command_find(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/finger.py:class Command_finger(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/free.py:class Command_free(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/fs.py:class Command_grep(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/fs.py:class Command_tail(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/fs.py:class Command_head(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/fs.py:class Command_cd(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/fs.py:class Command_rm(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/fs.py:class Command_cp(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/fs.py:class Command_mv(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/fs.py:class Command_mkdir(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/fs.py:class Command_rmdir(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/fs.py:class Command_pwd(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/fs.py:class Command_touch(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/ftpget.py:class FTPFileReceiver(Protocol):
+research/cowrie/src/cowrie/commands/ftpget.py:class Command_ftpget(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/gcc.py:class Command_gcc(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/git.py:class Command_git(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/groups.py:class Command_groups(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/ifconfig.py:class Command_ifconfig(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/iptables.py:class OptionParsingError(RuntimeError):
+research/cowrie/src/cowrie/commands/iptables.py:class OptionParsingExit(Exception):
+research/cowrie/src/cowrie/commands/iptables.py:class ModifiedOptionParser(optparse.OptionParser):
+research/cowrie/src/cowrie/commands/iptables.py:class Command_iptables(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/last.py:class Command_last(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/locate.py:class Command_locate(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/ls.py:class Command_ls(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/lspci.py:class Command_lspci(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/nc.py:class Command_nc(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/netstat.py:class Command_netstat(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/nohup.py:class Command_nohup(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/perl.py:class Command_perl(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/ping.py:class Command_ping(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/python.py:class Command_python(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/scp.py:class Command_scp(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/service.py:class Command_service(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/sleep.py:class Command_sleep(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/ssh.py:class Command_ssh(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/sudo.py:class Command_sudo(HoneyPotCommand):
+research/cowrie/src/cowrie/commands/tar.py:class Command_tar(HoneyPotCommand):
+
+=== KEY FUNCTIONS ===
+research/cowrie/src/backend_pool/libvirt/guest_handler.py:def create_guest(connection, mac_address, guest_unique_id):
+research/cowrie/src/backend_pool/libvirt/network_handler.py:def create_filter(connection):
+research/cowrie/src/backend_pool/libvirt/network_handler.py:def create_network(connection, network_table):
+research/cowrie/src/backend_pool/libvirt/snapshot_handler.py:def create_disk_snapshot(source_img: str, destination_img: str) -> bool:
+research/cowrie/src/backend_pool/ssh_exec.py:def execute_ssh(host, port, username, password, command, callback=None):
+research/cowrie/src/backend_pool/telnet_exec.py:def execute_telnet(host, port, username, password, command, callback=None):
+research/cowrie/src/backend_pool/util.py:def ping(guest_ip: str) -> int:
+research/cowrie/src/backend_pool/util.py:def nmap_port(guest_ip: str, port: int) -> bool:
+research/cowrie/src/backend_pool/util.py:def read_file(file_name: str) -> str:
+research/cowrie/src/backend_pool/util.py:def to_byte(n: int) -> str:
+research/cowrie/src/backend_pool/util.py:def generate_network_table(seed: int | None = None) -> dict[str, str]:
+research/cowrie/src/backend_pool/util.py:def now() -> float:
+research/cowrie/src/backend_pool/util.py:def to_absolute_path(path: str) -> str:
+research/cowrie/src/cowrie/commands/dd.py:def parse_size(param: str) -> int:
+research/cowrie/src/cowrie/commands/lspci.py:def lspci_out():
+research/cowrie/src/cowrie/commands/nc.py:def makeMask(n: int) -> int:
+research/cowrie/src/cowrie/commands/nc.py:def dottedQuadToNum(ip: str) -> int:
+research/cowrie/src/cowrie/commands/nc.py:def networkMask(ip: str, bits: int) -> int:
+research/cowrie/src/cowrie/commands/nc.py:def addressInNetwork(ip: int, net: int) -> int:
+research/cowrie/src/cowrie/commands/uname.py:def hardware_platform() -> str:
+research/cowrie/src/cowrie/commands/uname.py:def kernel_name() -> str:
+research/cowrie/src/cowrie/commands/uname.py:def kernel_version() -> str:
+research/cowrie/src/cowrie/commands/uname.py:def kernel_build_string() -> str:
+research/cowrie/src/cowrie/commands/uname.py:def operating_system() -> str:
+research/cowrie/src/cowrie/commands/uname.py:def uname_help() -> str:
+research/cowrie/src/cowrie/commands/uname.py:def uname_get_some_help() -> str:
+research/cowrie/src/cowrie/commands/uname.py:def uname_fail_long(arg: str) -> str:
+research/cowrie/src/cowrie/commands/uname.py:def uname_fail_short(arg: str) -> str:
+research/cowrie/src/cowrie/commands/uname.py:def uname_fail_extra(arg: str) -> str:
+research/cowrie/src/cowrie/commands/wget.py:def tdiff(seconds: int) -> str:
+research/cowrie/src/cowrie/commands/wget.py:def sizeof_fmt(num: float) -> str:
+research/cowrie/src/cowrie/commands/wget.py:def splitthousands(s: str, sep: str = ",") -> str:
+research/cowrie/src/cowrie/core/cef.py:def formatCef(logentry: dict[str, str]) -> str:
+research/cowrie/src/cowrie/core/config.py:def to_environ_key(key: str) -> str:
+research/cowrie/src/cowrie/core/config.py:def readConfigFile(cfgfile: list[str] | str) -> configparser.ConfigParser:
+research/cowrie/src/cowrie/core/config.py:def get_config_path() -> list[str]:
+research/cowrie/src/cowrie/core/fingerprint.py:def parse_tls_client_hello(data: bytes) -> dict | None:
+research/cowrie/src/cowrie/core/fingerprint.py:def parse_http_request(data: bytes) -> dict | None:
+research/cowrie/src/cowrie/core/fingerprint.py:def generate_ja4(
+research/cowrie/src/cowrie/core/fingerprint.py:def generate_ja4h(
+research/cowrie/src/cowrie/core/network.py:def is_valid_port(port: str) -> bool:
+research/cowrie/src/cowrie/core/network.py:def is_ip_address(
+research/cowrie/src/cowrie/core/network.py:def resolve_cname(
+research/cowrie/src/cowrie/core/network.py:def communication_allowed(address: str) -> Generator[Deferred, None, bool]:
+research/cowrie/src/cowrie/core/output.py:def convert(data):
+research/cowrie/src/cowrie/core/ttylog.py:def ttylog_open(logfile: str, stamp: float) -> None:
+research/cowrie/src/cowrie/core/ttylog.py:def ttylog_write(
+research/cowrie/src/cowrie/core/ttylog.py:def ttylog_close(logfile: str, stamp: float) -> None:
+research/cowrie/src/cowrie/core/ttylog.py:def ttylog_inputhash(logfile: str) -> str:
+research/cowrie/src/cowrie/core/utils.py:def durationHuman(duration: float) -> str:
+research/cowrie/src/cowrie/core/utils.py:def tail(the_file: BinaryIO, lines_2find: int = 20) -> list[bytes]:
+research/cowrie/src/cowrie/core/utils.py:def uptime(total_seconds: float) -> str:
+research/cowrie/src/cowrie/core/utils.py:def get_endpoints_from_section(
+research/cowrie/src/cowrie/core/utils.py:def create_endpoint_services(reactor, parent, listen_endpoints, factory):
+research/cowrie/src/cowrie/core/uuid.py:def create_uuid() -> uuid.UUID:
+research/cowrie/src/cowrie/core/uuid.py:def get_uuid() -> str:
+research/cowrie/src/cowrie/llm/protocol.py:def strip_markdown(text: str) -> str:
+research/cowrie/src/cowrie/output/rethinkdblog.py:def iso8601_to_timestamp(value):
+research/cowrie/src/cowrie/output/virustotal.py:def readBody(response: IResponse) -> defer.Deferred:
+research/cowrie/src/cowrie/output/virustotal.py:def encode_multipart_formdata(fields, files):
+research/cowrie/src/cowrie/python/logfile.py:def logger():
+research/cowrie/src/cowrie/scripts/asciinema.py:def playlog(fd, settings):
+research/cowrie/src/cowrie/scripts/asciinema.py:def printhelp(verbose=False):
+research/cowrie/src/cowrie/scripts/asciinema.py:def run():
+research/cowrie/src/cowrie/scripts/cowrie.py:def find_cowrie_directory() -> Path:
+research/cowrie/src/cowrie/scripts/cowrie.py:def get_pid_file() -> Path:
+research/cowrie/src/cowrie/scripts/cowrie.py:def read_pid() -> int | None:
+research/cowrie/src/cowrie/scripts/cowrie.py:def is_process_running(pid: int) -> bool:
+research/cowrie/src/cowrie/scripts/cowrie.py:def remove_stale_pidfile() -> None:
+research/cowrie/src/cowrie/scripts/cowrie.py:def cowrie_status() -> None:
+research/cowrie/src/cowrie/scripts/cowrie.py:def setup_environment() -> None:
+research/cowrie/src/cowrie/scripts/cowrie.py:def first_time_use() -> None:
+research/cowrie/src/cowrie/scripts/cowrie.py:def python_version_warning() -> None:
+research/cowrie/src/cowrie/scripts/cowrie.py:def check_root() -> None:
+research/cowrie/src/cowrie/scripts/cowrie.py:def cowrie_start(args: list[str]) -> NoReturn:
+research/cowrie/src/cowrie/scripts/cowrie.py:def cowrie_stop() -> None:
+research/cowrie/src/cowrie/scripts/cowrie.py:def cowrie_force_stop() -> None:
+research/cowrie/src/cowrie/scripts/cowrie.py:def cowrie_restart(args: list[str]) -> NoReturn:
+research/cowrie/src/cowrie/scripts/cowrie.py:def cowrie_shell() -> NoReturn:
+research/cowrie/src/cowrie/scripts/cowrie.py:def main() -> NoReturn:
+research/cowrie/src/cowrie/scripts/cowrie.py:def run() -> NoReturn:
+research/cowrie/src/cowrie/scripts/createdynamicprocess.py:def run():
+research/cowrie/src/cowrie/scripts/createfs.py:def logit(ftxt):
+research/cowrie/src/cowrie/scripts/createfs.py:def checkblacklist(ftxt):
+research/cowrie/src/cowrie/scripts/createfs.py:def recurse(localroot, root, tree, maxdepth=100):
+research/cowrie/src/cowrie/scripts/createfs.py:def printhelp(brief=False):
+research/cowrie/src/cowrie/scripts/createfs.py:def run():
+research/cowrie/src/cowrie/scripts/fsctl.py:def getpath(fs, path):
+research/cowrie/src/cowrie/scripts/fsctl.py:def exists(fs, path):
+research/cowrie/src/cowrie/scripts/fsctl.py:def is_directory(fs, path):
+research/cowrie/src/cowrie/scripts/fsctl.py:def resolve_reference(pwd, relativeReference):
+research/cowrie/src/cowrie/scripts/fsctl.py:def run():
+research/cowrie/src/cowrie/scripts/playlog.py:def playlog(fd, settings):
+research/cowrie/src/cowrie/scripts/playlog.py:def printhelp(brief=0):
+research/cowrie/src/cowrie/scripts/playlog.py:def run():
+research/cowrie/src/cowrie/ssh/forwarding.py:def cowrieOpenConnectForwardingClient(remoteWindow, remoteMaxPacket, data, avatar):
+research/cowrie/src/cowrie/ssh/keys.py:def getRSAKeys() -> tuple[bytes, bytes]:
+research/cowrie/src/cowrie/ssh/keys.py:def getECDSAKeys() -> tuple[bytes, bytes]:
+research/cowrie/src/cowrie/ssh/keys.py:def geted25519Keys() -> tuple[bytes, bytes]:
+research/cowrie/src/cowrie/ssh_proxy/client_transport.py:def get_int(data: bytes, length: int = 4) -> int:

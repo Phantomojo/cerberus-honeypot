@@ -4,6 +4,7 @@
 #include <time.h>
 #include "network.h"
 #include "utils.h"
+#include "security_utils.h"
 
 // Possible interface names (eth, wlan, wan, etc.)
 static const char* interface_names[] = {
@@ -20,6 +21,12 @@ static const int interface_names_count = sizeof(interface_names) / sizeof(interf
 // Helper: Parse IP address into octets
 static bool parse_ip(const char* ip, uint8_t* octets) {
     if (!ip || !octets) return false;
+    
+    // Validate IP address format first
+    if (sec_validate_ip_address(ip) != SEC_VALID) {
+        return false;
+    }
+    
     int count = sscanf(ip, "%hhu.%hhu.%hhu.%hhu",
                       &octets[0], &octets[1], &octets[2], &octets[3]);
     return count == 4;
@@ -93,6 +100,11 @@ char* get_random_interface_name(void) {
 
 // Create network configuration
 network_config_t* create_network_config(const char* base_ip) {
+    // Validate input
+    if (sec_validate_ip_address(base_ip) != SEC_VALID) {
+        return NULL;
+    }
+    
     network_config_t* config = (network_config_t*)malloc(sizeof(network_config_t));
     if (!config) return NULL;
 
@@ -100,10 +112,22 @@ network_config_t* create_network_config(const char* base_ip) {
 
     // Primary interface
     config->interface_count = 1;
-    strncpy(config->interfaces[0].name, get_random_interface_name(), MAX_INTERFACE_NAME - 1);
+    
+    // Safe string operations with validation
+    const char* iface_name = get_random_interface_name();
+    if (sec_safe_strcpy(config->interfaces[0].name, iface_name, MAX_INTERFACE_NAME) != SEC_VALID) {
+        free(config);
+        return NULL;
+    }
+    
     generate_ip_in_subnet(base_ip, config->interfaces[0].ip_address, MAX_IP_ADDR);
     get_subnet_mask(24, config->interfaces[0].netmask, MAX_IP_ADDR);
-    strncpy(config->interfaces[0].gateway, base_ip, MAX_IP_ADDR - 1);
+    
+    if (sec_safe_strcpy(config->interfaces[0].gateway, base_ip, MAX_IP_ADDR) != SEC_VALID) {
+        free(config);
+        return NULL;
+    }
+    
     config->interfaces[0].mtu = 1500;
     config->interfaces[0].is_primary = true;
 

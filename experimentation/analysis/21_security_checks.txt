@@ -1,0 +1,201 @@
+=== SECURITY CHECKS ===
+experimentation/cowrie/src/backend_pool/libvirt/guest_handler.py-    )
+experimentation/cowrie/src/backend_pool/libvirt/guest_handler.py-
+experimentation/cowrie/src/backend_pool/libvirt/guest_handler.py:    # check if base image exists
+experimentation/cowrie/src/backend_pool/libvirt/guest_handler.py-    if not os.path.isfile(base_image):
+experimentation/cowrie/src/backend_pool/libvirt/guest_handler.py-        log.msg(
+experimentation/cowrie/src/backend_pool/libvirt/guest_handler.py-            eventid="cowrie.backend_pool.guest_handler",
+experimentation/cowrie/src/backend_pool/libvirt/guest_handler.py-            format="Base image provided was not found: %(base_image)s",
+experimentation/cowrie/src/backend_pool/libvirt/guest_handler.py-            base_image=base_image,
+--
+experimentation/cowrie/src/backend_pool/pool_service.py-The **producer** is an infinite loop started by the server, and
+experimentation/cowrie/src/backend_pool/pool_service.py-runs every 5 seconds. It creates VMs up to the configured limit,
+experimentation/cowrie/src/backend_pool/pool_service.py:checks which VMs become available (by testing if they accept SSH
+experimentation/cowrie/src/backend_pool/pool_service.py-and/or Telnet connections), and destroys VMs that are no longer
+experimentation/cowrie/src/backend_pool/pool_service.py-needed.
+experimentation/cowrie/src/backend_pool/pool_service.py-
+experimentation/cowrie/src/backend_pool/pool_service.py-**Consumer** methods are called by server request, and basically
+experimentation/cowrie/src/backend_pool/pool_service.py-involve requesting and freeing VMs. All operations on shared data
+--
+experimentation/cowrie/src/backend_pool/pool_service.py-    def has_connectivity(self, ip: str) -> bool:
+experimentation/cowrie/src/backend_pool/pool_service.py-        """
+experimentation/cowrie/src/backend_pool/pool_service.py:        This method checks if a guest has either SSH or Telnet
+experimentation/cowrie/src/backend_pool/pool_service.py-        connectivity, to know whether it is ready for connections
+experimentation/cowrie/src/backend_pool/pool_service.py-        and healthy. It takes into account whether those services
+experimentation/cowrie/src/backend_pool/pool_service.py-        are enabled, and if SSH is enabled and available, then no
+experimentation/cowrie/src/backend_pool/pool_service.py:        Telnet check needs to be done.
+experimentation/cowrie/src/backend_pool/pool_service.py-        """
+experimentation/cowrie/src/backend_pool/pool_service.py:        # check SSH connectivity, if enabled in configs, if disabled then we need to check telnet
+experimentation/cowrie/src/backend_pool/pool_service.py-        has_ssh = (
+experimentation/cowrie/src/backend_pool/pool_service.py-            backend_pool.util.nmap_port(ip, self.ssh_port)
+experimentation/cowrie/src/backend_pool/pool_service.py-            if self.ssh_port > 0
+experimentation/cowrie/src/backend_pool/pool_service.py-            else False
+experimentation/cowrie/src/backend_pool/pool_service.py-        )
+experimentation/cowrie/src/backend_pool/pool_service.py-
+experimentation/cowrie/src/backend_pool/pool_service.py:        # telnet check not needed if has_ssh = True
+experimentation/cowrie/src/backend_pool/pool_service.py-        has_telnet = (
+experimentation/cowrie/src/backend_pool/pool_service.py-            backend_pool.util.nmap_port(ip, self.telnet_port)
+experimentation/cowrie/src/backend_pool/pool_service.py-            if self.telnet_port > 0 and not has_ssh
+experimentation/cowrie/src/backend_pool/pool_service.py-            else True
+experimentation/cowrie/src/backend_pool/pool_service.py-        )
+--
+experimentation/cowrie/src/backend_pool/pool_service.py-    def __producer_mark_timed_out(self, guest_timeout: int) -> None:
+experimentation/cowrie/src/backend_pool/pool_service.py-        """
+experimentation/cowrie/src/backend_pool/pool_service.py:        Checks timed-out VMs and acquires lock to safely mark for deletion
+experimentation/cowrie/src/backend_pool/pool_service.py-        """
+experimentation/cowrie/src/backend_pool/pool_service.py-        with self.guest_lock:
+experimentation/cowrie/src/backend_pool/pool_service.py-            # only mark VMs not in use
+experimentation/cowrie/src/backend_pool/pool_service.py-            used_guests = self.get_guest_states([POOL_STATE_USED])
+experimentation/cowrie/src/backend_pool/pool_service.py-            for guest in used_guests:
+--
+experimentation/cowrie/src/backend_pool/pool_service.py-                    guest.state = POOL_STATE_UNAVAILABLE
+experimentation/cowrie/src/backend_pool/pool_service.py-
+experimentation/cowrie/src/backend_pool/pool_service.py:    def __producer_check_health(self) -> None:
+experimentation/cowrie/src/backend_pool/pool_service.py-        """
+experimentation/cowrie/src/backend_pool/pool_service.py:        Checks all usable guests, and whether they should have connectivity. If they don't, then
+experimentation/cowrie/src/backend_pool/pool_service.py-        mark them for deletion.
+experimentation/cowrie/src/backend_pool/pool_service.py-        """
+experimentation/cowrie/src/backend_pool/pool_service.py-        with self.guest_lock:
+experimentation/cowrie/src/backend_pool/pool_service.py-            usable_guests = self.get_guest_states(
+experimentation/cowrie/src/backend_pool/pool_service.py-                [POOL_STATE_AVAILABLE, POOL_STATE_USING, POOL_STATE_USED]
+--
+experimentation/cowrie/src/backend_pool/pool_service.py-    def __producer_mark_available(self) -> None:
+experimentation/cowrie/src/backend_pool/pool_service.py-        """
+experimentation/cowrie/src/backend_pool/pool_service.py:        Checks recently-booted guests ('created' state), and whether they are accepting SSH or Telnet connections,
+experimentation/cowrie/src/backend_pool/pool_service.py-        which indicates they are ready to be used ('available' state).
+experimentation/cowrie/src/backend_pool/pool_service.py-
+experimentation/cowrie/src/backend_pool/pool_service.py-        No lock needed since the 'created' state is only accessed by the single-threaded producer
+experimentation/cowrie/src/backend_pool/pool_service.py-        """
+experimentation/cowrie/src/backend_pool/pool_service.py-        created_guests = self.get_guest_states([POOL_STATE_CREATED])
+--
+experimentation/cowrie/src/backend_pool/pool_service.py-            self.__producer_destroy_timed_out()
+experimentation/cowrie/src/backend_pool/pool_service.py-
+experimentation/cowrie/src/backend_pool/pool_service.py:        # checks for guests without connectivity
+experimentation/cowrie/src/backend_pool/pool_service.py:        self.__producer_check_health()
+experimentation/cowrie/src/backend_pool/pool_service.py-
+experimentation/cowrie/src/backend_pool/pool_service.py-        # remove destroyed from list
+experimentation/cowrie/src/backend_pool/pool_service.py-        self.__producer_remove_destroyed()
+experimentation/cowrie/src/backend_pool/pool_service.py-
+experimentation/cowrie/src/backend_pool/pool_service.py-        # replenish pool until full
+experimentation/cowrie/src/backend_pool/pool_service.py-        self.__producer_create_guests()
+experimentation/cowrie/src/backend_pool/pool_service.py-
+experimentation/cowrie/src/backend_pool/pool_service.py:        # check for created VMs that can become available
+experimentation/cowrie/src/backend_pool/pool_service.py-        self.__producer_mark_available()
+experimentation/cowrie/src/backend_pool/pool_service.py-
+experimentation/cowrie/src/backend_pool/pool_service.py-        # sleep until next iteration
+experimentation/cowrie/src/backend_pool/pool_service.py-        self.loop_next_call = reactor.callLater(  # type: ignore[attr-defined]
+experimentation/cowrie/src/backend_pool/pool_service.py-            self.loop_sleep_time, self.producer_loop
+--
+experimentation/cowrie/src/backend_pool/pool_service.py-    # Consumer methods to be called concurrently
+experimentation/cowrie/src/backend_pool/pool_service.py-    def request_vm(self, src_ip: str) -> tuple[int, str, str]:
+experimentation/cowrie/src/backend_pool/pool_service.py:        # first check if there is one for the ip
+experimentation/cowrie/src/backend_pool/pool_service.py-        guest = self.__consumers_get_guest_ip(src_ip)
+experimentation/cowrie/src/backend_pool/pool_service.py-
+experimentation/cowrie/src/backend_pool/pool_service.py-        if not guest:
+experimentation/cowrie/src/backend_pool/pool_service.py-            # try to get an available VM
+experimentation/cowrie/src/backend_pool/pool_service.py-            guest = self.__consumers_get_available_guest()
+--
+experimentation/cowrie/src/backend_pool/ssh_exec.py-        self.callback = callback
+experimentation/cowrie/src/backend_pool/ssh_exec.py-
+experimentation/cowrie/src/backend_pool/ssh_exec.py:    def verifyHostKey(self, hostKey, fingerprint):
+experimentation/cowrie/src/backend_pool/ssh_exec.py-        return defer.succeed(True)
+experimentation/cowrie/src/backend_pool/ssh_exec.py-
+experimentation/cowrie/src/backend_pool/ssh_exec.py-    def connectionSecure(self) -> None:
+experimentation/cowrie/src/backend_pool/ssh_exec.py-        self.requestService(
+experimentation/cowrie/src/backend_pool/ssh_exec.py-            PasswordAuth(
+--
+experimentation/cowrie/src/cowrie/commands/apt.py-   clean - Erase downloaded archive files
+experimentation/cowrie/src/cowrie/commands/apt.py-   autoclean - Erase old downloaded archive files
+experimentation/cowrie/src/cowrie/commands/apt.py:   check - Verify that there are no broken dependencies
+experimentation/cowrie/src/cowrie/commands/apt.py-   changelog - Download and display the changelog for the given package
+experimentation/cowrie/src/cowrie/commands/apt.py-   download - Download the binary package into the current directory
+experimentation/cowrie/src/cowrie/commands/apt.py-
+experimentation/cowrie/src/cowrie/commands/apt.py-Options:
+experimentation/cowrie/src/cowrie/commands/apt.py-  -h  This help text.
+--
+experimentation/cowrie/src/cowrie/commands/base.py-        "  -h               This help\n"
+experimentation/cowrie/src/cowrie/commands/base.py-        "  -i               PHP information\n"
+experimentation/cowrie/src/cowrie/commands/base.py:        "  -l               Syntax check only (lint)\n"
+experimentation/cowrie/src/cowrie/commands/base.py-        "  -m               Show compiled in modules\n"
+experimentation/cowrie/src/cowrie/commands/base.py-        "  -r <code>        Run PHP <code> without using script tags <?..?>\n"
+experimentation/cowrie/src/cowrie/commands/base.py-        "  -B <begin_code>  Run PHP <begin_code> before processing input lines\n"
+experimentation/cowrie/src/cowrie/commands/base.py-        "  -R <code>        Run PHP <code> for every input line\n"
+experimentation/cowrie/src/cowrie/commands/base.py-        "  -F <file>        Parse and execute <file> for every input line\n"
+--
+experimentation/cowrie/src/cowrie/commands/chmod.py-                return
+experimentation/cowrie/src/cowrie/commands/chmod.py-
+experimentation/cowrie/src/cowrie/commands/chmod.py:        # check for presence of mode and files in arguments
+experimentation/cowrie/src/cowrie/commands/chmod.py-        if (not mode or mode.startswith("-")) and not files:
+experimentation/cowrie/src/cowrie/commands/chmod.py-            self.errorWrite("chmod: missing operand\n" + TRY_CHMOD_HELP_MSG)
+experimentation/cowrie/src/cowrie/commands/chmod.py-            return
+experimentation/cowrie/src/cowrie/commands/chmod.py-        if mode and not files:
+experimentation/cowrie/src/cowrie/commands/chmod.py-            self.errorWrite(f"chmod: missing operand after ‘{mode}’\n" + TRY_CHMOD_HELP_MSG)
+--
+experimentation/cowrie/src/cowrie/commands/chmod.py-            return
+experimentation/cowrie/src/cowrie/commands/chmod.py-
+experimentation/cowrie/src/cowrie/commands/chmod.py:        # go through the list of files and check whether they exist
+experimentation/cowrie/src/cowrie/commands/chmod.py-        for file in files:
+experimentation/cowrie/src/cowrie/commands/chmod.py-            if file == "*":
+experimentation/cowrie/src/cowrie/commands/chmod.py-                # if the current directory is empty, return 'No such file or directory'
+experimentation/cowrie/src/cowrie/commands/chmod.py-                files = self.fs.get_path(self.protocol.cwd)[:]
+experimentation/cowrie/src/cowrie/commands/chmod.py-                if not files:
+--
+experimentation/cowrie/src/cowrie/commands/curl.py- -a, --append        Append to target file when uploading (F/SFTP)
+experimentation/cowrie/src/cowrie/commands/curl.py-     --basic         Use HTTP Basic Authentication (H)
+experimentation/cowrie/src/cowrie/commands/curl.py:     --cacert FILE   CA certificate to verify peer against (SSL)
+experimentation/cowrie/src/cowrie/commands/curl.py:     --capath DIR    CA directory to verify peer against (SSL)
+experimentation/cowrie/src/cowrie/commands/curl.py- -E, --cert CERT[:PASSWD] Client certificate file and password (SSL)
+experimentation/cowrie/src/cowrie/commands/curl.py-     --cert-type TYPE Certificate file type (DER/PEM/ENG) (SSL)
+experimentation/cowrie/src/cowrie/commands/curl.py-     --ciphers LIST  SSL ciphers to use (SSL)
+experimentation/cowrie/src/cowrie/commands/curl.py-     --compressed    Request compressed response (using deflate or gzip)
+experimentation/cowrie/src/cowrie/commands/curl.py- -K, --config FILE   Specify which config file to read
+--
+experimentation/cowrie/src/cowrie/commands/curl.py-        self.port = parsed.port or (443 if scheme == "https" else 80)
+experimentation/cowrie/src/cowrie/commands/curl.py-
+experimentation/cowrie/src/cowrie/commands/curl.py:        # Check rate limit before proceeding
+experimentation/cowrie/src/cowrie/commands/curl.py:        if not curl_rate_limiter.check(self.host):
+experimentation/cowrie/src/cowrie/commands/curl.py-            log.msg(f"curl: rate limit exceeded for host: {self.host}. Simulating connection timeout")
+experimentation/cowrie/src/cowrie/commands/curl.py-
+experimentation/cowrie/src/cowrie/commands/curl.py-            # Simulate connection timeout
+experimentation/cowrie/src/cowrie/commands/curl.py-            self.errorWrite(
+experimentation/cowrie/src/cowrie/commands/curl.py-                f"curl: (7) Failed to connect to {self.host} port {self.port}: Operation timed out\n"
+--
+experimentation/cowrie/src/cowrie/commands/curl.py-        )
+experimentation/cowrie/src/cowrie/commands/curl.py-
+experimentation/cowrie/src/cowrie/commands/curl.py:        if response.check(error.DNSLookupError) is not None:
+experimentation/cowrie/src/cowrie/commands/curl.py-            self.errorWrite(f"curl: (6) Could not resolve host: {self.host}\n")
+experimentation/cowrie/src/cowrie/commands/curl.py-            self.exit()
+experimentation/cowrie/src/cowrie/commands/curl.py-            return
+experimentation/cowrie/src/cowrie/commands/curl.py-
+experimentation/cowrie/src/cowrie/commands/curl.py:        elif response.check(error.ConnectingCancelledError) is not None:
+experimentation/cowrie/src/cowrie/commands/curl.py-            self.errorWrite(
+experimentation/cowrie/src/cowrie/commands/curl.py-                f"curl: (7) Failed to connect to {self.host} port {self.port}: Operation timed out\n"
+experimentation/cowrie/src/cowrie/commands/curl.py-            )
+experimentation/cowrie/src/cowrie/commands/curl.py-            self.exit()
+experimentation/cowrie/src/cowrie/commands/curl.py-            return
+experimentation/cowrie/src/cowrie/commands/curl.py-
+experimentation/cowrie/src/cowrie/commands/curl.py:        elif response.check(error.ConnectionRefusedError) is not None:
+experimentation/cowrie/src/cowrie/commands/curl.py-            self.errorWrite(
+experimentation/cowrie/src/cowrie/commands/curl.py-                f"curl: (7) Failed to connect to {self.host} port {self.port}: Connection refused\n"
+experimentation/cowrie/src/cowrie/commands/curl.py-            )
+experimentation/cowrie/src/cowrie/commands/curl.py-            self.exit()
+experimentation/cowrie/src/cowrie/commands/curl.py-            return
+--
+experimentation/cowrie/src/cowrie/commands/dig.py-        Returns True if the domain looks like a real DNS name.
+experimentation/cowrie/src/cowrie/commands/dig.py-        """
+experimentation/cowrie/src/cowrie/commands/dig.py:        # Basic check for something like "domain.com" or "sub.domain.co.uk"
+experimentation/cowrie/src/cowrie/commands/dig.py-        domain_regex = re.compile(
+experimentation/cowrie/src/cowrie/commands/dig.py-            r"^(?=.{1,253}$)(?!-)[A-Za-z0-9-]{1,63}(?<!-)"
+experimentation/cowrie/src/cowrie/commands/dig.py-            r"(?:\.(?!-)[A-Za-z0-9-]{1,63}(?<!-))*"
+experimentation/cowrie/src/cowrie/commands/dig.py-            r"\.[A-Za-z]{2,}$"
+experimentation/cowrie/src/cowrie/commands/dig.py-        )
+--
+experimentation/cowrie/src/cowrie/commands/dig.py-                 +[no]besteffort     (Try to parse even illegal messages)
+experimentation/cowrie/src/cowrie/commands/dig.py-                 +bufsize=###        (Set EDNS0 Max UDP packet size)
+experimentation/cowrie/src/cowrie/commands/dig.py:                 +[no]cdflag         (Set checking disabled flag in query)
+experimentation/cowrie/src/cowrie/commands/dig.py-                 +[no]cl             (Control display of class in records)
+experimentation/cowrie/src/cowrie/commands/dig.py-                 +[no]cmd            (Control display of command line)
+experimentation/cowrie/src/cowrie/commands/dig.py-                 +[no]comments       (Control display of comment lines)
+experimentation/cowrie/src/cowrie/commands/dig.py-                 +[no]crypto         (Control display of cryptographic fields in records)
+experimentation/cowrie/src/cowrie/commands/dig.py-                 +[no]defname        (Use search list (+[no]search))
+--

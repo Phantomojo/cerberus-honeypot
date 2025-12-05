@@ -1,0 +1,200 @@
+research/cowrie/src/backend_pool/ssh_exec.py-from __future__ import annotations
+research/cowrie/src/backend_pool/ssh_exec.py-from typing import TYPE_CHECKING
+research/cowrie/src/backend_pool/ssh_exec.py-
+research/cowrie/src/backend_pool/ssh_exec.py:from twisted.conch.ssh import channel, common, connection, transport, userauth
+research/cowrie/src/backend_pool/ssh_exec.py-from twisted.internet import defer, protocol
+research/cowrie/src/backend_pool/ssh_exec.py-from twisted.internet import reactor
+research/cowrie/src/backend_pool/ssh_exec.py-
+--
+research/cowrie/src/backend_pool/ssh_exec.py-    from twisted.internet.interfaces import IAddress
+research/cowrie/src/backend_pool/ssh_exec.py-
+research/cowrie/src/backend_pool/ssh_exec.py-
+research/cowrie/src/backend_pool/ssh_exec.py:class PasswordAuth(userauth.SSHUserAuthClient):
+research/cowrie/src/backend_pool/ssh_exec.py:    def __init__(self, user, password, conn):
+research/cowrie/src/backend_pool/ssh_exec.py-        super().__init__(user, conn)
+research/cowrie/src/backend_pool/ssh_exec.py:        self.password = password
+research/cowrie/src/backend_pool/ssh_exec.py-
+research/cowrie/src/backend_pool/ssh_exec.py-    def getPassword(self, prompt=None):
+research/cowrie/src/backend_pool/ssh_exec.py:        return defer.succeed(self.password)
+research/cowrie/src/backend_pool/ssh_exec.py-
+research/cowrie/src/backend_pool/ssh_exec.py-
+research/cowrie/src/backend_pool/ssh_exec.py-class CommandChannel(channel.SSHChannel):
+--
+research/cowrie/src/backend_pool/ssh_exec.py-
+research/cowrie/src/backend_pool/ssh_exec.py-
+research/cowrie/src/backend_pool/ssh_exec.py-class ClientCommandTransport(transport.SSHClientTransport):
+research/cowrie/src/backend_pool/ssh_exec.py:    def __init__(self, username, password, command, done_deferred, callback):
+research/cowrie/src/backend_pool/ssh_exec.py-        self.username = username
+research/cowrie/src/backend_pool/ssh_exec.py:        self.password = password
+research/cowrie/src/backend_pool/ssh_exec.py-        self.command = command
+research/cowrie/src/backend_pool/ssh_exec.py-        self.done_deferred = done_deferred
+research/cowrie/src/backend_pool/ssh_exec.py-        self.callback = callback
+--
+research/cowrie/src/backend_pool/ssh_exec.py-        self.requestService(
+research/cowrie/src/backend_pool/ssh_exec.py-            PasswordAuth(
+research/cowrie/src/backend_pool/ssh_exec.py-                self.username,
+research/cowrie/src/backend_pool/ssh_exec.py:                self.password,
+research/cowrie/src/backend_pool/ssh_exec.py-                ClientConnection(self.command, self.done_deferred, self.callback),
+research/cowrie/src/backend_pool/ssh_exec.py-            )
+research/cowrie/src/backend_pool/ssh_exec.py-        )
+research/cowrie/src/backend_pool/ssh_exec.py-
+research/cowrie/src/backend_pool/ssh_exec.py-
+research/cowrie/src/backend_pool/ssh_exec.py-class ClientCommandFactory(protocol.ClientFactory):
+research/cowrie/src/backend_pool/ssh_exec.py:    def __init__(self, username, password, command, done_deferred, callback):
+research/cowrie/src/backend_pool/ssh_exec.py-        self.username = username
+research/cowrie/src/backend_pool/ssh_exec.py:        self.password = password
+research/cowrie/src/backend_pool/ssh_exec.py-        self.command = command
+research/cowrie/src/backend_pool/ssh_exec.py-        self.done_deferred = done_deferred
+research/cowrie/src/backend_pool/ssh_exec.py-        self.callback = callback
+--
+research/cowrie/src/backend_pool/ssh_exec.py-    def buildProtocol(self, addr: IAddress) -> ClientCommandTransport:
+research/cowrie/src/backend_pool/ssh_exec.py-        return ClientCommandTransport(
+research/cowrie/src/backend_pool/ssh_exec.py-            self.username,
+research/cowrie/src/backend_pool/ssh_exec.py:            self.password,
+research/cowrie/src/backend_pool/ssh_exec.py-            self.command,
+research/cowrie/src/backend_pool/ssh_exec.py-            self.done_deferred,
+research/cowrie/src/backend_pool/ssh_exec.py-            self.callback,
+research/cowrie/src/backend_pool/ssh_exec.py-        )
+research/cowrie/src/backend_pool/ssh_exec.py-
+research/cowrie/src/backend_pool/ssh_exec.py-
+research/cowrie/src/backend_pool/ssh_exec.py:def execute_ssh(host, port, username, password, command, callback=None):
+research/cowrie/src/backend_pool/ssh_exec.py-    done_deferred = defer.Deferred()
+research/cowrie/src/backend_pool/ssh_exec.py-
+research/cowrie/src/backend_pool/ssh_exec.py:    factory = ClientCommandFactory(username, password, command, done_deferred, callback)
+research/cowrie/src/backend_pool/ssh_exec.py-    reactor.connectTCP(host, port, factory)
+research/cowrie/src/backend_pool/ssh_exec.py-
+research/cowrie/src/backend_pool/ssh_exec.py-    return done_deferred
+--
+research/cowrie/src/backend_pool/telnet_exec.py-
+research/cowrie/src/backend_pool/telnet_exec.py-    def connectionMade(self):
+research/cowrie/src/backend_pool/telnet_exec.py-        """
+research/cowrie/src/backend_pool/telnet_exec.py:        Set rawMode since we do not receive the login and password prompt in line mode.
+research/cowrie/src/backend_pool/telnet_exec.py-        We return to default line mode when we detect the prompt in the received data stream.
+research/cowrie/src/backend_pool/telnet_exec.py-        """
+research/cowrie/src/backend_pool/telnet_exec.py-        self.setRawMode()
+research/cowrie/src/backend_pool/telnet_exec.py-
+research/cowrie/src/backend_pool/telnet_exec.py-    def rawDataReceived(self, data):
+research/cowrie/src/backend_pool/telnet_exec.py-        """
+research/cowrie/src/backend_pool/telnet_exec.py:        The login and password prompt on some systems are not received in lineMode.
+research/cowrie/src/backend_pool/telnet_exec.py:        Therefore we do the authentication in raw mode and switch back to line mode
+research/cowrie/src/backend_pool/telnet_exec.py-        when we detect the shell prompt.
+research/cowrie/src/backend_pool/telnet_exec.py:        TODO: Need to handle authentication failure
+research/cowrie/src/backend_pool/telnet_exec.py-        """
+research/cowrie/src/backend_pool/telnet_exec.py-        if self.factory.prompt.strip() == rb"#":
+research/cowrie/src/backend_pool/telnet_exec.py-            self.re_prompt = re.compile(rb"#")
+--
+research/cowrie/src/backend_pool/telnet_exec.py-        if re.search(rb"([Ll]ogin:\s+$)", data):
+research/cowrie/src/backend_pool/telnet_exec.py-            self.sendLine(self.factory.username.encode())
+research/cowrie/src/backend_pool/telnet_exec.py-        elif re.search(rb"([Pp]assword:\s+$)", data):
+research/cowrie/src/backend_pool/telnet_exec.py:            self.sendLine(self.factory.password.encode())
+research/cowrie/src/backend_pool/telnet_exec.py-        elif self.re_prompt.search(data):
+research/cowrie/src/backend_pool/telnet_exec.py-            self.setLineMode()
+research/cowrie/src/backend_pool/telnet_exec.py-
+research/cowrie/src/backend_pool/telnet_exec.py:            # auth is done, send command to server
+research/cowrie/src/backend_pool/telnet_exec.py-            self.send_command(self.transport.factory.command)
+research/cowrie/src/backend_pool/telnet_exec.py-
+research/cowrie/src/backend_pool/telnet_exec.py-    def lineReceived(self, line: bytes) -> None:
+--
+research/cowrie/src/backend_pool/telnet_exec.py-
+research/cowrie/src/backend_pool/telnet_exec.py-
+research/cowrie/src/backend_pool/telnet_exec.py-class TelnetFactory(ClientFactory):
+research/cowrie/src/backend_pool/telnet_exec.py:    def __init__(self, username, password, prompt, command, done_deferred, callback):
+research/cowrie/src/backend_pool/telnet_exec.py-        self.username = username
+research/cowrie/src/backend_pool/telnet_exec.py:        self.password = password
+research/cowrie/src/backend_pool/telnet_exec.py-        self.prompt = prompt
+research/cowrie/src/backend_pool/telnet_exec.py-        self.command = command
+research/cowrie/src/backend_pool/telnet_exec.py-
+--
+research/cowrie/src/backend_pool/telnet_exec.py-        self.prompt = prompt
+research/cowrie/src/backend_pool/telnet_exec.py-        self.command = command
+research/cowrie/src/backend_pool/telnet_exec.py-
+research/cowrie/src/backend_pool/telnet_exec.py:    def connect(self, host, port, username, password):
+research/cowrie/src/backend_pool/telnet_exec.py-        # deferred to signal command and its output is done
+research/cowrie/src/backend_pool/telnet_exec.py-        done_deferred: defer.Deferred = defer.Deferred()
+research/cowrie/src/backend_pool/telnet_exec.py-
+research/cowrie/src/backend_pool/telnet_exec.py-        # start connection to the Telnet server
+research/cowrie/src/backend_pool/telnet_exec.py-        factory = TelnetFactory(
+research/cowrie/src/backend_pool/telnet_exec.py:            username, password, self.prompt, self.command, done_deferred, self.callback
+research/cowrie/src/backend_pool/telnet_exec.py-        )
+research/cowrie/src/backend_pool/telnet_exec.py-        reactor.connectTCP(host, port, factory)
+research/cowrie/src/backend_pool/telnet_exec.py-
+research/cowrie/src/backend_pool/telnet_exec.py-        return done_deferred
+research/cowrie/src/backend_pool/telnet_exec.py-
+research/cowrie/src/backend_pool/telnet_exec.py-
+research/cowrie/src/backend_pool/telnet_exec.py:def execute_telnet(host, port, username, password, command, callback=None):
+research/cowrie/src/backend_pool/telnet_exec.py-    """
+research/cowrie/src/backend_pool/telnet_exec.py:    Executes a command over Telnet. For that, it performs authentication beforehand,
+research/cowrie/src/backend_pool/telnet_exec.py-    and waits some time to get all of the output (slow machines might need the time
+research/cowrie/src/backend_pool/telnet_exec.py-    parameter adjusted.
+research/cowrie/src/backend_pool/telnet_exec.py-
+research/cowrie/src/backend_pool/telnet_exec.py-    Returns a deferred that is fired upon receiving the command's output.
+research/cowrie/src/backend_pool/telnet_exec.py-    """
+research/cowrie/src/backend_pool/telnet_exec.py-    telnet = TelnetClientCommand(callback, ":~#", command)
+research/cowrie/src/backend_pool/telnet_exec.py:    return telnet.connect(host, port, username, password)
+--
+research/cowrie/src/cowrie/commands/adduser.py-        line = self.output[self.item]
+research/cowrie/src/cowrie/commands/adduser.py-        self.write(line[1] % {"username": self.username})
+research/cowrie/src/cowrie/commands/adduser.py-        if line[0] == O_P:
+research/cowrie/src/cowrie/commands/adduser.py:            self.protocol.password_input = True
+research/cowrie/src/cowrie/commands/adduser.py-            return
+research/cowrie/src/cowrie/commands/adduser.py-        if line[0] == O_Q:
+research/cowrie/src/cowrie/commands/adduser.py-            return
+--
+research/cowrie/src/cowrie/commands/adduser.py-        else:
+research/cowrie/src/cowrie/commands/adduser.py-            self.item += 1
+research/cowrie/src/cowrie/commands/adduser.py-        self.schedule_next()
+research/cowrie/src/cowrie/commands/adduser.py:        self.protocol.password_input = False
+research/cowrie/src/cowrie/commands/adduser.py-
+research/cowrie/src/cowrie/commands/adduser.py-
+research/cowrie/src/cowrie/commands/adduser.py-commands["/usr/sbin/adduser"] = Command_adduser
+--
+research/cowrie/src/cowrie/commands/base.py-            "{:8s} pts/0    {} {}    0.00s  0.00s  0.00s w\n".format(
+research/cowrie/src/cowrie/commands/base.py-                self.protocol.user.username,
+research/cowrie/src/cowrie/commands/base.py-                self.protocol.clientIP[:17].ljust(17),
+research/cowrie/src/cowrie/commands/base.py:                time.strftime("%H:%M", time.localtime(self.protocol.logintime)),
+research/cowrie/src/cowrie/commands/base.py-            )
+research/cowrie/src/cowrie/commands/base.py-        )
+research/cowrie/src/cowrie/commands/base.py-
+--
+research/cowrie/src/cowrie/commands/base.py-        self.write(
+research/cowrie/src/cowrie/commands/base.py-            "{:8s} pts/0        {} {} ({})\n".format(
+research/cowrie/src/cowrie/commands/base.py-                self.protocol.user.username,
+research/cowrie/src/cowrie/commands/base.py:                time.strftime("%Y-%m-%d", time.localtime(self.protocol.logintime)),
+research/cowrie/src/cowrie/commands/base.py:                time.strftime("%H:%M", time.localtime(self.protocol.logintime)),
+research/cowrie/src/cowrie/commands/base.py-                self.protocol.clientIP,
+research/cowrie/src/cowrie/commands/base.py-            )
+research/cowrie/src/cowrie/commands/base.py-        )
+--
+research/cowrie/src/cowrie/commands/base.py-                    "Ss   ",
+research/cowrie/src/cowrie/commands/base.py-                    "Nov06",
+research/cowrie/src/cowrie/commands/base.py-                    "   0:00 ",
+research/cowrie/src/cowrie/commands/base.py:                    "/bin/login --     ",
+research/cowrie/src/cowrie/commands/base.py-                ),
+research/cowrie/src/cowrie/commands/base.py-                (
+research/cowrie/src/cowrie/commands/base.py-                    "root      ",
+--
+research/cowrie/src/cowrie/commands/base.py-    passwd: str | None
+research/cowrie/src/cowrie/commands/base.py-
+research/cowrie/src/cowrie/commands/base.py-    def start(self) -> None:
+research/cowrie/src/cowrie/commands/base.py:        self.write("Enter new UNIX password: ")
+research/cowrie/src/cowrie/commands/base.py:        self.protocol.password_input = True
+research/cowrie/src/cowrie/commands/base.py-        self.callbacks = [self.ask_again, self.finish]
+research/cowrie/src/cowrie/commands/base.py-        self.passwd = None
+research/cowrie/src/cowrie/commands/base.py-
+research/cowrie/src/cowrie/commands/base.py-    def ask_again(self, line: str) -> None:
+research/cowrie/src/cowrie/commands/base.py-        self.passwd = line
+research/cowrie/src/cowrie/commands/base.py:        self.write("Retype new UNIX password: ")
+research/cowrie/src/cowrie/commands/base.py-
+research/cowrie/src/cowrie/commands/base.py-    def finish(self, line: str) -> None:
+research/cowrie/src/cowrie/commands/base.py:        self.protocol.password_input = False
+research/cowrie/src/cowrie/commands/base.py-
+research/cowrie/src/cowrie/commands/base.py-        if line != self.passwd or self.passwd == "*":
+research/cowrie/src/cowrie/commands/base.py:            self.write("Sorry, passwords do not match\n")
+research/cowrie/src/cowrie/commands/base.py-        else:
+research/cowrie/src/cowrie/commands/base.py:            self.write("passwd: password updated successfully\n")
+research/cowrie/src/cowrie/commands/base.py-        self.exit()
+research/cowrie/src/cowrie/commands/base.py-
+research/cowrie/src/cowrie/commands/base.py-    def lineReceived(self, line: str) -> None:
+--
+research/cowrie/src/cowrie/commands/base.py-            input=line,
+research/cowrie/src/cowrie/commands/base.py-            format="INPUT (%(realm)s): %(input)s",

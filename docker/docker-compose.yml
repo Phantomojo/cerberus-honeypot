@@ -1,24 +1,24 @@
-
 services:
   # Cowrie SSH/Telnet Honeypot
   cowrie:
-    image: cowrie/cowrie:latest
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.cerberus
+    image: cerberus-cowrie:latest
     container_name: cerberus-cowrie
     restart: unless-stopped
     ports:
-      - "2222:2222"  # SSH (mapped to non-standard port)
-      - "2323:2323"  # Telnet (mapped to non-standard port)
+      - "2222:2222" # SSH (mapped to non-standard port)
+      - "2323:2323" # Telnet (mapped to non-standard port)
     volumes:
       - ../services/cowrie/data:/data
       - ../services/cowrie/logs:/var/log/cowrie
       - ../services/cowrie/etc:/etc/cowrie
       - ../services/cowrie/honeyfs:/cowrie/cowrie-git/share/cowrie/honeyfs:rw
+      - ../build/cowrie-dynamic:/data/cowrie-dynamic:ro
     environment:
       - COWRIE_SSH_PORT=2222
       - COWRIE_TELNET_PORT=2323
-      # Shell settings for uname command - these override config file values
-      # Update these after running ./build/morph, then restart cowrie
-      # Or use the env file approach below for dynamic morphing
     env_file:
       - ../services/cowrie/etc/cowrie.env
     networks:
@@ -63,7 +63,7 @@ services:
     container_name: cerberus-rtsp
     restart: unless-stopped
     ports:
-      - "554:554"   # RTSP
+      - "554:554" # RTSP
       - "8554:8554" # RTSP alternative
       - "1935:1935" # RTMP
     networks:
@@ -88,10 +88,9 @@ services:
       - fake-router-web
       - fake-camera-web
     profiles:
-      - dashboard  # Only start with: docker compose --profile dashboard up
+      - dashboard # Only start with: docker compose --profile dashboard up
 
 networks:
   cerberus-net:
     driver: bridge
     name: cerberus-honeynet
-

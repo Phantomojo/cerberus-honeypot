@@ -1,0 +1,101 @@
+=== CONFIGURATION PARAMETERS ===
+experimentation/cowrie/src/backend_pool/libvirt/backend_service.py:        libvirt_uri: str = CowrieConfig.get(
+experimentation/cowrie/src/backend_pool/libvirt/backend_service.py:                    not CowrieConfig.getboolean(
+experimentation/cowrie/src/backend_pool/libvirt/backend_service.py:                    or CowrieConfig.get("backend_pool", "snapshot_path", fallback=None)
+experimentation/cowrie/src/backend_pool/libvirt/guest_handler.py:        CowrieConfig.get(
+experimentation/cowrie/src/backend_pool/libvirt/guest_handler.py:        CowrieConfig.get("backend_pool", "guest_config", fallback="default_guest.xml"),
+experimentation/cowrie/src/backend_pool/libvirt/guest_handler.py:    version_tag: str = CowrieConfig.get("backend_pool", "guest_tag", fallback="guest")
+experimentation/cowrie/src/backend_pool/libvirt/guest_handler.py:    base_image: str = CowrieConfig.get("backend_pool", "guest_image_path")
+experimentation/cowrie/src/backend_pool/libvirt/guest_handler.py:    hypervisor: str = CowrieConfig.get(
+experimentation/cowrie/src/backend_pool/libvirt/guest_handler.py:    memory: int = CowrieConfig.getint("backend_pool", "guest_memory", fallback=128)
+experimentation/cowrie/src/backend_pool/libvirt/guest_handler.py:    qemu_machine: str = CowrieConfig.get(
+experimentation/cowrie/src/backend_pool/libvirt/guest_handler.py:    kernel_image: str = CowrieConfig.get(
+experimentation/cowrie/src/backend_pool/libvirt/guest_handler.py:            CowrieConfig.get("backend_pool", "snapshot_path")
+experimentation/cowrie/src/backend_pool/libvirt/network_handler.py:        CowrieConfig.get(
+experimentation/cowrie/src/backend_pool/libvirt/network_handler.py:        CowrieConfig.get(
+experimentation/cowrie/src/backend_pool/libvirt/network_handler.py:        CowrieConfig.get(
+experimentation/cowrie/src/backend_pool/libvirt/network_handler.py:        CowrieConfig.get(
+experimentation/cowrie/src/backend_pool/pool_server.py:            CowrieConfig.get("proxy", "pool", fallback="local") == "local"
+experimentation/cowrie/src/backend_pool/pool_server.py:        self.pool_only: bool = CowrieConfig.getboolean(
+experimentation/cowrie/src/backend_pool/pool_server.py:        self.use_nat: bool = CowrieConfig.getboolean(
+experimentation/cowrie/src/backend_pool/pool_server.py:            self.nat_public_ip: str = CowrieConfig.get("backend_pool", "nat_public_ip")
+experimentation/cowrie/src/backend_pool/pool_server.py:                ssh_port: int = CowrieConfig.getint(
+experimentation/cowrie/src/backend_pool/pool_server.py:                telnet_port: int = CowrieConfig.getint(
+experimentation/cowrie/src/backend_pool/pool_service.py:        self.ssh_port: int = CowrieConfig.getint(
+experimentation/cowrie/src/backend_pool/pool_service.py:        self.telnet_port: int = CowrieConfig.getint(
+experimentation/cowrie/src/backend_pool/pool_service.py:            CowrieConfig.get("proxy", "pool", fallback="local") == "local"
+experimentation/cowrie/src/backend_pool/pool_service.py:        self.pool_only: bool = CowrieConfig.getboolean(
+experimentation/cowrie/src/backend_pool/pool_service.py:        self.use_nat: bool = CowrieConfig.getboolean(
+experimentation/cowrie/src/backend_pool/pool_service.py:        recycle_period = CowrieConfig.getint(
+experimentation/cowrie/src/cowrie/commands/curl.py:    enabled=CowrieConfig.getboolean("honeypot", "curl_rate_limit_enabled", fallback=True),
+experimentation/cowrie/src/cowrie/commands/curl.py:    max_requests=CowrieConfig.getint("honeypot", "curl_rate_limit_requests", fallback=5),
+experimentation/cowrie/src/cowrie/commands/curl.py:    window_seconds=CowrieConfig.getint("honeypot", "curl_rate_limit_window", fallback=60),
+experimentation/cowrie/src/cowrie/commands/curl.py:    max_keys=CowrieConfig.getint("honeypot", "curl_rate_limit_max_hosts", fallback=1000)
+experimentation/cowrie/src/cowrie/commands/curl.py:    limit_size: int = CowrieConfig.getint("honeypot", "download_limit_size", fallback=0)
+experimentation/cowrie/src/cowrie/commands/curl.py:        #     out_addr = (CowrieConfig.get("honeypot", "out_addr"), 0)
+experimentation/cowrie/src/cowrie/commands/ftpget.py:    download_path = CowrieConfig.get("honeypot", "download_path", fallback=".")
+experimentation/cowrie/src/cowrie/commands/gcc.py:            CowrieConfig.get("honeypot", "download_path", fallback="."), tmp_fname
+experimentation/cowrie/src/cowrie/commands/nc.py:    enabled=CowrieConfig.getboolean("honeypot", "nc_rate_limit_enabled", fallback=True),
+experimentation/cowrie/src/cowrie/commands/nc.py:    max_requests=CowrieConfig.getint("honeypot", "nc_rate_limit_requests", fallback=5),
+experimentation/cowrie/src/cowrie/commands/nc.py:    window_seconds=CowrieConfig.getint("honeypot", "nc_rate_limit_window", fallback=60),
+experimentation/cowrie/src/cowrie/commands/nc.py:    max_keys=CowrieConfig.getint("honeypot", "nc_rate_limit_max_hosts", fallback=1000)
+experimentation/cowrie/src/cowrie/commands/nc.py:            out_addr = (CowrieConfig.get("honeypot", "out_addr"), 0)
+experimentation/cowrie/src/cowrie/commands/scp.py:    download_path = CowrieConfig.get("honeypot", "download_path", fallback=".")
+experimentation/cowrie/src/cowrie/commands/scp.py:    download_path_uniq = CowrieConfig.get(
+experimentation/cowrie/src/cowrie/commands/ssh.py:                    CowrieConfig.get(
+experimentation/cowrie/src/cowrie/commands/tftp.py:    limit_size = CowrieConfig.getint("honeypot", "download_limit_size", fallback=0)
+experimentation/cowrie/src/cowrie/commands/uname.py:    return CowrieConfig.get("shell", "hardware_platform", fallback="x86_64")
+experimentation/cowrie/src/cowrie/commands/uname.py:    return CowrieConfig.get("shell", "kernel_name", fallback="Linux")
+experimentation/cowrie/src/cowrie/commands/uname.py:    return CowrieConfig.get("shell", "kernel_version", fallback="3.2.0-4-amd64")
+experimentation/cowrie/src/cowrie/commands/uname.py:    return CowrieConfig.get(
+experimentation/cowrie/src/cowrie/commands/uname.py:    return CowrieConfig.get("shell", "operating_system", fallback="GNU/Linux")
+experimentation/cowrie/src/cowrie/commands/wget.py:    enabled=CowrieConfig.getboolean("honeypot", "wget_rate_limit_enabled", fallback=True),
+experimentation/cowrie/src/cowrie/commands/wget.py:    max_requests=CowrieConfig.getint("honeypot", "wget_rate_limit_requests", fallback=5),
+experimentation/cowrie/src/cowrie/commands/wget.py:    window_seconds=CowrieConfig.getint("honeypot", "wget_rate_limit_window", fallback=60),
+experimentation/cowrie/src/cowrie/commands/wget.py:    max_keys=CowrieConfig.getint("honeypot", "wget_rate_limit_max_hosts", fallback=1000)
+experimentation/cowrie/src/cowrie/commands/wget.py:    limit_size: int = CowrieConfig.getint("honeypot", "download_limit_size", fallback=0)
+experimentation/cowrie/src/cowrie/commands/wget.py:        #     out_addr = (CowrieConfig.get("honeypot", "out_addr"), 0)
+experimentation/cowrie/src/cowrie/core/artifact.py:    artifactDir: str = CowrieConfig.get("honeypot", "download_path", fallback=".")
+experimentation/cowrie/src/cowrie/core/auth.py:                "{}/userdb.txt".format(CowrieConfig.get("honeypot", "etc_path")),
+experimentation/cowrie/src/cowrie/core/auth.py:            parameters: str = CowrieConfig.get("honeypot", "auth_class_parameters")
+experimentation/cowrie/src/cowrie/core/auth.py:            CowrieConfig.get("honeypot", "state_path")
+experimentation/cowrie/src/cowrie/core/checkers.py:        if CowrieConfig.getboolean("ssh", "auth_publickey_allow_any", fallback=False):
+experimentation/cowrie/src/cowrie/core/checkers.py:        authclass = CowrieConfig.get("honeypot", "auth_class", fallback="UserDB")
+experimentation/cowrie/src/cowrie/core/output.py:        self.sensor: str = CowrieConfig.get(
+experimentation/cowrie/src/cowrie/core/output.py:        self.uuid: str = CowrieConfig.get("honeypot", "uuid", fallback="unknown")
+experimentation/cowrie/src/cowrie/core/uuid.py:    state_path = CowrieConfig.get("honeypot", "state_path", fallback=".")
+experimentation/cowrie/src/cowrie/insults/insults.py:    ttylogPath: str = CowrieConfig.get("honeypot", "ttylog_path", fallback=".")
+experimentation/cowrie/src/cowrie/insults/insults.py:    downloadPath: str = CowrieConfig.get("honeypot", "download_path", fallback=".")
+experimentation/cowrie/src/cowrie/insults/insults.py:    ttylogEnabled: bool = CowrieConfig.getboolean("honeypot", "ttylog", fallback=False)
+experimentation/cowrie/src/cowrie/insults/insults.py:    bytesReceivedLimit: int = CowrieConfig.getint(
+experimentation/cowrie/src/cowrie/llm/llm.py:        self.api_key = CowrieConfig.get("llm", "api_key", fallback="")
+experimentation/cowrie/src/cowrie/llm/llm.py:        self.model = CowrieConfig.get("llm", "model", fallback="gpt-4o-mini")
+experimentation/cowrie/src/cowrie/llm/llm.py:        self.host = CowrieConfig.get("llm", "host", fallback="https://api.openai.com")
+experimentation/cowrie/src/cowrie/llm/llm.py:        self.path = CowrieConfig.get("llm", "path", fallback="/v1/chat/completions")
+experimentation/cowrie/src/cowrie/llm/llm.py:        self.max_tokens = CowrieConfig.getint("llm", "max_tokens", fallback=500)
+experimentation/cowrie/src/cowrie/llm/llm.py:        self.temperature = CowrieConfig.getfloat("llm", "temperature", fallback=0.7)
+experimentation/cowrie/src/cowrie/llm/llm.py:        self.debug = CowrieConfig.getboolean("llm", "debug", fallback=False)
+experimentation/cowrie/src/cowrie/llm/protocol.py:        timeout = CowrieConfig.getint("honeypot", "interactive_timeout", fallback=180)
+experimentation/cowrie/src/cowrie/llm/protocol.py:        self.clientIP = CowrieConfig.get(
+experimentation/cowrie/src/cowrie/llm/protocol.py:            self.kippoIP = CowrieConfig.get("honeypot", "internet_facing_ip")
+experimentation/cowrie/src/cowrie/llm/server.py:        self.hostname = CowrieConfig.get("honeypot", "hostname", fallback="svr04")
+experimentation/cowrie/src/cowrie/output/abuseipdb.py:        self.tolerance_attempts: int = CowrieConfig.getint(
+experimentation/cowrie/src/cowrie/output/abuseipdb.py:        self.state_path = Path(CowrieConfig.get("output_abuseipdb", "dump_path"))
+experimentation/cowrie/src/cowrie/output/abuseipdb.py:        self.tolerance_window: int = 60 * CowrieConfig.getint(
+experimentation/cowrie/src/cowrie/output/abuseipdb.py:        self.rereport_after: float = 3600 * CowrieConfig.getfloat(
+experimentation/cowrie/src/cowrie/output/abuseipdb.py:            "Key": CowrieConfig.get("output_abuseipdb", "api_key"),
+experimentation/cowrie/src/cowrie/output/axiom.py:        self.api_token = CowrieConfig.get("output_axiom", "api_token")
+experimentation/cowrie/src/cowrie/output/axiom.py:        self.dataset = CowrieConfig.get("output_axiom", "dataset")
+experimentation/cowrie/src/cowrie/output/crashreporter.py:        self.apiKey = CowrieConfig.get("output_cowrie", "api_key", fallback=None)
+experimentation/cowrie/src/cowrie/output/crashreporter.py:        self.debug = CowrieConfig.getboolean("output_cowrie", "debug", fallback=False)
+experimentation/cowrie/src/cowrie/output/csirtg.py:token = CowrieConfig.get("output_csirtg", "token", fallback="a1b2c3d4")
+experimentation/cowrie/src/cowrie/output/csirtg.py:        self.user = CowrieConfig.get("output_csirtg", "username")
+experimentation/cowrie/src/cowrie/output/csirtg.py:        self.feed = CowrieConfig.get("output_csirtg", "feed")
+experimentation/cowrie/src/cowrie/output/csirtg.py:        self.debug = CowrieConfig.getboolean("output_csirtg", "debug", fallback=False)
+experimentation/cowrie/src/cowrie/output/csirtg.py:        self.description = CowrieConfig.get("output_csirtg", "description")
+experimentation/cowrie/src/cowrie/output/cuckoo.py:        self.url_base = CowrieConfig.get("output_cuckoo", "url_base").encode("utf-8")
+experimentation/cowrie/src/cowrie/output/cuckoo.py:        self.api_user = CowrieConfig.get("output_cuckoo", "user")
+experimentation/cowrie/src/cowrie/output/cuckoo.py:        self.api_passwd = CowrieConfig.get("output_cuckoo", "passwd", raw=True)
+experimentation/cowrie/src/cowrie/output/cuckoo.py:        self.cuckoo_force = int(CowrieConfig.getboolean("output_cuckoo", "force"))
+experimentation/cowrie/src/cowrie/output/datadog.py:        self.url = CowrieConfig.get("output_datadog", "url").encode("utf8")
+experimentation/cowrie/src/cowrie/output/datadog.py:        self.api_key = CowrieConfig.get(

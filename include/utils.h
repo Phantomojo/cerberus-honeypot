@@ -3,6 +3,8 @@
 
 #include <stdio.h>
 #include <stdbool.h>
+#include <stdint.h>
+#include <sys/time.h>
 
 // Logging functions
 typedef enum {
@@ -33,6 +35,11 @@ char* str_dup(const char* str);
 // Path utilities
 int create_dir(const char* dirpath);
 int get_file_size(const char* filepath);
+
+// Path security functions
+bool is_safe_path(const char* filepath);
+int sanitize_path(const char* input_path, char* output_path, size_t output_size);
+bool is_path_traversal(const char* filepath);
 
 // Configuration helpers
 int read_config_value(const char* filepath, const char* key, char* value, size_t value_size);

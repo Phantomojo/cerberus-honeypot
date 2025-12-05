@@ -1,0 +1,58 @@
+research/cowrie/src/cowrie/commands/awk.py:        -S                      --sandbox
+research/cowrie/src/cowrie/commands/awk.py-        -t                      --lint-old
+research/cowrie/src/cowrie/commands/awk.py-        -V                      --version
+research/cowrie/src/cowrie/commands/awk.py-
+research/cowrie/src/cowrie/commands/awk.py-To report bugs, see node `Bugs' in `gawk.info', which is
+research/cowrie/src/cowrie/commands/awk.py-section `Reporting Problems and Bugs' in the printed version.
+--
+research/cowrie/src/cowrie/commands/busybox.py:    bunzip2, bzcat, bzip2, cal, cat, chgrp, chmod, chown, chroot, chvt,
+research/cowrie/src/cowrie/commands/busybox.py-    clear, cmp, cp, cpio, cttyhack, cut, date, dc, dd, deallocvt, depmod,
+research/cowrie/src/cowrie/commands/busybox.py-    df, diff, dirname, dmesg, dnsdomainname, dos2unix, du, dumpkmap,
+research/cowrie/src/cowrie/commands/busybox.py-    dumpleases, echo, egrep, env, expand, expr, false, fgrep, find, fold,
+research/cowrie/src/cowrie/commands/busybox.py-    free, freeramdisk, ftpget, ftpput, getopt, getty, grep, groups, gunzip,
+research/cowrie/src/cowrie/commands/busybox.py-    gzip, halt, head, hexdump, hostid, hostname, httpd, hwclock, id,
+--
+research/cowrie/src/cowrie/commands/chpasswd.py:            "  -R, --root CHROOT_DIR         directory to chroot into"
+research/cowrie/src/cowrie/commands/chpasswd.py-            "  -s, --sha-rounds              number of SHA rounds for the SHA*"
+research/cowrie/src/cowrie/commands/chpasswd.py-            "                                crypt algorithms",
+research/cowrie/src/cowrie/commands/chpasswd.py-        )
+research/cowrie/src/cowrie/commands/chpasswd.py-        for line in output:
+research/cowrie/src/cowrie/commands/chpasswd.py-            self.write(line + "\n")
+--
+research/cowrie/src/cowrie/commands/curl.py:     --krb LEVEL     Enable Kerberos with specified security level (F)
+research/cowrie/src/cowrie/commands/curl.py-     --libcurl FILE  Dump libcurl equivalent code of this command line
+research/cowrie/src/cowrie/commands/curl.py-     --limit-rate RATE  Limit transfer speed to this rate
+research/cowrie/src/cowrie/commands/curl.py- -l, --list-only     List only names of an FTP directory (F)
+research/cowrie/src/cowrie/commands/curl.py-     --local-port RANGE  Force use of these local port numbers
+research/cowrie/src/cowrie/commands/curl.py- -L, --location      Follow redirects (H)
+--
+research/cowrie/src/cowrie/commands/curl.py:     --ssl-allow-beast Allow security flaw to improve interop (SSL)
+research/cowrie/src/cowrie/commands/curl.py-     --stderr FILE   Where to redirect stderr. - means stdout
+research/cowrie/src/cowrie/commands/curl.py-     --tcp-nodelay   Use the TCP_NODELAY option
+research/cowrie/src/cowrie/commands/curl.py- -t, --telnet-option OPT=VAL  Set telnet option
+research/cowrie/src/cowrie/commands/curl.py-     --tftp-blksize VALUE  Set TFTP BLKSIZE option (must be >512)
+research/cowrie/src/cowrie/commands/curl.py- -z, --time-cond TIME  Transfer based on a time condition
+--
+research/cowrie/src/cowrie/commands/sudo.py:  -r role       create SELinux security context with specified role
+research/cowrie/src/cowrie/commands/sudo.py-  -S            read password from standard input
+research/cowrie/src/cowrie/commands/sudo.py-  -s [command]  run a shell as target user
+research/cowrie/src/cowrie/commands/sudo.py:  -t type       create SELinux security context with specified role
+research/cowrie/src/cowrie/commands/sudo.py-  -U user       when listing, list specified user's privileges
+research/cowrie/src/cowrie/commands/sudo.py-  -u user       run command (or edit file) as specified user
+research/cowrie/src/cowrie/commands/sudo.py-  -V            display version information and exit
+research/cowrie/src/cowrie/commands/sudo.py-  -v            update user's timestamp without running a command
+research/cowrie/src/cowrie/commands/sudo.py-  --            stop processing command line arguments
+--
+research/cowrie/src/cowrie/commands/yum.py:  --security            Include security relevant packages, in updates
+research/cowrie/src/cowrie/commands/yum.py-  --advisory=ADVS, --advisories=ADVS
+research/cowrie/src/cowrie/commands/yum.py-                        Include packages needed to fix the given advisory, in
+research/cowrie/src/cowrie/commands/yum.py-                        updates
+research/cowrie/src/cowrie/commands/yum.py-  --bzs=BZS             Include packages needed to fix the given BZ, in
+research/cowrie/src/cowrie/commands/yum.py-                        updates
+--
+research/cowrie/src/cowrie/commands/yum.py:                        Include security relevant packages matching the
+research/cowrie/src/cowrie/commands/yum.py-                        severity, in updates
+research/cowrie/src/cowrie/commands/yum.py-  --tsflags=TSFLAGS
+research/cowrie/src/cowrie/commands/yum.py-
+research/cowrie/src/cowrie/commands/yum.py-  Plugin Options:
+research/cowrie/src/cowrie/commands/yum.py-    --changelog         Show changelog delta of updated packages

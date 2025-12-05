@@ -1,0 +1,115 @@
+name: Code Quality
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+concurrency:
+  group: code-quality-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  clang-format:
+    name: clang-format (style check)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run clang-format lint (C/C++)
+        uses: DoozyX/clang-format-lint-action@v1.21
+        with:
+          source: |
+            src
+            include
+            tests
+          extensions: |
+            c,h,cc,cpp,cxx,hpp
+          clangFormatVersion: 18
+          style: file
+          inplace: false
+
+  clang-tidy-review:
+    name: clang-tidy (reviewdog)
+    runs-on: ubuntu-latest
+    env:
+      REPORTER: ${{ github.event_name == 'pull_request' && 'github-pr-review' || 'github-check' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential clang clang-tidy bear make gcc
+
+      - name: Prepare build dir
+        run: |
+          mkdir -p build
+
+      - name: Generate compile_commands.json (best effort)
+        run: |
+          set -e
+          # Try to capture compilation database; don't fail the job if build fails.
+          bear -- make -j2 all || true
+          # Fallback: if no compile_commands produced, create an empty one to avoid action failures.
+          test -f compile_commands.json || echo '[]' > compile_commands.json
+
+      - name: Run clang-tidy with reviewdog
+        uses: reviewdog/action-clang-tidy@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          reporter: ${{ env.REPORTER }}
+          fail_on_error: 'false'
+          filter_mode: diff_context
+          level: warning
+          clang_tidy_flags: >
+            -p=.
+            -header-filter='^(src|include)/.*'
+            -extra-arg=-std=c11
+
+  cppcheck-review:
+    name: cppcheck (reviewdog)
+    runs-on: ubuntu-latest
+    env:
+      REPORTER: ${{ github.event_name == 'pull_request' && 'github-pr-review' || 'github-check' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install cppcheck
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cppcheck
+
+      - name: Run cppcheck with reviewdog
+        uses: reviewdog/action-cppcheck@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          reporter: ${{ env.REPORTER }}
+          fail_on_error: 'false'
+          filter_mode: diff_context
+          level: warning
+          # Configure cppcheck arguments.
+          # --inline-suppr allows inline suppressions in code comments.
+          # --enable=all runs all checks, but we allow the job to pass and annotate instead.
+          # --std=c11 sets language standard for C sources.
+          cppcheck_flags: >
+            --enable=all
+            --inconclusive
+            --std=c11
+            --inline-suppr
+            --suppress=missingIncludeSystem
+            --quiet
+          # Restrict to project sources and headers.
+          targets: |
+            src
+            include
+            tests

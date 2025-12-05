@@ -1,0 +1,24 @@
+=== COMMAND EXECUTION FLOW ===
+    def lineReceived(self, line: str) -> None:
+        log.msg(eventid="cowrie.command.input", input=line, format="CMD: %(input)s")
+        self.lexer = shlex.shlex(instream=line, punctuation_chars=True, posix=True)
+        # Add these special characters that are not in the default lexer
+        self.lexer.wordchars += "@%{}=$:+^,()`"
+
+        tokens: list[str] = []
+
+        while True:
+            try:
+                tokkie: str | None = self.lexer.get_token()
+                # log.msg("tok: %s" % (repr(tok)))
+
+                if tokkie is None:  # self.lexer.eof put None for mypy
+                    if tokens:
+                        self.cmdpending.append(tokens)
+                    break
+                else:
+                    tok: str = tokkie
+
+                # For now, treat && and || same as ;, just execute without checking return code
+
+=== COMMAND DISPATCH ===

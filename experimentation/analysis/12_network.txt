@@ -1,0 +1,200 @@
+research/cowrie/src/backend_pool/nat.py:        self.bindings: dict[int, Any] = {}
+research/cowrie/src/backend_pool/nat.py-        self.lock = Lock()  # we need to be thread-safe just in case, this is accessed from multiple clients
+research/cowrie/src/backend_pool/nat.py-
+research/cowrie/src/backend_pool/nat.py:    def request_binding(
+research/cowrie/src/backend_pool/nat.py-        self, guest_id: int, dst_ip: str, ssh_port: int, telnet_port: int
+research/cowrie/src/backend_pool/nat.py-    ) -> tuple[int, int]:
+research/cowrie/src/backend_pool/nat.py-        with self.lock:
+research/cowrie/src/backend_pool/nat.py:            # see if binding is already created
+research/cowrie/src/backend_pool/nat.py:            if guest_id in self.bindings:
+research/cowrie/src/backend_pool/nat.py-                # increase connected
+research/cowrie/src/backend_pool/nat.py:                self.bindings[guest_id][0] += 1
+research/cowrie/src/backend_pool/nat.py-
+research/cowrie/src/backend_pool/nat.py-                return (
+research/cowrie/src/backend_pool/nat.py:                    self.bindings[guest_id][1]._realPortNumber,
+research/cowrie/src/backend_pool/nat.py:                    self.bindings[guest_id][2]._realPortNumber,
+research/cowrie/src/backend_pool/nat.py-                )
+research/cowrie/src/backend_pool/nat.py-            else:
+research/cowrie/src/backend_pool/nat.py:                nat_ssh = reactor.listenTCP(  # type: ignore[attr-defined]
+research/cowrie/src/backend_pool/nat.py-                    0, ServerFactory(dst_ip, ssh_port), interface="0.0.0.0"
+research/cowrie/src/backend_pool/nat.py-                )
+research/cowrie/src/backend_pool/nat.py:                nat_telnet = reactor.listenTCP(  # type: ignore[attr-defined]
+research/cowrie/src/backend_pool/nat.py-                    0, ServerFactory(dst_ip, telnet_port), interface="0.0.0.0"
+research/cowrie/src/backend_pool/nat.py-                )
+research/cowrie/src/backend_pool/nat.py:                self.bindings[guest_id] = [1, nat_ssh, nat_telnet]
+research/cowrie/src/backend_pool/nat.py-
+research/cowrie/src/backend_pool/nat.py-                return nat_ssh._realPortNumber, nat_telnet._realPortNumber
+research/cowrie/src/backend_pool/nat.py-
+research/cowrie/src/backend_pool/nat.py:    def free_binding(self, guest_id: int) -> None:
+research/cowrie/src/backend_pool/nat.py-        with self.lock:
+research/cowrie/src/backend_pool/nat.py:            self.bindings[guest_id][0] -= 1
+research/cowrie/src/backend_pool/nat.py-
+research/cowrie/src/backend_pool/nat.py:            # stop listening if no one is connected
+research/cowrie/src/backend_pool/nat.py:            if self.bindings[guest_id][0] <= 0:
+research/cowrie/src/backend_pool/nat.py:                self.bindings[guest_id][1].stopListening()
+research/cowrie/src/backend_pool/nat.py:                self.bindings[guest_id][2].stopListening()
+research/cowrie/src/backend_pool/nat.py:                del self.bindings[guest_id]
+research/cowrie/src/backend_pool/nat.py-
+research/cowrie/src/backend_pool/nat.py-    def free_all(self):
+research/cowrie/src/backend_pool/nat.py-        with self.lock:
+research/cowrie/src/backend_pool/nat.py:            for guest_id in self.bindings:
+research/cowrie/src/backend_pool/nat.py:                self.bindings[guest_id][1].stopListening()
+research/cowrie/src/backend_pool/nat.py:                self.bindings[guest_id][2].stopListening()
+--
+research/cowrie/src/backend_pool/pool_server.py:                    nat_ssh_port, nat_telnet_port = self.factory.nat.request_binding(
+research/cowrie/src/backend_pool/pool_server.py-                        guest_id, guest_ip, ssh_port, telnet_port
+research/cowrie/src/backend_pool/pool_server.py-                    )
+research/cowrie/src/backend_pool/pool_server.py-
+--
+research/cowrie/src/backend_pool/pool_server.py:                self.factory.nat.free_binding(guest_id)
+research/cowrie/src/backend_pool/pool_server.py-
+research/cowrie/src/backend_pool/pool_server.py-            # free the vm
+research/cowrie/src/backend_pool/pool_server.py-            self.factory.pool_service.free_vm(guest_id)
+--
+research/cowrie/src/backend_pool/pool_server.py:                self.factory.nat.free_binding(guest_id)
+research/cowrie/src/backend_pool/pool_server.py-
+research/cowrie/src/backend_pool/pool_server.py-            # free this connection and allow VM to be reused
+research/cowrie/src/backend_pool/pool_server.py-            self.factory.pool_service.reuse_vm(guest_id)
+--
+research/cowrie/src/backend_pool/pool_service.py:checks which VMs become available (by testing if they accept SSH
+research/cowrie/src/backend_pool/pool_service.py-and/or Telnet connections), and destroys VMs that are no longer
+research/cowrie/src/backend_pool/pool_service.py-needed.
+research/cowrie/src/backend_pool/pool_service.py-
+--
+research/cowrie/src/backend_pool/pool_service.py:        # close any NAT sockets
+research/cowrie/src/backend_pool/pool_service.py-        if (not self.local_pool and self.use_nat) or self.pool_only:
+research/cowrie/src/backend_pool/pool_service.py-            log.msg(
+research/cowrie/src/backend_pool/pool_service.py:                eventid="cowrie.backend_pool.service", format="Free all NAT bindings"
+research/cowrie/src/backend_pool/pool_service.py-            )
+research/cowrie/src/backend_pool/pool_service.py-            self.nat_service.free_all()
+research/cowrie/src/backend_pool/pool_service.py-
+--
+research/cowrie/src/backend_pool/pool_service.py:        Checks recently-booted guests ('created' state), and whether they are accepting SSH or Telnet connections,
+research/cowrie/src/backend_pool/pool_service.py-        which indicates they are ready to be used ('available' state).
+research/cowrie/src/backend_pool/pool_service.py-
+research/cowrie/src/backend_pool/pool_service.py-        No lock needed since the 'created' state is only accessed by the single-threaded producer
+--
+research/cowrie/src/cowrie/commands/base.py: bind [-lpvsPVS] [-m keymap] [-f filename] [-q name] [-u name] [-r keyseq] [-x keyseq:shell-c>  popd [-n] [+N | -N]
+research/cowrie/src/cowrie/commands/base.py- break [n]                                                                                      printf [-v var] format [arguments]
+research/cowrie/src/cowrie/commands/base.py- builtin [shell-builtin [arg ...]]                                                              pushd [-n] [+N | -N | dir]
+research/cowrie/src/cowrie/commands/base.py- caller [expr]                                                                                  pwd [-LP]
+--
+research/cowrie/src/cowrie/commands/curl.py:     --egd-file FILE  EGD socket path for random data (SSL)
+research/cowrie/src/cowrie/commands/curl.py-     --engine ENGINGE  Crypto engine (SSL). "--engine list" for list
+research/cowrie/src/cowrie/commands/curl.py- -f, --fail          Fail silently (no output at all) on HTTP errors (H)
+research/cowrie/src/cowrie/commands/curl.py- -F, --form CONTENT  Specify HTTP multipart POST data (H)
+--
+research/cowrie/src/cowrie/commands/dig.py:                 -b address[#port]   (bind to source address/port)
+research/cowrie/src/cowrie/commands/dig.py-                 -c class            (specify query class)
+research/cowrie/src/cowrie/commands/dig.py-                 -f filename         (batch mode)
+research/cowrie/src/cowrie/commands/dig.py-                 -i                  (use IP6.INT for IPv6 reverse lookups)
+--
+research/cowrie/src/cowrie/commands/dig.py:                 +[no]keepopen       (Keep the TCP socket open between queries)
+research/cowrie/src/cowrie/commands/dig.py-                 +[no]multiline      (Print records in an expanded format)
+research/cowrie/src/cowrie/commands/dig.py-                 +ndots=###          (Set search NDOTS value)
+research/cowrie/src/cowrie/commands/dig.py-                 +[no]nsid           (Request Name Server ID)
+--
+research/cowrie/src/cowrie/commands/nc.py:import socket
+research/cowrie/src/cowrie/commands/nc.py-import struct
+research/cowrie/src/cowrie/commands/nc.py-
+research/cowrie/src/cowrie/commands/nc.py-from cowrie.core.config import CowrieConfig
+--
+research/cowrie/src/cowrie/commands/nc.py:    ip32bit: bytes = socket.inet_aton(ip)
+research/cowrie/src/cowrie/commands/nc.py-    num: int = struct.unpack("I", ip32bit)[0]
+research/cowrie/src/cowrie/commands/nc.py-    return num
+research/cowrie/src/cowrie/commands/nc.py-
+--
+research/cowrie/src/cowrie/commands/nc.py:    s: socket.socket
+research/cowrie/src/cowrie/commands/nc.py-    CONNECT_TIMEOUT: float = 10.0  # seconds
+research/cowrie/src/cowrie/commands/nc.py-
+research/cowrie/src/cowrie/commands/nc.py-    def print_usage_error(self, error_msg: str = "") -> None:
+--
+research/cowrie/src/cowrie/commands/nc.py:        self.errorWrite("\t\t-D\t\tEnable the debug socket option\n")
+research/cowrie/src/cowrie/commands/nc.py-        self.errorWrite("\t\t-d\t\tDetach from stdin\n")
+research/cowrie/src/cowrie/commands/nc.py:        self.errorWrite("\t\t-F\t\tPass socket fd\n")
+research/cowrie/src/cowrie/commands/nc.py-        self.errorWrite("\t\t-h\t\tThis help text\n")
+research/cowrie/src/cowrie/commands/nc.py-        self.errorWrite("\t\t-I length\tTCP receive buffer length\n")
+research/cowrie/src/cowrie/commands/nc.py-        self.errorWrite("\t\t-i interval\tDelay interval for lines sent, ports scanned\n")
+research/cowrie/src/cowrie/commands/nc.py:        self.errorWrite("\t\t-k\t\tKeep inbound sockets open for multiple connects\n")
+research/cowrie/src/cowrie/commands/nc.py-        self.errorWrite("\t\t-l\t\tListen mode, for inbound connects\n")
+research/cowrie/src/cowrie/commands/nc.py-        self.errorWrite("\t\t-M ttl\t\tOutgoing TTL / Hop Limit\n")
+research/cowrie/src/cowrie/commands/nc.py-        self.errorWrite("\t\t-m minttl\tMinimum incoming TTL / Hop Limit\n")
+research/cowrie/src/cowrie/commands/nc.py:        self.errorWrite("\t\t-N\t\tShutdown the network socket after EOF on stdin\n")
+research/cowrie/src/cowrie/commands/nc.py-        self.errorWrite("\t\t-n\t\tSuppress name/port resolutions\n")
+research/cowrie/src/cowrie/commands/nc.py-        self.errorWrite("\t\t-O length\tTCP send buffer length\n")
+research/cowrie/src/cowrie/commands/nc.py-        self.errorWrite("\t\t-P proxyuser\tUsername for proxy authentication\n")
+--
+research/cowrie/src/cowrie/commands/nc.py:        self.errorWrite("\t\t-U\t\tUse UNIX domain socket\n")
+research/cowrie/src/cowrie/commands/nc.py-        self.errorWrite("\t\t-u\t\tUDP mode\n")
+research/cowrie/src/cowrie/commands/nc.py-        self.errorWrite("\t\t-V rtable\tSpecify alternate routing table\n")
+research/cowrie/src/cowrie/commands/nc.py-        self.errorWrite("\t\t-v\t\tVerbose\n")
+--
+research/cowrie/src/cowrie/commands/nc.py:        listen_mode = False
+research/cowrie/src/cowrie/commands/nc.py-        source_port = None
+research/cowrie/src/cowrie/commands/nc.py-        use_udp = False
+research/cowrie/src/cowrie/commands/nc.py-        use_ipv6 = False
+--
+research/cowrie/src/cowrie/commands/nc.py:                listen_mode = True
+research/cowrie/src/cowrie/commands/nc.py-            elif o == "-p":
+research/cowrie/src/cowrie/commands/nc.py-                source_port = a
+research/cowrie/src/cowrie/commands/nc.py-            elif o == "-u":
+--
+research/cowrie/src/cowrie/commands/nc.py:            if listen_mode:
+research/cowrie/src/cowrie/commands/nc.py-                if not source_port:
+research/cowrie/src/cowrie/commands/nc.py-                    # Listen mode requires -p to specify port
+research/cowrie/src/cowrie/commands/nc.py-                    self.errorWrite("nc: missing port number\n")
+--
+research/cowrie/src/cowrie/commands/nc.py:                    # Valid listen mode request, but not implemented - fake permission denied
+research/cowrie/src/cowrie/commands/nc.py-                    self.errorWrite("nc: Permission denied\n")
+research/cowrie/src/cowrie/commands/nc.py-            else:
+research/cowrie/src/cowrie/commands/nc.py-                # Client mode without any arguments
+--
+research/cowrie/src/cowrie/commands/nc.py:        # Mixing listen mode with client mode is invalid
+research/cowrie/src/cowrie/commands/nc.py:        if listen_mode:
+research/cowrie/src/cowrie/commands/nc.py-            self.print_usage_error()
+research/cowrie/src/cowrie/commands/nc.py-            self.exit()
+research/cowrie/src/cowrie/commands/nc.py-            return
+--
+research/cowrie/src/cowrie/commands/nc.py:        self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+research/cowrie/src/cowrie/commands/nc.py-        self.s.settimeout(self.CONNECT_TIMEOUT)
+research/cowrie/src/cowrie/commands/nc.py:        self.s.bind(out_addr)
+research/cowrie/src/cowrie/commands/nc.py-        try:
+research/cowrie/src/cowrie/commands/nc.py-            self.s.connect((host, int(port)))
+research/cowrie/src/cowrie/commands/nc.py-
+--
+research/cowrie/src/cowrie/commands/netstat.py:import socket
+research/cowrie/src/cowrie/commands/netstat.py-
+research/cowrie/src/cowrie/commands/netstat.py-from cowrie.shell.command import HoneyPotCommand
+research/cowrie/src/cowrie/commands/netstat.py-
+--
+research/cowrie/src/cowrie/commands/netstat.py:       netstat [-vWnNcaeol] [<Socket> ...]
+research/cowrie/src/cowrie/commands/netstat.py-       netstat { [-vWeenNac] -i | [-cWnNe] -M | -s }
+research/cowrie/src/cowrie/commands/netstat.py-
+research/cowrie/src/cowrie/commands/netstat.py-        -r, --route              display routing table
+--
+research/cowrie/src/cowrie/commands/netstat.py:        -p, --programs           display PID/Program name for sockets
+research/cowrie/src/cowrie/commands/netstat.py-        -c, --continuous         continuous listing
+research/cowrie/src/cowrie/commands/netstat.py-
+research/cowrie/src/cowrie/commands/netstat.py:        -l, --listening          display listening server sockets
+research/cowrie/src/cowrie/commands/netstat.py-
+research/cowrie/src/cowrie/commands/netstat.py-        -o, --timers             display timers
+research/cowrie/src/cowrie/commands/netstat.py-        -F, --fib                display Forwarding Information Base (default)
+--
+research/cowrie/src/cowrie/commands/netstat.py:  <Socket>={-t|--tcp} {-u|--udp} {-w|--raw} {-x|--unix} --ax25 --ipx --netrom
+research/cowrie/src/cowrie/commands/netstat.py-  <AF>=Use \'-6|-4\' or \'-A <af>\' or \'--<af>\'; default: inet
+research/cowrie/src/cowrie/commands/netstat.py-  List of possible address families (which support routing):
+research/cowrie/src/cowrie/commands/netstat.py-    inet (DARPA Internet) inet6 (IPv6) ax25 (AMPR AX.25)
+--
+research/cowrie/src/cowrie/commands/netstat.py:                c_name = socket.gethostbyaddr(self.protocol.clientIP)[0][:17]
+research/cowrie/src/cowrie/commands/netstat.py-            except Exception:
+research/cowrie/src/cowrie/commands/netstat.py-                c_name = self.protocol.clientIP
+research/cowrie/src/cowrie/commands/netstat.py:        if self.show_listen or self.show_all:
+research/cowrie/src/cowrie/commands/netstat.py-            self.write(
+research/cowrie/src/cowrie/commands/netstat.py-                "tcp        0      0 *:ssh                   *:*                     LISTEN\n"
+research/cowrie/src/cowrie/commands/netstat.py-            )
+research/cowrie/src/cowrie/commands/netstat.py:        if not self.show_listen or self.show_all:
+research/cowrie/src/cowrie/commands/netstat.py-            line = "tcp        0    308 {}:{}{}{}:{}{}{}".format(
+research/cowrie/src/cowrie/commands/netstat.py-                s_name,
+research/cowrie/src/cowrie/commands/netstat.py-                s_port,
+--
+research/cowrie/src/cowrie/commands/netstat.py:        if self.show_listen or self.show_all:

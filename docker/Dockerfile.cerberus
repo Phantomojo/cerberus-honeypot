@@ -1,0 +1,11 @@
+FROM cowrie/cowrie:latest
+
+# Copy Cerberus custom command handlers
+COPY services/cowrie/custom-commands/cerberus_loader.py /cowrie/cowrie-git/src/cowrie/commands/
+COPY services/cowrie/custom-commands/docker.py /cowrie/cowrie-git/src/cowrie/commands/
+COPY services/cowrie/custom-commands/systemctl.py /cowrie/cowrie-git/src/cowrie/commands/
+COPY services/cowrie/custom-commands/route.py /cowrie/cowrie-git/src/cowrie/commands/
+
+# Label for identification
+LABEL maintainer="CERBERUS Project"
+LABEL description="Cowrie honeypot with Cerberus morphing integration"

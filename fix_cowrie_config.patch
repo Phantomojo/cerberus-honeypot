@@ -1,0 +1,15 @@
+The Cowrie config needs to include "ssh_version_string" field in the [shell] section.
+
+Current code has:
+    "version = %s\n"
+
+Should also include in the [shell] section:
+    "ssh_version_string = %s\n"
+
+This is at line ~294 in src/morph/morph.c, in the [shell] section configuration.
+
+To fix: Add after the "hostname = %s\n" line:
+        "ssh_version_string = %s\n"
+
+And update the snprintf arguments to include:
+        profile->ssh_banner,

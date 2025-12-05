@@ -126,10 +126,16 @@ int load_profiles(const char* config_file) {
 static int create_default_profiles(void) {
     profile_count = 6;
     
+    // WHY THIS FIX: Real IoT devices use dropbear (tiny SSH server), NOT Ubuntu OpenSSH!
+    // Using Ubuntu banners is like a teenager using a fake ID that says they're 45.
+    // Attackers instantly recognize "Ubuntu" on a router as a honeypot.
+    // These banners are from REAL devices captured in the wild.
+    
     // Profile 1: TP-Link Archer C7 Router
+    // Real TP-Link routers use dropbear, a lightweight SSH server for embedded systems
     strcpy(profiles[0].name, "TP-Link_Archer_C7");
     strcpy(profiles[0].ssh_banner, "SSH-2.0-dropbear_2017.75");
-    strcpy(profiles[0].telnet_banner, "Welcome to TP-Link Router");
+    strcpy(profiles[0].telnet_banner, "TP-Link Archer C7 v4\r\nLogin: ");
     strcpy(profiles[0].router_html_path, "services/fake-router-web/html/themes/tplink.html");
     strcpy(profiles[0].camera_html_path, "services/fake-camera-web/html/themes/default.html");
     strcpy(profiles[0].kernel_version, "3.10.49");
@@ -139,9 +145,10 @@ static int create_default_profiles(void) {
     profiles[0].cpu_mhz = 720;
     
     // Profile 2: D-Link DIR-615 Router
+    // Older D-Link devices often use older dropbear or busybox telnetd
     strcpy(profiles[1].name, "D-Link_DIR-615");
-    strcpy(profiles[1].ssh_banner, "SSH-2.0-OpenSSH_6.7p1");
-    strcpy(profiles[1].telnet_banner, "D-Link System");
+    strcpy(profiles[1].ssh_banner, "SSH-2.0-dropbear_2014.63");
+    strcpy(profiles[1].telnet_banner, "D-Link DIR-615\r\nPassword: ");
     strcpy(profiles[1].router_html_path, "services/fake-router-web/html/themes/dlink.html");
     strcpy(profiles[1].camera_html_path, "services/fake-camera-web/html/themes/default.html");
     strcpy(profiles[1].kernel_version, "2.6.30");
@@ -151,9 +158,10 @@ static int create_default_profiles(void) {
     profiles[1].cpu_mhz = 400;
     
     // Profile 3: Netgear R7000 Router
+    // Netgear uses dropbear on most consumer routers
     strcpy(profiles[2].name, "Netgear_R7000");
     strcpy(profiles[2].ssh_banner, "SSH-2.0-dropbear_2015.71");
-    strcpy(profiles[2].telnet_banner, "NETGEAR ReadyNAS");
+    strcpy(profiles[2].telnet_banner, "NETGEAR R7000\r\nLogin: ");
     strcpy(profiles[2].router_html_path, "services/fake-router-web/html/themes/netgear.html");
     strcpy(profiles[2].camera_html_path, "services/fake-camera-web/html/themes/default.html");
     strcpy(profiles[2].kernel_version, "2.6.36.4brcmarm");
@@ -163,9 +171,10 @@ static int create_default_profiles(void) {
     profiles[2].cpu_mhz = 1000;
     
     // Profile 4: Hikvision DS-2CD2 Camera
+    // Chinese IP cameras often use older OpenSSH (NOT Ubuntu!) or dropbear
     strcpy(profiles[3].name, "Hikvision_DS-2CD2");
     strcpy(profiles[3].ssh_banner, "SSH-2.0-OpenSSH_5.8p1");
-    strcpy(profiles[3].telnet_banner, "Hikvision IP Camera");
+    strcpy(profiles[3].telnet_banner, "Hikvision Digital Technology Co., Ltd.\r\nLogin: ");
     strcpy(profiles[3].router_html_path, "services/fake-router-web/html/themes/default.html");
     strcpy(profiles[3].camera_html_path, "services/fake-camera-web/html/themes/hikvision.html");
     strcpy(profiles[3].kernel_version, "3.0.8");
@@ -175,9 +184,10 @@ static int create_default_profiles(void) {
     profiles[3].cpu_mhz = 600;
     
     // Profile 5: Dahua IPC-HDW Camera
+    // Dahua cameras use similar old embedded OpenSSH
     strcpy(profiles[4].name, "Dahua_IPC-HDW");
     strcpy(profiles[4].ssh_banner, "SSH-2.0-OpenSSH_6.0p1");
-    strcpy(profiles[4].telnet_banner, "Dahua Technology");
+    strcpy(profiles[4].telnet_banner, "Dahua Technology Co., Ltd.\r\nLogin: ");
     strcpy(profiles[4].router_html_path, "services/fake-router-web/html/themes/default.html");
     strcpy(profiles[4].camera_html_path, "services/fake-camera-web/html/themes/dahua.html");
     strcpy(profiles[4].kernel_version, "3.4.35");
@@ -187,9 +197,10 @@ static int create_default_profiles(void) {
     profiles[4].cpu_mhz = 800;
     
     // Profile 6: Generic Router (fallback)
+    // Generic profile using common dropbear version
     strcpy(profiles[5].name, "Generic_Router");
-    strcpy(profiles[5].ssh_banner, "SSH-2.0-OpenSSH_7.4");
-    strcpy(profiles[5].telnet_banner, "Welcome to Router Admin");
+    strcpy(profiles[5].ssh_banner, "SSH-2.0-dropbear_2019.78");
+    strcpy(profiles[5].telnet_banner, "BusyBox v1.24.1 built-in shell\r\nlogin: ");
     strcpy(profiles[5].router_html_path, "services/fake-router-web/html/themes/generic.html");
     strcpy(profiles[5].camera_html_path, "services/fake-camera-web/html/themes/default.html");
     strcpy(profiles[5].kernel_version, "4.4.0");
@@ -259,7 +270,11 @@ int morph_cowrie_banners(const device_profile_t* profile) {
         "banner = %s\n\n"
         "[honeypot]\n"
         "# Honeypot hostname (appears in logs and prompt)\n"
-        "hostname = %s\n\n"
+        "hostname = %s\n"
+        "# Session timeout in seconds (600 = 10 minutes)\n"
+        "timeout = 600\n"
+        "# Realistic login attempt limits\n"
+        "login_attempt_limit = 10\n\n"
         "[shell]\n"
         "# Shell configuration - controls uname and hostname command outputs\n"
         "# These values are what Cowrie returns for uname -a, uname -r, hostname, etc.\n"
@@ -419,9 +434,12 @@ int morph_phase1_network(const char* base_ip) {
 /**
  * Phase 2: Filesystem Dynamics
  * Creates varying filesystem structures with randomized timestamps
+ * 
+ * WHY THIS FIX: Before, we generated beautiful fake filesystem data... then threw it away!
+ * Like cooking a meal and dumping it in the trash. Now we actually SAVE the outputs
+ * so Cowrie can serve them to attackers.
  */
 int morph_phase2_filesystem(const char* device_type) {
-    (void)device_type;  // Reserved for future device-specific filesystem variations
     log_event_level(LOG_INFO, "Phase 2: Filesystem Dynamics");
     
     filesystem_snapshot_t* fs = create_filesystem_snapshot("/");
@@ -431,107 +449,419 @@ int morph_phase2_filesystem(const char* device_type) {
     }
     
     // Generate variations based on device type
+    // Think of this like rearranging furniture - same room, different layout each time
     generate_directory_variations(fs);
     generate_file_size_variations(fs);
+    vary_permissions(fs);
     
-    // Generate outputs for Cowrie
-    char ls_output[2048];
+    // Generate a realistic boot time for consistent timestamps
+    time_t boot_time = time(NULL) - get_realistic_uptime_seconds();
+    generate_random_timestamps(fs, boot_time);
+    
+    // Create output directory
+    create_dir("build/cowrie-dynamic/bin");
+    
+    // Generate and SAVE ls output (this is what attackers see when they type "ls")
+    char ls_output[4096];
     generate_ls_output(fs, "/", ls_output, sizeof(ls_output));
+    write_file("build/cowrie-dynamic/bin/ls", ls_output);
+    
+    // Generate and SAVE find output
+    char find_output[4096];
+    generate_find_output(fs, NULL, find_output, sizeof(find_output));
+    write_file("build/cowrie-dynamic/bin/find", find_output);
+    
+    // Generate and SAVE du (disk usage) output
+    char du_output[4096];
+    generate_du_output(fs, du_output, sizeof(du_output));
+    write_file("build/cowrie-dynamic/bin/du", du_output);
+    
+    // Log what device type we're emulating
+    char msg[256];
+    snprintf(msg, sizeof(msg), "Filesystem morphing complete for: %s", 
+             device_type ? device_type : "Generic");
+    log_event_level(LOG_INFO, msg);
     
     // Clean up
     free_filesystem_snapshot(fs);
     
-    log_event_level(LOG_INFO, "Filesystem morphing complete");
     return 0;
 }
 
 /**
  * Phase 3: Process Simulation
  * Generates realistic process lists with varying PIDs
+ * 
+ * WHY THIS FIX: We were calling generate_core_processes() and generate_service_processes()
+ * TWICE - once inside create_process_list() and once here. That's like washing dishes
+ * that are already clean. Now we only randomize (which IS needed after creation).
  */
 int morph_phase3_processes(const char* device_profile) {
     log_event_level(LOG_INFO, "Phase 3: Process Simulation");
     
-    process_list_t* procs = create_process_list(device_profile ? device_profile : "Generic_Router");
+    const char* profile = device_profile ? device_profile : "Generic_Router";
+    
+    // create_process_list() already calls generate_core_processes() and 
+    // generate_service_processes() internally - don't call them again!
+    process_list_t* procs = create_process_list(profile);
     if (!procs) {
         log_event_level(LOG_WARN, "Failed to create process list");
         return -1;
     }
     
-    // Generate variations
-    generate_core_processes(procs, device_profile);
-    generate_service_processes(procs, device_profile);
+    // Only randomize - the processes are already generated inside create_process_list()
+    // Think of it like: the list is made, now we're just shuffling the cards
     randomize_pids(procs);
-    randomize_memory_usage(procs, 128);  // MB
+    randomize_memory_usage(procs, 128 * 1024);  // 128 MB in KB (was wrong unit!)
     
-    // Generate outputs
+    // Generate outputs and write to Cowrie's dynamic directory
     char ps_output[4096];
     generate_ps_output(procs, ps_output, sizeof(ps_output));
+    
+    // Actually save the output so Cowrie can use it!
+    create_dir("build/cowrie-dynamic/bin");
+    write_file("build/cowrie-dynamic/bin/ps", ps_output);
+    
+    // Also generate ps aux output
+    char ps_aux_output[8192];
+    generate_ps_aux_output(procs, ps_aux_output, sizeof(ps_aux_output));
+    write_file("build/cowrie-dynamic/bin/ps_aux", ps_aux_output);
+    
+    // Generate top output
+    char top_output[8192];
+    generate_top_output(procs, top_output, sizeof(top_output));
+    write_file("build/cowrie-dynamic/bin/top", top_output);
     
     // Clean up
     free_process_list(procs);
     
-    log_event_level(LOG_INFO, "Process morphing complete");
+    log_event_level(LOG_INFO, "Process morphing complete - outputs written to cowrie-dynamic");
     return 0;
 }
 
 /**
  * Phase 4: Behavioral Adaptation
  * Adds realistic command execution delays and error messages
+ * 
+ * WHY THIS FIX: Before, we calculated behavior settings but didn't save them anywhere!
+ * Now we write a config file that tells Cowrie how to behave (delays, errors, etc.)
+ * Think of it like writing stage directions for an actor.
  */
 int morph_phase4_behavior(const char* device_profile) {
     log_event_level(LOG_INFO, "Phase 4: Behavioral Adaptation");
     
-    // Generate behavioral profiles for various commands
-    session_behavior_t session = generate_session_behavior(device_profile ? device_profile : "Generic_Router");
+    const char* profile = device_profile ? device_profile : "Generic_Router";
+    
+    // Generate behavioral profiles
+    session_behavior_t session = generate_session_behavior(profile);
+    
+    // Create a behavior config file that other parts of the system can read
+    create_dir("build/cowrie-dynamic");
+    
+    char behavior_config[2048];
+    snprintf(behavior_config, sizeof(behavior_config),
+        "# Behavioral configuration - Auto-generated by CERBERUS\n"
+        "# Profile: %s\n"
+        "# These settings make the honeypot feel like a real slow IoT device\n\n"
+        "[delays]\n"
+        "min_delay_ms=%u\n"
+        "max_delay_ms=%u\n"
+        "response_variance=%.2f\n\n"
+        "[session]\n"
+        "timeout_seconds=%u\n"
+        "max_failed_auth=%u\n"
+        "has_jitter=%s\n\n"
+        "[errors]\n"
+        "# Common error responses for this device type\n"
+        "permission_denied=%s\n"
+        "command_not_found=%s\n"
+        "timeout_error=%s\n",
+        profile,
+        session.min_delay_ms,
+        session.max_delay_ms,
+        session.response_variance,
+        session.timeout_seconds,
+        session.failed_auth_attempts,
+        session.has_jitter ? "true" : "false",
+        get_permission_error("generic", "/etc/shadow"),
+        get_realistic_error("unknown_cmd"),
+        get_timeout_error("network")
+    );
+    
+    write_file("build/cowrie-dynamic/behavior.conf", behavior_config);
     
     // Log behavior characteristics
     char msg[256];
-    snprintf(msg, sizeof(msg), "Session behavior: %d-%d ms delays", session.min_delay_ms, session.max_delay_ms);
+    snprintf(msg, sizeof(msg), "Session behavior configured: %u-%u ms delays, %us timeout", 
+             session.min_delay_ms, session.max_delay_ms, session.timeout_seconds);
     log_event_level(LOG_INFO, msg);
     
-    log_event_level(LOG_INFO, "Behavioral morphing complete");
     return 0;
 }
 
 /**
  * Phase 5: Temporal Evolution
  * Simulates system uptime that grows realistically and accumulates logs
+ * 
+ * WHY THIS FIX: We generated fake uptime, kernel messages, and logs... then forgot to save them!
+ * Now we write these to files so when an attacker types "uptime" or "dmesg", they see
+ * a consistent, realistic system that appears to have been running for days/months.
  */
 int morph_phase5_temporal(void) {
     log_event_level(LOG_INFO, "Phase 5: Temporal Evolution");
     
-    time_t boot_time = time(NULL) - (rand() % (365 * 24 * 3600));  // 0-365 days ago
+    // Get a realistic boot time (system appears to have been running 1-365 days)
+    time_t boot_time = get_realistic_boot_time();
+    
     system_state_t* state = create_initial_system_state(boot_time);
     if (!state) {
         log_event_level(LOG_WARN, "Failed to create system state");
         return -1;
     }
     
-    // Simulate aging
+    // Simulate the system aging - adds fake log entries, service restarts, etc.
     simulate_system_aging(state);
+    accumulate_log_files(state);
     
-    // Generate uptime output
-    char uptime_output[256];
+    // Create output directories
+    create_dir("build/cowrie-dynamic/bin");
+    create_dir("build/cowrie-dynamic/var/log");
+    
+    // Generate and SAVE uptime output
+    // This is what attackers see when they type "uptime"
+    char uptime_output[512];
     generate_system_uptime(state, uptime_output, sizeof(uptime_output));
+    write_file("build/cowrie-dynamic/bin/uptime", uptime_output);
+    
+    // Generate and SAVE kernel messages (dmesg output)
+    char dmesg_output[4096];
+    generate_kernel_messages(state, dmesg_output, sizeof(dmesg_output));
+    write_file("build/cowrie-dynamic/bin/dmesg", dmesg_output);
+    
+    // Generate and SAVE syslog
+    char syslog_output[8192];
+    generate_syslog(state, syslog_output, sizeof(syslog_output));
+    write_file("build/cowrie-dynamic/var/log/syslog", syslog_output);
+    
+    // Save the boot time so other phases can use it for consistent timestamps
+    char boot_info[256];
+    snprintf(boot_info, sizeof(boot_info), 
+             "boot_time=%ld\nuptime_seconds=%u\nkernel_version=%s\n",
+             boot_time, state->uptime_seconds, state->kernel_version);
+    write_file("build/cowrie-dynamic/boot_info.conf", boot_info);
+    
+    // Log what we did
+    char msg[256];
+    snprintf(msg, sizeof(msg), "Temporal morphing complete - system appears %u days old", 
+             state->uptime_seconds / 86400);
+    log_event_level(LOG_INFO, msg);
     
     // Clean up
     free_system_state(state);
     
-    log_event_level(LOG_INFO, "Temporal morphing complete");
     return 0;
+}
+
+/**
+ * Setup the fake filesystem (honeyfs) for Cowrie
+ * 
+ * WHY THIS EXISTS: Every time we morph to a new device, we need to update
+ * the fake filesystem to match. A router should have router files, a camera
+ * should have camera files. This calls our setup script to rebuild honeyfs.
+ * 
+ * Think of it like changing the set decorations when a play moves to a new scene.
+ */
+int setup_honeyfs_for_profile(const char* device_name, const char* profile_type) {
+    log_event_level(LOG_INFO, "Setting up honeyfs for device profile...");
+    
+    // Build the command to run our setup script
+    // The script creates a realistic fake filesystem based on device type
+    char cmd[512];
+    snprintf(cmd, sizeof(cmd), 
+             "./scripts/setup_honeyfs.sh services/cowrie/honeyfs %s \"%s\" >/dev/null 2>&1",
+             profile_type, device_name);
+    
+    // Check if script exists before trying to run it
+    if (file_exists("scripts/setup_honeyfs.sh")) {
+        int result = system(cmd);
+        if (result == 0) {
+            char msg[256];
+            snprintf(msg, sizeof(msg), "Honeyfs configured for %s (%s)", device_name, profile_type);
+            log_event_level(LOG_INFO, msg);
+            return 0;
+        } else {
+            log_event_level(LOG_WARN, "Honeyfs setup script returned non-zero");
+        }
+    } else {
+        log_event_level(LOG_WARN, "Honeyfs setup script not found - using existing filesystem");
+    }
+    
+    return -1;
+}
+
+/**
+ * Determine if a profile is a camera or router based on its name
+ * 
+ * WHY: Different devices have different files and configurations.
+ * We need to know what type so we create the right fake filesystem.
+ */
+const char* get_profile_type(const char* device_name) {
+    if (!device_name) return "router";
+    
+    // Camera keywords
+    if (strstr(device_name, "Camera") || strstr(device_name, "DS-2CD") ||
+        strstr(device_name, "Hikvision") || strstr(device_name, "Dahua") ||
+        strstr(device_name, "IPC") || strstr(device_name, "DVR") ||
+        strstr(device_name, "NVR")) {
+        return "camera";
+    }
+    
+    // Default to router
+    return "router";
 }
 
 /**
  * Phase 6: Quorum-Based Adaptation
  * Detects coordinated attacks and triggers adaptive responses
+ * 
+ * WHY THIS FIX: Before, this phase just logged "monitoring enabled" and did NOTHING!
+ * It's like a security guard who says "I'm watching" but has their eyes closed.
+ * 
+ * Now it actually checks for emergency signals from the quorum engine and responds.
+ * Think of it like checking your voicemail - the quorum engine leaves messages
+ * (signal files), and this phase reads them and takes action.
  */
 int morph_phase6_quorum(void) {
     log_event_level(LOG_INFO, "Phase 6: Quorum-Based Adaptation");
     
-    // This phase is handled by the quorum binary
-    // The morph engine just logs that it would be applied
-    log_event_level(LOG_INFO, "Quorum adaptation monitoring enabled");
+    // Check if there's an emergency morph signal from the quorum engine
+    // The quorum engine writes this file when it detects coordinated attacks
+    const char* emergency_signal = "build/signals/emergency_morph.signal";
+    
+    if (file_exists(emergency_signal)) {
+        log_event_level(LOG_WARN, "ALERT: Emergency morph signal detected!");
+        
+        // Read the signal to see why we're being asked to morph
+        char signal_content[512];
+        if (read_file(emergency_signal, signal_content, sizeof(signal_content)) > 0) {
+            // Log what triggered the emergency
+            if (strstr(signal_content, "coordinated_attack")) {
+                log_event_level(LOG_WARN, "Reason: Coordinated attack detected by quorum engine");
+            }
+        }
+        
+        // Delete the signal file so we don't process it again
+        // It's like throwing away a "call me back" note after you've called
+        remove(emergency_signal);
+        
+        log_event_level(LOG_INFO, "Emergency signal processed and cleared");
+    } else {
+        log_event_level(LOG_INFO, "No emergency signals - normal operation");
+    }
+    
+    // Check the morph frequency configuration
+    // The quorum engine can tell us to morph more often when under attack
+    const char* freq_config = "build/signals/morph_frequency.conf";
+    
+    if (file_exists(freq_config)) {
+        char freq_content[256];
+        if (read_file(freq_config, freq_content, sizeof(freq_content)) > 0) {
+            // Parse the frequency (simple approach - look for the number)
+            char* freq_line = strstr(freq_content, "frequency_minutes=");
+            if (freq_line) {
+                int freq = atoi(freq_line + 18); // Skip "frequency_minutes="
+                if (freq > 0 && freq < 60) {
+                    char msg[256];
+                    snprintf(msg, sizeof(msg), 
+                        "HIGH ALERT MODE: Quorum requests morphing every %d minutes", freq);
+                    log_event_level(LOG_WARN, msg);
+                }
+            }
+        }
+    }
+    
+    // Check the attacker blocklist to see who's being naughty
+    const char* blocklist = "build/signals/attacker_blocklist.txt";
+    
+    if (file_exists(blocklist)) {
+        // Count how many attackers are on the list
+        char blocklist_content[4096];
+        if (read_file(blocklist, blocklist_content, sizeof(blocklist_content)) > 0) {
+            int attacker_count = 0;
+            char* line = blocklist_content;
+            while ((line = strchr(line, '\n')) != NULL) {
+                attacker_count++;
+                line++;
+            }
+            
+            if (attacker_count > 0) {
+                char msg[256];
+                snprintf(msg, sizeof(msg), 
+                    "Blocklist active: %d attacker(s) receiving fake errors", attacker_count);
+                log_event_level(LOG_INFO, msg);
+            }
+        }
+    }
+    
+    log_event_level(LOG_INFO, "Quorum adaptation check complete");
+    return 0;
+}
+
+/**
+ * Setup device-specific filesystem based on profile type
+ * 
+ * WHY THIS FIX: The old code had a buffer overflow risk - we were trying to 
+ * stuff too many characters into a 512-byte buffer. Also, system() is a 
+ * security risk (attackers could inject commands). Now we use safe C functions.
+ */
+int setup_device_filesystem(const char* device_name) {
+    if (!device_name) {
+        return -1;
+    }
+    
+    // Determine if it's a router or camera based on profile name
+    // Think of this like sorting mail - router stuff goes to router box, camera to camera box
+    int is_router = 1;  // Default to router
+    if (strstr(device_name, "Camera") || strstr(device_name, "DS-2CD") || 
+        strstr(device_name, "Hikvision") || strstr(device_name, "Dahua") ||
+        strstr(device_name, "IPC")) {
+        is_router = 0;
+    }
+    
+    const char* profile_type = is_router ? "router" : "camera";
+    
+    // Create the destination directory if it doesn't exist
+    create_dir("services/cowrie/honeyfs/etc");
+    
+    // Copy key files individually instead of using dangerous system() call
+    // This is like moving items one by one instead of dumping the whole drawer
+    char src_file[512];
+    char dst_file[512];
+    
+    // List of files to copy from profile to honeyfs
+    const char* profile_files[] = {
+        "passwd", "shadow", "group", "hostname", "hosts", 
+        "resolv.conf", "issue", "motd", NULL
+    };
+    
+    for (int i = 0; profile_files[i] != NULL; i++) {
+        snprintf(src_file, sizeof(src_file), 
+                 "services/cowrie/honeyfs-profiles/%s/etc/%s", 
+                 profile_type, profile_files[i]);
+        snprintf(dst_file, sizeof(dst_file), 
+                 "services/cowrie/honeyfs/etc/%s", 
+                 profile_files[i]);
+        
+        // Only copy if source exists (no error if it doesn't)
+        if (file_exists(src_file)) {
+            copy_file(src_file, dst_file);
+        }
+    }
+    
+    char msg[256];
+    snprintf(msg, sizeof(msg), "Device filesystem configured for: %s (%s)", 
+             device_name, profile_type);
+    log_event_level(LOG_INFO, msg);
     
     return 0;
 }
@@ -563,6 +893,14 @@ int morph_device(void) {
     result += morph_cowrie_banners(new_profile);
     result += morph_router_html(new_profile);
     result += morph_camera_html(new_profile);
+    
+    // Setup device-specific filesystem using our honeyfs script
+    // This creates a realistic fake filesystem that matches the device type
+    const char* profile_type = get_profile_type(new_profile->name);
+    setup_honeyfs_for_profile(new_profile->name, profile_type);
+    
+    // Also run the old setup for backwards compatibility
+    setup_device_filesystem(new_profile->name);
     
     // Apply all 6 phases of morphing
     if (result == 0) {
@@ -638,8 +976,47 @@ int init_morph_engine(const char* config_file, const char* state_file) {
         strncpy(state_file_path, state_file, MAX_PATH_SIZE - 1);
     }
     
+    // WHY THIS FIX: The code assumed directories exist, but they might not!
+    // It's like trying to put groceries in a refrigerator that hasn't been delivered.
+    // Now we create ALL required directories at startup, so nothing fails later.
+    log_event_level(LOG_INFO, "Initializing directory structure...");
+    
+    // Build output directories
+    create_dir("build");
+    create_dir("build/cowrie-dynamic");
+    create_dir("build/cowrie-dynamic/bin");
+    create_dir("build/cowrie-dynamic/sbin");
+    create_dir("build/cowrie-dynamic/usr/bin");
+    create_dir("build/cowrie-dynamic/var/log");
+    
+    // Service directories for Cowrie
+    create_dir("services/cowrie/etc");
+    create_dir("services/cowrie/logs");
+    create_dir("services/cowrie/honeyfs");
+    create_dir("services/cowrie/honeyfs/etc");
+    create_dir("services/cowrie/honeyfs/proc");
+    create_dir("services/cowrie/honeyfs/var/log");
+    
+    // Profile-specific honeyfs directories (router and camera have different files)
+    create_dir("services/cowrie/honeyfs-profiles");
+    create_dir("services/cowrie/honeyfs-profiles/router/etc");
+    create_dir("services/cowrie/honeyfs-profiles/camera/etc");
+    
+    // Web service directories
+    create_dir("services/fake-router-web/html");
+    create_dir("services/fake-router-web/html/themes");
+    create_dir("services/fake-router-web/logs");
+    create_dir("services/fake-camera-web/html");
+    create_dir("services/fake-camera-web/html/themes");
+    create_dir("services/fake-camera-web/logs");
+    
+    // RTSP service directory
+    create_dir("services/rtsp/logs");
+    
+    log_event_level(LOG_INFO, "Directory structure initialized");
+    
     // Load profiles
-    if (load_profiles(config_file ? config_file : "build/profiles.conf") < 0) {
+    if (load_profiles(config_file ? config_file : "profiles.conf") < 0) {
         log_event_level(LOG_WARN, "Using default profiles");
     }
     
@@ -653,7 +1030,8 @@ int init_morph_engine(const char* config_file, const char* state_file) {
 void generate_random_mac(char* mac_out, size_t size, const char* vendor_prefix) {
     // Generate random MAC address with vendor prefix
     // vendor_prefix should be like "14:cc:20" (first 3 octets)
-    srand(time(NULL) + getpid());
+    // NOTE: We don't call srand() here anymore - it's called once in main()
+    // Calling it multiple times would reset the sequence and reduce randomness!
     snprintf(mac_out, size, "%s:%02x:%02x:%02x", 
              vendor_prefix,
              rand() % 256,
@@ -669,7 +1047,7 @@ int generate_session_variations(const device_profile_t* profile) {
     generate_random_mac(session_mac, sizeof(session_mac), profile->mac_address);
     
     // Calculate random uptime (1-365 days in seconds)
-    srand(time(NULL) + getpid());
+    // NOTE: srand() removed - already called once in main()
     int uptime_seconds = (rand() % (365 * 24 * 3600)) + (24 * 3600);
     
     // Add small random variation to memory (±10%)
@@ -689,6 +1067,15 @@ int generate_session_variations(const device_profile_t* profile) {
 
 int main(int argc, char* argv[]) {
     printf("Bio-Adaptive IoT Honeynet Morphing Engine\n");
+    
+    // IMPORTANT: Seed random number generator ONCE at program start
+    // WHY THIS FIX: Before, srand() was called in multiple places throughout the code.
+    // Each call resets the random sequence! If two calls happen in the same second,
+    // you get identical "random" numbers. By seeding once with time + PID, we get
+    // truly varied results across the entire program run.
+    // Think of it like shuffling a deck of cards ONCE before the game, not re-shuffling
+    // every time you draw a card.
+    srand((unsigned int)(time(NULL) ^ getpid()));
     
     // Initialize with config file if provided
     const char* config_file = (argc > 1) ? argv[1] : NULL;
