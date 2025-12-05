@@ -43,30 +43,30 @@ print_error() {
 # Check dependencies
 check_dependencies() {
     echo "Checking dependencies..."
-    
+
     local missing=0
-    
+
     if ! command_exists gcc; then
         print_error "GCC not found"
         missing=1
     else
         print_status "GCC found: $(gcc --version | head -n1)"
     fi
-    
+
     if ! command_exists make; then
         print_error "Make not found"
         missing=1
     else
         print_status "Make found"
     fi
-    
+
     if ! command_exists docker; then
         print_error "Docker not found"
         missing=1
     else
         print_status "Docker found: $(docker --version)"
     fi
-    
+
     if command_exists docker; then
         if docker compose version >/dev/null 2>&1; then
             print_status "Docker Compose found: $(docker compose version)"
@@ -75,34 +75,34 @@ check_dependencies() {
             missing=1
         fi
     fi
-    
+
     if ! command_exists python3; then
         print_error "Python 3 not found"
         missing=1
     else
         print_status "Python 3 found: $(python3 --version)"
     fi
-    
+
     if ! command_exists nginx; then
         print_warning "nginx not found (optional, can use Docker)"
     else
         print_status "nginx found: $(nginx -v 2>&1 | head -n1)"
     fi
-    
+
     if [ $missing -eq 1 ]; then
         echo ""
         print_warning "Some dependencies are missing. Install them and run this script again."
         echo "See DEPENDENCIES.md for installation instructions."
         return 1
     fi
-    
+
     return 0
 }
 
 # Install dependencies based on OS
 install_dependencies() {
     detect_os
-    
+
     echo "Detected OS: $OS"
     echo ""
     echo "This script will install system dependencies."
@@ -112,7 +112,7 @@ install_dependencies() {
         echo "Skipping dependency installation."
         return
     fi
-    
+
     case $OS in
         ubuntu|debian)
             echo "Installing dependencies for Debian/Ubuntu..."
@@ -141,7 +141,7 @@ setup_python_env() {
     else
         print_status "Virtual environment already exists"
     fi
-    
+
     echo "Installing Python dependencies..."
     source venv/bin/activate
     pip install --upgrade pip
@@ -166,7 +166,7 @@ build_c_modules() {
 # Setup services directories
 setup_services() {
     echo "Setting up service directories..."
-    
+
     # Create necessary directories
     mkdir -p services/cowrie/{logs,data,etc}
     mkdir -p services/fake-router-web/{html,conf}
@@ -174,7 +174,7 @@ setup_services() {
     mkdir -p services/rtsp/{conf,media}
     mkdir -p logs
     mkdir -p build
-    
+
     print_status "Service directories created"
 }
 
@@ -184,13 +184,13 @@ main() {
     echo "  CERBERUS Honeynet Setup Script"
     echo "=========================================="
     echo ""
-    
+
     # Check if we should install dependencies
     if [ "$1" == "--install-deps" ]; then
         install_dependencies
         echo ""
     fi
-    
+
     # Check dependencies
     if ! check_dependencies; then
         echo ""
@@ -198,21 +198,21 @@ main() {
         echo "  ./setup.sh --install-deps"
         exit 1
     fi
-    
+
     echo ""
-    
+
     # Setup Python environment
     setup_python_env
     echo ""
-    
+
     # Setup services
     setup_services
     echo ""
-    
+
     # Build C modules
     build_c_modules
     echo ""
-    
+
     echo "=========================================="
     print_status "Setup complete!"
     echo "=========================================="
@@ -227,4 +227,3 @@ main() {
 
 # Run main function
 main "$@"
-

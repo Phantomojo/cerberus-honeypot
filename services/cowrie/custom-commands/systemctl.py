@@ -12,7 +12,7 @@ class Command_systemctl(HoneyPotCommand):
     """
     Systemctl command that reads output from Cerberus morphing engine
     """
-    
+
     def call(self):
         # Try to load from Cerberus first
         try:
@@ -25,7 +25,7 @@ class Command_systemctl(HoneyPotCommand):
                 return
         except Exception:
             pass
-        
+
         # Fallback: basic systemctl output
         if not self.args:
             self.write("  UNIT                     LOAD   ACTIVE SUB    DESCRIPTION\n")

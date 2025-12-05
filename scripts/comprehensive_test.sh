@@ -38,7 +38,7 @@ cat > test_input_validation.c << 'EOF'
 // Simple validation tests
 int test_ip_validation() {
     printf("Testing IP validation...\n");
-    
+
     // Test valid IPs
     const char* valid_ips[] = {"192.168.1.1", "10.0.0.1", "172.16.0.1"};
     for (int i = 0; i < 3; i++) {
@@ -55,7 +55,7 @@ int test_ip_validation() {
             printf("FAIL\n");
         }
     }
-    
+
     // Test invalid IPs
     const char* invalid_ips[] = {"999.999.999.999", "192.168.1", "abc.def.ghi.jkl"};
     for (int i = 0; i < 3; i++) {
@@ -71,13 +71,13 @@ int test_ip_validation() {
             printf("PASS (correctly rejected)\n");
         }
     }
-    
+
     return 0;
 }
 
 int test_filename_validation() {
     printf("Testing filename validation...\n");
-    
+
     // Test safe filenames
     const char* safe_files[] = {"config.txt", "data.log", "backup.tar.gz"};
     for (int i = 0; i < 3; i++) {
@@ -92,7 +92,7 @@ int test_filename_validation() {
             printf("FAIL\n");
         }
     }
-    
+
     // Test dangerous filenames
     const char* dangerous_files[] = {"../../../etc/passwd", "file;rm -rf /", "file`whoami`"};
     for (int i = 0; i < 3; i++) {
@@ -106,18 +106,18 @@ int test_filename_validation() {
             printf("FAIL (should be rejected)\n");
         }
     }
-    
+
     return 0;
 }
 
 int test_buffer_overflow() {
     printf("Testing buffer overflow protection...\n");
-    
+
     char small_buffer[10];
     char large_input[50];
     memset(large_input, 'A', 49);
     large_input[49] = '\0';
-    
+
     // Test safe copy
     if (strlen(large_input) < sizeof(small_buffer)) {
         strcpy(small_buffer, large_input);
@@ -125,18 +125,18 @@ int test_buffer_overflow() {
     } else {
         printf("  Safe copy: FAIL (input too large)\n");
     }
-    
+
     return 0;
 }
 
 int main() {
     printf("=== Input Validation Tests ===\n");
-    
+
     int result = 0;
     result += test_ip_validation();
     result += test_filename_validation();
     result += test_buffer_overflow();
-    
+
     printf("\nInput Validation Tests Complete\n");
     return result;
 }

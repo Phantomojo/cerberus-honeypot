@@ -39,7 +39,7 @@ echo "3. Running AddressSanitizer tests..."
 if [ -f "./build/morph" ]; then
     echo "   Testing morph engine with ASAN..."
     timeout 10s bash -c "ASAN_OPTIONS=detect_stack_use_after_return=1:strict_string_checks=1 ./build/morph profiles.conf" 2>asan_output.log
-    
+
     if grep -q "ERROR: AddressSanitizer" asan_output.log; then
         echo "   ✗ AddressSanitizer detected issues:"
         grep "ERROR: AddressSanitizer" asan_output.log | head -3
@@ -56,7 +56,7 @@ echo "4. Running Valgrind memory leak detection..."
 if [ -f "./build/morph" ]; then
     echo "   Testing morph engine with Valgrind..."
     timeout 30s bash -c "valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --error-exitcode=1 ./build/morph profiles.conf" 2>valgrind_output.log
-    
+
     if grep -q "definitely lost:" valgrind_output.log; then
         echo "   ✗ Valgrind detected memory leaks:"
         grep "definitely lost:" valgrind_output.log
@@ -76,7 +76,7 @@ echo "5. Running UndefinedBehaviorSanitizer tests..."
 if [ -f "./build/morph" ]; then
     echo "   Testing morph engine with UBSAN..."
     timeout 10s bash -c "UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 ./build/morph profiles.conf" 2>ubsan_output.log
-    
+
     if grep -q "runtime error:" ubsan_output.log; then
         echo "   ✗ UndefinedBehaviorSanitizer detected issues:"
         grep "runtime error:" ubsan_output.log | head -3
@@ -98,22 +98,22 @@ cat > test_memory_safety.c << 'EOF'
 
 int main() {
     printf("=== Memory Safety Test Program ===\n");
-    
+
     // Test 1: Buffer overflow detection
     printf("1. Testing buffer overflow protection...\n");
     char small_buffer[10];
     char large_input[50];
-    
+
     memset(large_input, 'A', 49);
     large_input[49] = '\0';
-    
+
     sec_result_t result = sec_safe_strcpy(small_buffer, large_input, sizeof(small_buffer));
     if (result == SEC_BUFFER_OVERFLOW) {
         printf("   ✓ Buffer overflow correctly detected\n");
     } else {
         printf("   ✗ Buffer overflow NOT detected\n");
     }
-    
+
     // Test 2: Memory allocation safety
     printf("2. Testing memory allocation safety...\n");
     char* ptr = malloc(100);
@@ -127,31 +127,31 @@ int main() {
         }
         free(ptr);
     }
-    
+
     // Test 3: String length validation
     printf("3. Testing string length validation...\n");
     char long_string[2000];
     memset(long_string, 'B', 1999);
     long_string[1999] = '\0';
-    
+
     result = sec_validate_string(long_string, 100, false);
     if (result == SEC_STRING_TOO_LONG) {
         printf("   ✓ Long string correctly rejected\n");
     } else {
         printf("   ✗ Long string NOT rejected\n");
     }
-    
+
     // Test 4: Safe arithmetic operations
     printf("4. Testing safe arithmetic operations...\n");
     size_t a = SIZE_MAX / 2;
     size_t b = SIZE_MAX / 2;
-    
+
     if (sec_is_safe_addition(a, b)) {
         printf("   ✗ Unsafe addition NOT detected\n");
     } else {
         printf("   ✓ Unsafe addition correctly detected\n");
     }
-    
+
     printf("=== Memory Safety Tests Complete ===\n");
     return 0;
 }

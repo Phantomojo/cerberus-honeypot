@@ -1,5 +1,6 @@
 #ifndef MORPH_H
 #define MORPH_H
+#include <stddef.h>
 
 #define MAX_PROFILES 10
 #define MAX_PROFILE_NAME 64
@@ -43,4 +44,3 @@ int generate_session_variations(const device_profile_t* profile);
 int init_morph_engine(const char* config_file, const char* state_file);
 
 #endif // MORPH_H
-

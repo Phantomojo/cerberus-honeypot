@@ -106,4 +106,3 @@ nginx -v
 1. Run the setup script: `./setup.sh`
 2. Build C modules: `make`
 3. Start services: `cd docker && docker compose up -d`
-

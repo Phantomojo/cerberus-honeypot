@@ -1,13 +1,13 @@
 /**
  * state_engine.h - The Brain of CERBERUS Honeypot
  * ============================================================================
- * 
+ *
  * THE RUBIK'S CUBE VISION:
  * ------------------------
  * This is the "single source of truth" for the entire fake system.
  * Instead of generating random files independently (which don't correlate),
  * we maintain ONE coherent system state, and ALL outputs derive from it.
- * 
+ *
  * EXAMPLE OF WHY THIS MATTERS:
  * ----------------------------
  * BAD (old approach):
@@ -16,7 +16,7 @@
  *   - /proc/meminfo says 50 processes worth of memory
  *   - `ps` shows only 12 processes
  *   → Attacker notices inconsistency = HONEYPOT DETECTED
- * 
+ *
  * GOOD (this approach):
  *   - SystemState says: uptime=45 days, processes=12, boot_time=Oct15
  *   - /proc/uptime → generated from state.uptime_seconds
@@ -24,7 +24,7 @@
  *   - /proc/meminfo → calculated from state.processes memory usage
  *   - `ps` → shows exactly state.processes
  *   → Everything correlates = BELIEVABLE SYSTEM
- * 
+ *
  * REACTIVE BEHAVIOR:
  * ------------------
  * When attacker does something, we update the state:
@@ -32,7 +32,7 @@
  *   - `rm /tmp/bar` → state_remove_file("/tmp/bar")
  *   - `kill 1234` → state_kill_process(1234)
  * Then next time they query, it reflects their actions!
- * 
+ *
  * MORPHING:
  * ---------
  * When we morph, we generate a NEW coherent state:
@@ -41,37 +41,37 @@
  *   - New file timestamps (all relative to new boot_time)
  *   - New network config (different IPs, MACs)
  * Everything changes together, staying internally consistent.
- * 
+ *
  * ============================================================================
  */
 
 #ifndef STATE_ENGINE_H
 #define STATE_ENGINE_H
 
-#include <stdint.h>
 #include <stdbool.h>
-#include <time.h>
+#include <stdint.h>
 #include <sys/types.h>
+#include <time.h>
 
 /* ============================================================================
  * CONFIGURATION LIMITS
  * ============================================================================ */
 
-#define MAX_STATE_PROCESSES     128     /* Max fake processes */
-#define MAX_STATE_FILES         512     /* Max tracked files */
-#define MAX_STATE_USERS         32      /* Max fake users */
-#define MAX_STATE_CONNECTIONS   64      /* Max fake network connections */
-#define MAX_STATE_LOG_ENTRIES   256     /* Max log entries in memory */
-#define MAX_STATE_INTERFACES    8       /* Max network interfaces */
-#define MAX_STATE_MOUNTS        16      /* Max mounted filesystems */
-#define MAX_STATE_ENV_VARS      64      /* Max environment variables */
+#define MAX_STATE_PROCESSES 128   /* Max fake processes */
+#define MAX_STATE_FILES 512       /* Max tracked files */
+#define MAX_STATE_USERS 32        /* Max fake users */
+#define MAX_STATE_CONNECTIONS 64  /* Max fake network connections */
+#define MAX_STATE_LOG_ENTRIES 256 /* Max log entries in memory */
+#define MAX_STATE_INTERFACES 8    /* Max network interfaces */
+#define MAX_STATE_MOUNTS 16       /* Max mounted filesystems */
+#define MAX_STATE_ENV_VARS 64     /* Max environment variables */
 
-#define MAX_PATH_LENGTH         256
-#define MAX_NAME_LENGTH         64
-#define MAX_CMDLINE_LENGTH      256
-#define MAX_LOG_MESSAGE         512
-#define MAX_IP_LENGTH           46      /* IPv6 max */
-#define MAX_MAC_LENGTH          18
+#define MAX_PATH_LENGTH 256
+#define MAX_NAME_LENGTH 64
+#define MAX_CMDLINE_LENGTH 256
+#define MAX_LOG_MESSAGE 512
+#define MAX_IP_LENGTH 46 /* IPv6 max */
+#define MAX_MAC_LENGTH 18
 
 /* ============================================================================
  * DEVICE PROFILE - What kind of device are we pretending to be?
@@ -97,31 +97,31 @@ typedef enum {
 } cpu_arch_t;
 
 typedef struct {
-    char name[MAX_NAME_LENGTH];             /* e.g., "TP-Link_Archer_C7" */
-    char vendor[MAX_NAME_LENGTH];           /* e.g., "TP-Link" */
-    char model[MAX_NAME_LENGTH];            /* e.g., "Archer C7 v4" */
-    device_type_t type;                     /* Router, Camera, etc. */
-    cpu_arch_t architecture;                /* MIPS, ARM, etc. */
-    
+    char name[MAX_NAME_LENGTH];   /* e.g., "TP-Link_Archer_C7" */
+    char vendor[MAX_NAME_LENGTH]; /* e.g., "TP-Link" */
+    char model[MAX_NAME_LENGTH];  /* e.g., "Archer C7 v4" */
+    device_type_t type;           /* Router, Camera, etc. */
+    cpu_arch_t architecture;      /* MIPS, ARM, etc. */
+
     /* Hardware specs (for realistic /proc/cpuinfo, /proc/meminfo) */
-    char cpu_model[MAX_NAME_LENGTH];        /* e.g., "MIPS 74Kc V5.0" */
-    uint32_t cpu_mhz;                       /* CPU frequency */
-    uint32_t cpu_cores;                     /* Number of cores */
-    uint32_t total_ram_kb;                  /* Total RAM in KB */
-    uint32_t total_flash_kb;                /* Total flash storage */
-    uint32_t bogomips;                      /* BogoMIPS * 100 (for precision) */
-    
+    char cpu_model[MAX_NAME_LENGTH]; /* e.g., "MIPS 74Kc V5.0" */
+    uint32_t cpu_mhz;                /* CPU frequency */
+    uint32_t cpu_cores;              /* Number of cores */
+    uint32_t total_ram_kb;           /* Total RAM in KB */
+    uint32_t total_flash_kb;         /* Total flash storage */
+    uint32_t bogomips;               /* BogoMIPS * 100 (for precision) */
+
     /* Software specs */
-    char kernel_version[MAX_NAME_LENGTH];   /* e.g., "3.10.49" */
-    char os_name[MAX_NAME_LENGTH];          /* e.g., "OpenWrt" */
-    char os_version[MAX_NAME_LENGTH];       /* e.g., "18.06.4" */
-    char busybox_version[MAX_NAME_LENGTH];  /* e.g., "1.24.1" */
-    
+    char kernel_version[MAX_NAME_LENGTH];  /* e.g., "3.10.49" */
+    char os_name[MAX_NAME_LENGTH];         /* e.g., "OpenWrt" */
+    char os_version[MAX_NAME_LENGTH];      /* e.g., "18.06.4" */
+    char busybox_version[MAX_NAME_LENGTH]; /* e.g., "1.24.1" */
+
     /* Network identity */
     char ssh_banner[MAX_CMDLINE_LENGTH];    /* SSH version string */
     char telnet_banner[MAX_CMDLINE_LENGTH]; /* Telnet welcome message */
     char mac_prefix[9];                     /* Vendor MAC prefix "AA:BB:CC" */
-    
+
 } device_profile_t;
 
 /* ============================================================================
@@ -130,14 +130,14 @@ typedef struct {
 
 typedef struct {
     char username[MAX_NAME_LENGTH];
-    char password_hash[128];        /* For /etc/shadow (fake hash) */
+    char password_hash[128]; /* For /etc/shadow (fake hash) */
     uid_t uid;
     gid_t gid;
     char home_dir[MAX_PATH_LENGTH];
     char shell[MAX_PATH_LENGTH];
-    char gecos[MAX_NAME_LENGTH];    /* Comment field */
-    bool is_system_user;            /* daemon, bin, etc. */
-    bool can_login;                 /* Has valid shell? */
+    char gecos[MAX_NAME_LENGTH]; /* Comment field */
+    bool is_system_user;         /* daemon, bin, etc. */
+    bool can_login;              /* Has valid shell? */
 } state_user_t;
 
 /* ============================================================================
@@ -145,39 +145,39 @@ typedef struct {
  * ============================================================================ */
 
 typedef enum {
-    PROC_STATE_RUNNING,     /* R */
-    PROC_STATE_SLEEPING,    /* S */
-    PROC_STATE_DISK_WAIT,   /* D */
-    PROC_STATE_ZOMBIE,      /* Z */
-    PROC_STATE_STOPPED,     /* T */
+    PROC_STATE_RUNNING,   /* R */
+    PROC_STATE_SLEEPING,  /* S */
+    PROC_STATE_DISK_WAIT, /* D */
+    PROC_STATE_ZOMBIE,    /* Z */
+    PROC_STATE_STOPPED,   /* T */
 } proc_state_t;
 
 typedef struct {
     pid_t pid;
-    pid_t ppid;                         /* Parent PID */
-    uid_t uid;                          /* Owner */
+    pid_t ppid; /* Parent PID */
+    uid_t uid;  /* Owner */
     gid_t gid;
-    char name[MAX_NAME_LENGTH];         /* Process name (comm) */
-    char cmdline[MAX_CMDLINE_LENGTH];   /* Full command line */
+    char name[MAX_NAME_LENGTH];       /* Process name (comm) */
+    char cmdline[MAX_CMDLINE_LENGTH]; /* Full command line */
     proc_state_t state;
-    
+
     /* Resource usage (for ps, top, /proc/[pid]/stat) */
-    uint32_t memory_kb;                 /* RSS in KB */
-    uint32_t virtual_kb;                /* VSZ in KB */
-    uint16_t cpu_percent;               /* CPU% * 10 (for precision) */
-    uint16_t mem_percent;               /* MEM% * 10 */
-    
+    uint32_t memory_kb;   /* RSS in KB */
+    uint32_t virtual_kb;  /* VSZ in KB */
+    uint16_t cpu_percent; /* CPU% * 10 (for precision) */
+    uint16_t mem_percent; /* MEM% * 10 */
+
     /* Timing (relative to boot_time for consistency!) */
-    uint32_t start_time_offset;         /* Seconds after boot when started */
-    uint32_t cpu_time_ms;               /* Total CPU time in milliseconds */
-    
+    uint32_t start_time_offset; /* Seconds after boot when started */
+    uint32_t cpu_time_ms;       /* Total CPU time in milliseconds */
+
     /* Flags */
-    bool is_kernel_thread;              /* [kworker], [ksoftirqd], etc. */
-    bool is_service;                    /* Long-running daemon */
-    bool visible_in_ps;                 /* Some processes hidden */
-    
+    bool is_kernel_thread; /* [kworker], [ksoftirqd], etc. */
+    bool is_service;       /* Long-running daemon */
+    bool visible_in_ps;    /* Some processes hidden */
+
     /* TTY (for ps output) */
-    char tty[16];                       /* "pts/0", "tty1", "?" */
+    char tty[16]; /* "pts/0", "tty1", "?" */
 } state_process_t;
 
 /* ============================================================================
@@ -195,34 +195,34 @@ typedef enum {
 } file_type_t;
 
 typedef struct {
-    char path[MAX_PATH_LENGTH];         /* Full path */
-    char name[MAX_NAME_LENGTH];         /* Basename */
+    char path[MAX_PATH_LENGTH]; /* Full path */
+    char name[MAX_NAME_LENGTH]; /* Basename */
     file_type_t type;
-    
-    mode_t permissions;                 /* e.g., 0755 */
+
+    mode_t permissions; /* e.g., 0755 */
     uid_t owner;
     gid_t group;
-    off_t size;                         /* File size in bytes */
-    
+    off_t size; /* File size in bytes */
+
     /* Timestamps (as offsets from boot_time for consistency!) */
-    int32_t atime_offset;               /* Access time: seconds from boot (can be negative = before boot) */
-    int32_t mtime_offset;               /* Modify time */
-    int32_t ctime_offset;               /* Change time */
-    
+    int32_t atime_offset; /* Access time: seconds from boot (can be negative = before boot) */
+    int32_t mtime_offset; /* Modify time */
+    int32_t ctime_offset; /* Change time */
+
     /* For symlinks */
     char link_target[MAX_PATH_LENGTH];
-    
+
     /* For devices */
     uint32_t device_major;
     uint32_t device_minor;
-    
+
     /* Content generation */
-    bool has_dynamic_content;           /* Content generated on-demand? */
-    char content_generator[64];         /* Function name to generate content */
-    
+    bool has_dynamic_content;   /* Content generated on-demand? */
+    char content_generator[64]; /* Function name to generate content */
+
     /* Flags */
-    bool created_by_attacker;           /* Track what attacker created */
-    bool deleted;                       /* Soft-deleted (still in state) */
+    bool created_by_attacker; /* Track what attacker created */
+    bool deleted;             /* Soft-deleted (still in state) */
 } state_file_t;
 
 /* ============================================================================
@@ -230,14 +230,14 @@ typedef struct {
  * ============================================================================ */
 
 typedef struct {
-    char name[MAX_NAME_LENGTH];         /* eth0, wlan0, br-lan, etc. */
+    char name[MAX_NAME_LENGTH]; /* eth0, wlan0, br-lan, etc. */
     char ip_address[MAX_IP_LENGTH];
     char netmask[MAX_IP_LENGTH];
     char broadcast[MAX_IP_LENGTH];
     char gateway[MAX_IP_LENGTH];
     char mac_address[MAX_MAC_LENGTH];
     uint32_t mtu;
-    
+
     /* Statistics (for /proc/net/dev, ifconfig) */
     uint64_t rx_bytes;
     uint64_t tx_bytes;
@@ -245,7 +245,7 @@ typedef struct {
     uint64_t tx_packets;
     uint32_t rx_errors;
     uint32_t tx_errors;
-    
+
     bool is_up;
     bool is_loopback;
     bool is_wireless;
@@ -261,13 +261,13 @@ typedef enum {
 } connection_state_t;
 
 typedef struct {
-    char protocol[8];                   /* tcp, udp, tcp6, udp6 */
+    char protocol[8]; /* tcp, udp, tcp6, udp6 */
     char local_ip[MAX_IP_LENGTH];
     uint16_t local_port;
     char remote_ip[MAX_IP_LENGTH];
     uint16_t remote_port;
     connection_state_t state;
-    pid_t owner_pid;                    /* Which process owns this */
+    pid_t owner_pid; /* Which process owns this */
 } state_connection_t;
 
 /* ============================================================================
@@ -284,11 +284,11 @@ typedef enum {
 } state_log_level_t;
 
 typedef struct {
-    int32_t time_offset;                /* Seconds from boot_time */
+    int32_t time_offset; /* Seconds from boot_time */
     state_log_level_t level;
-    char facility[16];                  /* kern, auth, daemon, etc. */
-    char service[MAX_NAME_LENGTH];      /* dropbear, dnsmasq, kernel */
-    pid_t pid;                          /* Optional PID */
+    char facility[16];             /* kern, auth, daemon, etc. */
+    char service[MAX_NAME_LENGTH]; /* dropbear, dnsmasq, kernel */
+    pid_t pid;                     /* Optional PID */
     char message[MAX_LOG_MESSAGE];
 } state_log_entry_t;
 
@@ -297,14 +297,14 @@ typedef struct {
  * ============================================================================ */
 
 typedef struct {
-    char device[MAX_PATH_LENGTH];       /* /dev/root, tmpfs, etc. */
-    char mount_point[MAX_PATH_LENGTH];  /* /, /tmp, /proc, etc. */
-    char fs_type[32];                   /* jffs2, tmpfs, proc, etc. */
-    char options[128];                  /* rw,noatime,... */
-    
-    uint64_t total_kb;                  /* Total space */
-    uint64_t used_kb;                   /* Used space */
-    uint64_t available_kb;              /* Available space */
+    char device[MAX_PATH_LENGTH];      /* /dev/root, tmpfs, etc. */
+    char mount_point[MAX_PATH_LENGTH]; /* /, /tmp, /proc, etc. */
+    char fs_type[32];                  /* jffs2, tmpfs, proc, etc. */
+    char options[128];                 /* rw,noatime,... */
+
+    uint64_t total_kb;     /* Total space */
+    uint64_t used_kb;      /* Used space */
+    uint64_t available_kb; /* Available space */
 } state_mount_t;
 
 /* ============================================================================
@@ -312,25 +312,25 @@ typedef struct {
  * ============================================================================ */
 
 typedef struct {
-    char session_id[64];                /* Unique session identifier */
-    time_t connect_time;                /* When they connected (real time) */
-    char source_ip[MAX_IP_LENGTH];      /* Attacker's IP */
+    char session_id[64];           /* Unique session identifier */
+    time_t connect_time;           /* When they connected (real time) */
+    char source_ip[MAX_IP_LENGTH]; /* Attacker's IP */
     uint16_t source_port;
-    
-    char username[MAX_NAME_LENGTH];     /* Who they logged in as */
-    char current_dir[MAX_PATH_LENGTH];  /* pwd */
-    
+
+    char username[MAX_NAME_LENGTH];    /* Who they logged in as */
+    char current_dir[MAX_PATH_LENGTH]; /* pwd */
+
     /* Track attacker actions for reactive responses */
     uint32_t commands_executed;
     uint32_t files_created;
     uint32_t files_deleted;
     uint32_t processes_started;
-    
+
     /* For behavioral analysis */
     time_t last_command_time;
     char last_command[MAX_CMDLINE_LENGTH];
-    
-    bool is_suspicious;                 /* Flagged by quorum? */
+
+    bool is_suspicious; /* Flagged by quorum? */
 } attacker_session_t;
 
 /* ============================================================================
@@ -339,62 +339,62 @@ typedef struct {
 
 typedef struct {
     /* === Identity === */
-    device_profile_t profile;           /* What device we're pretending to be */
-    char hostname[MAX_NAME_LENGTH];     /* Current hostname */
-    uint32_t state_seed;                /* Random seed for reproducibility */
-    
+    device_profile_t profile;       /* What device we're pretending to be */
+    char hostname[MAX_NAME_LENGTH]; /* Current hostname */
+    uint32_t state_seed;            /* Random seed for reproducibility */
+
     /* === Time (EVERYTHING derives from these!) === */
-    time_t boot_time;                   /* When the "system" booted (fake) */
-    uint32_t uptime_seconds;            /* Calculated: now - boot_time */
-    time_t last_morph_time;             /* When we last morphed */
-    
+    time_t boot_time;        /* When the "system" booted (fake) */
+    uint32_t uptime_seconds; /* Calculated: now - boot_time */
+    time_t last_morph_time;  /* When we last morphed */
+
     /* === Users === */
     state_user_t users[MAX_STATE_USERS];
     int user_count;
-    
+
     /* === Processes === */
     state_process_t processes[MAX_STATE_PROCESSES];
     int process_count;
-    pid_t next_pid;                     /* For new processes */
-    
+    pid_t next_pid; /* For new processes */
+
     /* === Files === */
     state_file_t files[MAX_STATE_FILES];
     int file_count;
-    
+
     /* === Network === */
     state_interface_t interfaces[MAX_STATE_INTERFACES];
     int interface_count;
     state_connection_t connections[MAX_STATE_CONNECTIONS];
     int connection_count;
-    
+
     /* === Mounts === */
     state_mount_t mounts[MAX_STATE_MOUNTS];
     int mount_count;
-    
+
     /* === Logs === */
     state_log_entry_t logs[MAX_STATE_LOG_ENTRIES];
     int log_count;
-    int log_write_index;                /* Circular buffer index */
-    
+    int log_write_index; /* Circular buffer index */
+
     /* === Resource Usage (calculated from processes) === */
     uint32_t total_memory_kb;
     uint32_t used_memory_kb;
     uint32_t cached_memory_kb;
     uint32_t buffer_memory_kb;
-    uint16_t cpu_usage_percent;         /* Overall CPU% * 10 */
-    uint16_t load_avg_1;                /* Load average * 100 */
+    uint16_t cpu_usage_percent; /* Overall CPU% * 10 */
+    uint16_t load_avg_1;        /* Load average * 100 */
     uint16_t load_avg_5;
     uint16_t load_avg_15;
-    
+
     /* === Session Tracking === */
     attacker_session_t current_session;
     bool has_active_session;
-    
+
     /* === Flags === */
     bool is_initialized;
-    bool needs_recalculation;           /* State changed, recalc derived values */
-    bool emergency_morph_pending;       /* Quorum triggered emergency morph */
-    
+    bool needs_recalculation;     /* State changed, recalc derived values */
+    bool emergency_morph_pending; /* Quorum triggered emergency morph */
+
 } system_state_t;
 
 /* ============================================================================
@@ -415,7 +415,7 @@ void state_engine_destroy(system_state_t* state);
 /**
  * MORPH - Generate a completely new state while keeping the same profile
  * Everything changes but stays internally consistent
- * 
+ *
  * @param state The state to morph
  * @param seed Optional seed for reproducibility (0 = random)
  * @return 0 on success
@@ -443,37 +443,42 @@ void state_engine_update_time(system_state_t* state);
  * ============================================================================ */
 
 /* File operations */
-int state_add_file(system_state_t* state, const char* path, file_type_t type, 
-                   uid_t owner, mode_t perms);
+int state_add_file(
+    system_state_t* state, const char* path, file_type_t type, uid_t owner, mode_t perms);
 int state_remove_file(system_state_t* state, const char* path);
 int state_modify_file(system_state_t* state, const char* path, off_t new_size);
 state_file_t* state_get_file(system_state_t* state, const char* path);
 bool state_file_exists(system_state_t* state, const char* path);
 
 /* Process operations */
-int state_add_process(system_state_t* state, const char* name, const char* cmdline,
-                      uid_t owner, pid_t ppid);
+int state_add_process(
+    system_state_t* state, const char* name, const char* cmdline, uid_t owner, pid_t ppid);
 int state_kill_process(system_state_t* state, pid_t pid);
 state_process_t* state_get_process(system_state_t* state, pid_t pid);
 state_process_t* state_get_process_by_name(system_state_t* state, const char* name);
 
 /* User operations */
-int state_add_user(system_state_t* state, const char* username, uid_t uid, 
-                   const char* home, const char* shell);
+int state_add_user(
+    system_state_t* state, const char* username, uid_t uid, const char* home, const char* shell);
 state_user_t* state_get_user(system_state_t* state, const char* username);
 state_user_t* state_get_user_by_uid(system_state_t* state, uid_t uid);
 
 /* Log operations */
-int state_add_log(system_state_t* state, state_log_level_t level, const char* service,
+int state_add_log(system_state_t* state,
+                  state_log_level_t level,
+                  const char* service,
                   const char* message);
 
 /* Network operations */
-int state_add_connection(system_state_t* state, const char* proto, 
-                         const char* local_ip, uint16_t local_port,
-                         const char* remote_ip, uint16_t remote_port,
-                         connection_state_t conn_state, pid_t owner);
-int state_remove_connection(system_state_t* state, const char* local_ip, 
-                            uint16_t local_port);
+int state_add_connection(system_state_t* state,
+                         const char* proto,
+                         const char* local_ip,
+                         uint16_t local_port,
+                         const char* remote_ip,
+                         uint16_t remote_port,
+                         connection_state_t conn_state,
+                         pid_t owner);
+int state_remove_connection(system_state_t* state, const char* local_ip, uint16_t local_port);
 
 /* ============================================================================
  * OUTPUT GENERATION API - Generate File Contents from State
@@ -482,15 +487,17 @@ int state_remove_connection(system_state_t* state, const char* local_ip,
 /**
  * Generate content for a specific path
  * The content is derived from the current state
- * 
+ *
  * @param state The system state
  * @param path The file path (e.g., "/proc/meminfo", "/etc/passwd")
  * @param buffer Output buffer
  * @param buffer_size Size of output buffer
  * @return Number of bytes written, or -1 on error
  */
-int state_generate_file_content(system_state_t* state, const char* path,
-                                char* buffer, size_t buffer_size);
+int state_generate_file_content(system_state_t* state,
+                                const char* path,
+                                char* buffer,
+                                size_t buffer_size);
 
 /* Specific generators (used internally but exposed for flexibility) */
 int state_generate_passwd(system_state_t* state, char* buf, size_t size);
@@ -520,15 +527,21 @@ int state_generate_syslog(system_state_t* state, char* buf, size_t size, int max
 int state_generate_authlog(system_state_t* state, char* buf, size_t size, int max_entries);
 int state_generate_dmesg(system_state_t* state, char* buf, size_t size);
 
-int state_generate_ls_output(system_state_t* state, const char* path, char* buf, 
-                             size_t size, bool long_format, bool show_hidden);
+int state_generate_ls_output(system_state_t* state,
+                             const char* path,
+                             char* buf,
+                             size_t size,
+                             bool long_format,
+                             bool show_hidden);
 
 /* ============================================================================
  * SESSION TRACKING API
  * ============================================================================ */
 
-int state_start_session(system_state_t* state, const char* source_ip, 
-                        uint16_t source_port, const char* username);
+int state_start_session(system_state_t* state,
+                        const char* source_ip,
+                        uint16_t source_port,
+                        const char* username);
 void state_end_session(system_state_t* state);
 void state_record_command(system_state_t* state, const char* command);
 void state_set_current_dir(system_state_t* state, const char* path);

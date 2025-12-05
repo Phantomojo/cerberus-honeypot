@@ -33,7 +33,8 @@ sec_result_t sec_safe_snprintf(char* dest, size_t dest_size, const char* format,
 
 // Buffer validation
 sec_result_t sec_validate_buffer(const void* buffer, size_t size, size_t max_size);
-sec_result_t sec_validate_buffer_bounds(const void* buffer, size_t size, const void* base, size_t base_size);
+sec_result_t
+sec_validate_buffer_bounds(const void* buffer, size_t size, const void* base, size_t base_size);
 
 // Memory safety checks
 bool sec_is_safe_size_t(size_t size);

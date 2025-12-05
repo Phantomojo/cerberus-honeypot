@@ -623,3 +623,4 @@ Inter-|   Receive                                                |  Transmit
  face |bytes    packets errs drop fifo frame compressed multicast|bytes    packets errs drop fifo colls carrier compressed
     lo:$(rand_between 10000 99999)    $(rand_between 100 999)    0    0    0     0          0         0 $(rand_between 10000 99999)    $(rand_between 100 999)    0    0    0     0       0          0
   eth0:$(rand_between 1000000 99999999) $(rand_between 10000 99999)    0    0    0     0          0         0 $(rand_between 100000 9999999) $(rand_between 1000 99999)    0    0    0     0
+EOF

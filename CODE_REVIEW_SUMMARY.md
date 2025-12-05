@@ -202,7 +202,7 @@ The CERBERUS honeypot codebase is now **production-ready** with all critical bug
 ## Sign-off
 
 **Reviewed by**: GitHub Copilot Code Review Agent  
-**Commits**: 
+**Commits**:
 - f641785: Fix critical bugs and improve code quality
 - 905fc55: Fix additional bugs: profile parsing and IP validation
 

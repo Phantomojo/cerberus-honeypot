@@ -147,4 +147,3 @@
 ### Overall: **HIGHLY FUNCTIONAL** 🎉
 
 The honeypot is successfully using most of your Cerberus features. The core morphing, profiles, and dynamic generation are all working. The main gaps are in real-time integration and some command execution details.
-

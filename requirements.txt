@@ -1,5 +1,5 @@
 # Python Dependencies for CERBERUS Honeynet
-# 
+#
 # Install with: pip install -r requirements.txt
 # Or use in virtualenv: python3 -m venv venv && source venv/bin/activate && pip install -r requirements.txt
 
@@ -18,4 +18,3 @@ Flask-CORS>=3.0.10
 # Log parsing utilities (for quorum engine)
 # These may be needed if we add Python log parsers
 # python-dateutil>=2.8.0
-

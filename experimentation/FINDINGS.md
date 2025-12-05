@@ -282,24 +282,24 @@ auth_class = cowrie.core.auth.UserPassword
 def lineReceived(self, line):
     # 1. Log raw input
     self.log_input(line)
-    
+
     # 2. Parse command line
     cmd, args = self.parse(line)
-    
+
     # 3. Find command class
     cmd_class = self.get_command(cmd)
-    
+
     # 4. Check if command exists
     if not cmd_class:
         self.write(f"-bash: {cmd}: command not found\n")
         return
-    
+
     # 5. Create command instance
     command = cmd_class(self, args)
-    
+
     # 6. Execute command
     command.start()
-    
+
     # 7. Command writes output to self.terminal
     # 8. Output is logged
     # 9. Control returns to prompt
@@ -494,21 +494,21 @@ Cowrie logs to CERBERUS central logs
 // Main SSH server loop
 int main() {
     ssh_bind sshbind = ssh_bind_new();
-    
+
     // Load morph profile
     device_profile_t *profile = load_morph_profile();
-    
+
     // Configure SSH banner from profile
-    ssh_bind_options_set(sshbind, SSH_BIND_OPTIONS_BANNER, 
+    ssh_bind_options_set(sshbind, SSH_BIND_OPTIONS_BANNER,
                          profile->ssh_banner);
-    
+
     // Listen for connections
     ssh_bind_listen(sshbind);
-    
+
     while(1) {
         ssh_session session = ssh_new();
         ssh_bind_accept(sshbind, session);
-        
+
         // Handle session in thread
         handle_ssh_session(session, profile);
     }
@@ -585,7 +585,7 @@ class Command_nvram(HoneyPotCommand):
     def call(self):
         # Read NVRAM values from morph profile
         # Output realistic router NVRAM data
-        
+
 # commands/cmd_uci.py  
 class Command_uci(HoneyPotCommand):
     def call(self):
