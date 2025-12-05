@@ -80,7 +80,7 @@ echo "[+] Analyzing command handling..."
 
 # 7. FILESYSTEM EMULATION
 echo "[+] Analyzing filesystem emulation..."
-cat "$COWRIE_DIR/src/cowrie/shell/fs.py" 2>/dev/null | head -100 > "$OUTPUT_DIR/08_filesystem.txt"
+head -100 "$COWRIE_DIR/src/cowrie/shell/fs.py" 2>/dev/null > "$OUTPUT_DIR/08_filesystem.txt"
 
 # 8. SESSION MANAGEMENT
 echo "[+] Analyzing session management..."
@@ -99,7 +99,7 @@ echo "[+] Analyzing logging..."
 # 10. CONFIGURATION PARSING
 echo "[+] Analyzing configuration..."
 {
-  find "$COWRIE_DIR" -name "*.cfg" -o -name "*.cfg.dist" | while read cfg; do
+  find "$COWRIE_DIR" -name "*.cfg" -o -name "*.cfg.dist" | while IFS= read -r cfg; do
     echo "=== $cfg ==="
     cat "$cfg"
     echo ""

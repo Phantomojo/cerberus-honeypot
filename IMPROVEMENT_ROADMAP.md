@@ -146,7 +146,7 @@ Needed: Device-profile-specific certificates
   * Realistic serial numbers
   * Varied expiration dates
   * Correct key sizes per device type
-  
+
 - Store in: services/cowrie/etc/ssh_host_rsa_key (SSH)
 - Store in: services/fake-router-web/certs/ (HTTPS)
 ```

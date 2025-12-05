@@ -280,7 +280,7 @@ Session Uniqueness:
   ├─ Command delays: Random per cycle
   ├─ System uptime: Random per cycle
   └─ Boot time: Random per cycle
-  
+
 Cross-Session Consistency:
   ├─ Same device type selected for ~24 cycles
   ├─ Device profile determines all variations

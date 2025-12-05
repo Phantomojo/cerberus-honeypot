@@ -339,7 +339,7 @@ ALERT_FILE="logs/alerts.log"
 tail -f "$LOG_FILE" | grep -E "connection|brute|attempt" | while read line; do
     # Log with timestamp
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $line" >> "$ALERT_FILE"
-    
+
     # Alert on detection attempts
     if echo "$line" | grep -qE "docker|systemctl|uname|passwd"; then
         echo "DETECTION ATTEMPT: $line" >> "$ALERT_FILE"

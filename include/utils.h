@@ -1,18 +1,13 @@
 #ifndef UTILS_H
 #define UTILS_H
 
-#include <stdio.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <sys/time.h>
 
 // Logging functions
-typedef enum {
-    LOG_DEBUG,
-    LOG_INFO,
-    LOG_WARN,
-    LOG_ERROR
-} log_level_t;
+typedef enum { LOG_DEBUG, LOG_INFO, LOG_WARN, LOG_ERROR } log_level_t;
 
 void log_event(const char* msg);
 void log_event_level(log_level_t level, const char* msg);
@@ -46,4 +41,3 @@ int read_config_value(const char* filepath, const char* key, char* value, size_t
 int write_config_value(const char* filepath, const char* key, const char* value);
 
 #endif // UTILS_H
-

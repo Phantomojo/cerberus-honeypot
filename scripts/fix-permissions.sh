@@ -25,7 +25,7 @@ fix_dir_permissions() {
     if [ ! -w "$dir" ]; then
         if [ "$(stat -c '%U' "$dir" 2>/dev/null || stat -f '%Su' "$dir" 2>/dev/null)" = "root" ]; then
             echo "🔐 Fixing permissions for: $dir (requires sudo)"
-            sudo chown -R $(whoami):$(id -gn) "$dir" 2>/dev/null || {
+            sudo chown -R "$(whoami)":"$(id -gn)" "$dir" 2>/dev/null || {
                 echo "⚠️  Failed to change ownership for $dir"
                 echo "    Run: sudo chown -R $(whoami):$(id -gn) $dir"
                 return 1
@@ -76,7 +76,7 @@ find services -name ".gitkeep" -type f | while read -r file; do
     if [ ! -w "$file" ]; then
         if [ "$(stat -c '%U' "$file" 2>/dev/null || stat -f '%Su' "$file" 2>/dev/null)" = "root" ]; then
             echo "🔐 Fixing: $file"
-            sudo chown $(whoami):$(id -gn) "$file" 2>/dev/null || {
+            sudo chown "$(whoami)":"$(id -gn)" "$file" 2>/dev/null || {
                 echo "⚠️  Failed to fix $file"
             }
         fi

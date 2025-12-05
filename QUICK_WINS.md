@@ -102,10 +102,10 @@ void update_cowrie_banner() {
     srand(time(NULL));
     int idx = rand() % VERSION_COUNT;
     const char *version = openssh_versions[idx];
-    
+
     FILE *cfg = fopen("services/cowrie/etc/cowrie.cfg", "r");
     FILE *tmp = fopen("services/cowrie/etc/cowrie.cfg.tmp", "w");
-    
+
     char line[512];
     while (fgets(line, sizeof(line), cfg)) {
         if (strstr(line, "banner = SSH")) {
@@ -114,11 +114,11 @@ void update_cowrie_banner() {
             fprintf(tmp, "%s", line);
         }
     }
-    
+
     fclose(cfg);
     fclose(tmp);
     rename("services/cowrie/etc/cowrie.cfg.tmp", "services/cowrie/etc/cowrie.cfg");
-    
+
     printf("[*] SSH version set to: %s\n", version);
 }
 ```
@@ -372,7 +372,7 @@ def execute_command(self):
     # Add random delay (100-500ms)
     delay = random.uniform(0.1, 0.5)
     time.sleep(delay)
-    
+
     # Then return command output
     return self.get_output()
 ```
@@ -419,7 +419,7 @@ You can't improve what you don't measure.
 tail -f services/cowrie/logs/cowrie.log | grep -E "connection|brute|attempt" | while read line; do
     # Log with timestamp
     echo "[$(date)] $line" >> logs/attacks.log
-    
+
     # Alert on detection attempts
     if echo "$line" | grep -qE "docker|systemctl|uname|passwd"; then
         echo "DETECTION ATTEMPT: $line" >> logs/alerts.log

@@ -9,7 +9,7 @@ SUMMARY OF CHANGES
 ================================================================================
 
 This implementation adds 6 high-impact, fast-to-deploy improvements to reduce
-honeypot detection and improve attack engagement. All changes are fully 
+honeypot detection and improve attack engagement. All changes are fully
 integrated with the morphing engine and Docker infrastructure.
 
 ================================================================================
@@ -115,14 +115,14 @@ FILES MODIFIED/CREATED
 Modified Files (3):
   1. src/morph/morph.c
      - Updated all 6 device SSH banners
-     - Added setup_device_filesystem() function  
+     - Added setup_device_filesystem() function
      - Added timeout and login_attempt_limit to config
-     
+
   2. docker/docker-compose.yml
      - Changed port from 2222 to 22
      - Added dynamic commands volume mount
      - Added startup command to inject commands
-     
+
   3. Makefile
      - Added call to add_dynamic_commands.sh
 
@@ -149,7 +149,7 @@ Detection Evasion:
 
 Session Duration:
   Before: 3 minutes
-  After:  10 minutes  
+  After:  10 minutes
   Result: 3.3x longer (more intelligence gathering)
 
 Command Realism:
@@ -169,27 +169,27 @@ DEPLOYMENT STEPS
 1. Build Everything:
    $ cd /home/ph/cerberus-honeypot
    $ make clean && make
-   
+
 2. Initialize Morphing:
    $ ./build/morph
    # Should output: Device filesystem configured for: Router
-   
+
 3. Build Containers:
    $ docker compose build
-   
+
 4. Start Honeypot:
    $ docker compose up -d cowrie
-   
+
 5. Test Access:
    $ ssh localhost
    # Should connect on port 22 (not 2222)
-   
+
    # Test commands:
    $ docker ps
    $ python --version
    $ git --version
    $ cat /etc/hostname
-   
+
 6. Verify:
    $ ./scripts/verify_quick_wins.sh
    # Should show: ✓ All Quick Wins Implemented!

@@ -58,9 +58,9 @@ services:
 void configure_cowrie_port(const char *profile_name) {
     FILE *config = fopen(COWRIE_CONFIG, "r");
     FILE *temp = fopen(COWRIE_CONFIG ".tmp", "w");
-    
+
     int port = (profile_index % 5 == 0) ? 22 : 22 + (profile_index * 100);
-    
+
     char line[512];
     while (fgets(line, sizeof(line), config)) {
         if (strstr(line, "port =")) {
@@ -69,11 +69,11 @@ void configure_cowrie_port(const char *profile_name) {
             fprintf(temp, "%s", line);
         }
     }
-    
+
     fclose(config);
     fclose(temp);
     rename(COWRIE_CONFIG ".tmp", COWRIE_CONFIG);
-    
+
     log_event("[INFO] Cowrie port configured to: %d", port);
 }
 ```
@@ -120,10 +120,10 @@ void randomize_openssh_version() {
     srand(time(NULL) + rand());
     int idx = rand() % VALID_VERSIONS_COUNT;
     const char *version = valid_openssh_versions[idx];
-    
+
     FILE *config = fopen("/home/cowrie/cowrie/etc/cowrie.cfg", "r");
     FILE *temp = fopen("/home/cowrie/cowrie/etc/cowrie.cfg.tmp", "w");
-    
+
     char line[512];
     while (fgets(line, sizeof(line), config)) {
         if (strstr(line, "banner = SSH")) {
@@ -132,12 +132,12 @@ void randomize_openssh_version() {
             fprintf(temp, "%s", line);
         }
     }
-    
+
     fclose(config);
     fclose(temp);
-    rename("/home/cowrie/cowrie/etc/cowrie.cfg.tmp", 
+    rename("/home/cowrie/cowrie/etc/cowrie.cfg.tmp",
            "/home/cowrie/cowrie/etc/cowrie.cfg");
-    
+
     printf("[INFO] OpenSSH version randomized to: %s\n", version);
 }
 ```
@@ -258,11 +258,11 @@ const char *hostnames[] = {
 void randomize_hostname() {
     int idx = rand() % (sizeof(hostnames) / sizeof(hostnames[0]));
     const char *hostname = hostnames[idx];
-    
+
     // Write to Cowrie config
     FILE *config = fopen("/home/cowrie/cowrie/etc/cowrie.cfg", "r");
     FILE *temp = fopen("/home/cowrie/cowrie/etc/cowrie.cfg.tmp", "w");
-    
+
     char line[512];
     while (fgets(line, sizeof(line), config)) {
         if (strstr(line, "hostname = ")) {
@@ -271,10 +271,10 @@ void randomize_hostname() {
             fprintf(temp, "%s", line);
         }
     }
-    
+
     fclose(config);
     fclose(temp);
-    rename("/home/cowrie/cowrie/etc/cowrie.cfg.tmp", 
+    rename("/home/cowrie/cowrie/etc/cowrie.cfg.tmp",
            "/home/cowrie/cowrie/etc/cowrie.cfg");
 }
 ```
@@ -334,7 +334,7 @@ class DockerCommand:
             return self.docker_version()
         else:
             return "docker: command not found\n"
-    
+
     def docker_ps(self):
         # Return fake container list
         output = "CONTAINER ID  IMAGE             COMMAND    CREATED       STATUS\n"
@@ -431,15 +431,15 @@ postgres:x:105:111:PostgreSQL administrator:/var/lib/postgresql:/bin/bash
 void configure_device_filesystem(const char *profile_name) {
     char src_path[256];
     char dst_path[256];
-    
-    snprintf(src_path, sizeof(src_path), 
+
+    snprintf(src_path, sizeof(src_path),
              "services/cowrie/honeyfs/%s", profile_name);
-    snprintf(dst_path, sizeof(dst_path), 
+    snprintf(dst_path, sizeof(dst_path),
              "services/cowrie/honeyfs/active");
-    
+
     // Copy device-specific filesystem
     system("rm -rf %s && cp -r %s %s", dst_path, src_path, dst_path);
-    
+
     log_event("[INFO] Filesystem configured for profile: %s", profile_name);
 }
 ```

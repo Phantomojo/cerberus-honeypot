@@ -24,4 +24,4 @@
   Heap overflow protection                                  [0;32m✓ SECURE[0m
   Stack canary protection enabled                           [0;32m✓ SECURE[0m
   ASLR compatibility                                        [0;32m✓ SECURE[0m
-  Memory leak check                                         
+  Memory leak check

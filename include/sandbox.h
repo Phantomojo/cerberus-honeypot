@@ -7,17 +7,17 @@
 
 // Sandbox configuration
 typedef struct {
-    char service_name[64];           // Name of service (cowrie, rtsp, etc.)
-    char chroot_path[256];          // Chroot directory path
-    char user[32];                  // Unprivileged user to run as
-    char group[32];                 // Unprivileged group to run as
-    uint32_t max_memory_mb;         // Memory limit in MB
-    uint32_t max_cpu_percent;        // CPU usage limit
-    uint32_t max_file_descriptors;  // File descriptor limit
-    bool network_isolated;           // Network namespace isolation
-    bool pid_isolated;               // PID namespace isolation
-    char allowed_ports[256];         // Comma-separated list of allowed ports
-    char readonly_paths[512];        // Read-only mount paths
+    char service_name[64];         // Name of service (cowrie, rtsp, etc.)
+    char chroot_path[256];         // Chroot directory path
+    char user[32];                 // Unprivileged user to run as
+    char group[32];                // Unprivileged group to run as
+    uint32_t max_memory_mb;        // Memory limit in MB
+    uint32_t max_cpu_percent;      // CPU usage limit
+    uint32_t max_file_descriptors; // File descriptor limit
+    bool network_isolated;         // Network namespace isolation
+    bool pid_isolated;             // PID namespace isolation
+    char allowed_ports[256];       // Comma-separated list of allowed ports
+    char readonly_paths[512];      // Read-only mount paths
     char tmpfs_size[64];           // Size of temporary filesystem
 } sandbox_config_t;
 
@@ -35,7 +35,8 @@ typedef enum {
 
 // Main sandbox functions
 sandbox_result_t create_sandbox(const sandbox_config_t* config);
-sandbox_result_t run_in_sandbox(const sandbox_config_t* config, const char* command, char* const args[]);
+sandbox_result_t
+run_in_sandbox(const sandbox_config_t* config, const char* command, char* const args[]);
 sandbox_result_t cleanup_sandbox(const sandbox_config_t* config);
 bool is_sandbox_active(const char* service_name);
 
@@ -62,10 +63,10 @@ bool validate_sandbox_config(const sandbox_config_t* config);
 
 // Security constants
 #define SANDBOX_MAX_SERVICES 10
-#define SANDBOX_DEFAULT_MEMORY_LIMIT 256    // MB
-#define SANDBOX_DEFAULT_CPU_LIMIT 50        // percent
+#define SANDBOX_DEFAULT_MEMORY_LIMIT 256 // MB
+#define SANDBOX_DEFAULT_CPU_LIMIT 50     // percent
 #define SANDBOX_DEFAULT_FD_LIMIT 1024
-#define SANDBOX_MIN_MEMORY_LIMIT 32         // MB
-#define SANDBOX_MIN_CPU_LIMIT 10            // percent
+#define SANDBOX_MIN_MEMORY_LIMIT 32 // MB
+#define SANDBOX_MIN_CPU_LIMIT 10    // percent
 
 #endif // SANDBOX_H

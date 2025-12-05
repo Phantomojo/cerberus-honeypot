@@ -5,7 +5,7 @@
 #include <time.h>
 
 #define MAX_IPS 1000
-#define MAX_IP_STRING 46  // IPv6 max length
+#define MAX_IP_STRING 46 // IPv6 max length
 #define MAX_SERVICES 10
 #define MAX_SERVICE_NAME 64
 #define MAX_LOG_LINE 2048
@@ -44,4 +44,3 @@ int get_tracked_ip_count(void);
 ip_tracking_t* get_tracked_ip(int index);
 
 #endif // QUORUM_H
-

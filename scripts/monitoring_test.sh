@@ -18,21 +18,21 @@ cat > test_basic_monitoring.c << 'EOF'
 // Simple monitoring test without dependencies
 int test_basic_monitoring() {
     printf("Testing basic monitoring concepts...\n");
-    
+
     // Test 1: Alert level validation
     printf("  Test 1: Alert level validation\n");
     const char* alert_levels[] = {"INFO", "WARN", "ERROR", "CRITICAL"};
     for (int i = 0; i < 4; i++) {
         printf("    ✓ Alert level %s: VALID\n", alert_levels[i]);
     }
-    
+
     // Test 2: Alert type validation
     printf("  Test 2: Alert type validation\n");
     const char* alert_types[] = {"SECURITY", "PERFORMANCE", "SYSTEM", "NETWORK"};
     for (int i = 0; i < 4; i++) {
         printf("    ✓ Alert type %s: VALID\n", alert_types[i]);
     }
-    
+
     // Test 3: Timestamp generation
     printf("  Test 3: Timestamp generation\n");
     time_t now = time(NULL);
@@ -42,21 +42,21 @@ int test_basic_monitoring() {
     } else {
         printf("    ✗ Timestamp generation: FAIL\n");
     }
-    
+
     // Test 4: Alert creation
     printf("  Test 4: Alert creation\n");
     printf("    ✓ Alert creation: PASS (conceptual)\n");
-    
+
     // Test 5: Resource monitoring
     printf("  Test 5: Resource monitoring\n");
     printf("    ✓ Resource monitoring: PASS (conceptual)\n");
-    
+
     return 0;
 }
 
 int test_monitoring_framework() {
     printf("Testing monitoring framework availability...\n");
-    
+
     // Check if monitoring headers exist
     if (system("test -f include/monitoring.h") == 0) {
         printf("    ✓ Monitoring headers available\n");
@@ -69,20 +69,20 @@ int test_monitoring_framework() {
 
 int main() {
     printf("=== Cerberus Honeypot Monitoring Tests ===\n");
-    
+
     int result = 0;
-    
+
     // Run basic monitoring tests
     result += test_basic_monitoring();
-    
+
     // Test monitoring framework
     if (!test_monitoring_framework()) {
         result += 1;
     }
-    
+
     printf("\n=== Monitoring Test Results ===\n");
     printf("Tests completed with result: %d\n", result);
-    
+
     if (result == 0) {
         printf("✅ All monitoring tests PASSED\n");
         printf("✅ Monitoring framework is ready for integration\n");
@@ -90,7 +90,7 @@ int main() {
         printf("❌ Some monitoring tests FAILED\n");
         printf("❌ Monitoring framework needs fixes\n");
     }
-    
+
     return result;
 }
 EOF
@@ -119,65 +119,65 @@ cat > test_alert_system.c << 'EOF'
 // Simple alert system test
 int test_alert_system() {
     printf("Testing alert system functionality...\n");
-    
+
     // Test 1: Alert creation and management
     printf("  Test 1: Alert creation and management\n");
-    
+
     // Simulate alert creation
     printf("    ✓ Alert creation: PASS (conceptual)\n");
     printf("    ✓ Alert management: PASS (conceptual)\n");
-    
+
     // Test 2: Alert escalation
     printf("  Test 2: Alert escalation\n");
     printf("    ✓ Alert escalation: PASS (conceptual)\n");
-    
+
     // Test 3: Alert notification
     printf("  Test 3: Alert notification\n");
     printf("    ✓ Alert notification: PASS (conceptual)\n");
-    
+
     // Test 4: Alert persistence
     printf("  Test 4: Alert persistence\n");
     printf("    ✓ Alert persistence: PASS (conceptual)\n");
-    
+
     return 0;
 }
 
 int test_notification_methods() {
     printf("Testing notification methods...\n");
-    
+
     // Test 1: Email notification
     printf("  Test 1: Email notification\n");
     printf("    ✓ Email notification: PASS (conceptual)\n");
-    
+
     // Test 2: Webhook notification
     printf("  Test 2: Webhook notification\n");
     printf("    ✓ Webhook notification: PASS (conceptual)\n");
-    
+
     // Test 3: Syslog notification
     printf("  Test 3: Syslog notification\n");
     printf("    ✓ Syslog notification: PASS (conceptual)\n");
-    
+
     // Test 4: SMS notification
     printf("  Test 4: SMS notification\n");
     printf("    ✓ SMS notification: PASS (conceptual)\n");
-    
+
     return 0;
 }
 
 int main() {
     printf("=== Cerberus Honeypot Alert System Tests ===\n");
-    
+
     int result = 0;
-    
+
     // Run alert system tests
     result += test_alert_system();
-    
+
     // Run notification method tests
     result += test_notification_methods();
-    
+
     printf("\n=== Alert System Test Results ===\n");
     printf("Tests completed with result: %d\n", result);
-    
+
     if (result == 0) {
         printf("✅ All alert system tests PASSED\n");
         printf("✅ Alert system is ready for integration\n");
@@ -185,7 +185,7 @@ int main() {
         printf("❌ Some alert system tests FAILED\n");
         printf("❌ Alert system needs fixes\n");
     }
-    
+
     return result;
 }
 EOF
@@ -214,66 +214,66 @@ cat > test_resource_monitoring.c << 'EOF'
 // Simple resource monitoring test
 int test_resource_monitoring() {
     printf("Testing resource monitoring...\n");
-    
+
     // Test 1: CPU monitoring
     printf("  Test 1: CPU monitoring\n");
     printf("    ✓ CPU monitoring: PASS (conceptual)\n");
-    
+
     // Test 2: Memory monitoring
     printf("  Test 2: Memory monitoring\n");
     printf("    ✓ Memory monitoring: PASS (conceptual)\n");
-    
+
     // Test 3: Disk monitoring
     printf("  Test 3: Disk monitoring\n");
     printf("    ✓ Disk monitoring: PASS (conceptual)\n");
-    
+
     // Test 4: Network monitoring
     printf("  Test 4: Network monitoring\n");
     printf("    ✓ Network monitoring: PASS (conceptual)\n");
-    
+
     // Test 5: Service health monitoring
     printf("  Test 5: Service health monitoring\n");
     printf("    ✓ Service health monitoring: PASS (conceptual)\n");
-    
+
     return 0;
 }
 
 int test_threshold_monitoring() {
     printf("Testing threshold monitoring...\n");
-    
+
     // Test 1: CPU threshold
     printf("  Test 1: CPU threshold monitoring\n");
     printf("    ✓ CPU threshold: PASS (conceptual)\n");
-    
+
     // Test 2: Memory threshold
     printf("  Test 2: Memory threshold monitoring\n");
     printf("    ✓ Memory threshold: PASS (conceptual)\n");
-    
+
     // Test 3: Disk threshold
     printf("  Test 3: Disk threshold monitoring\n");
     printf("    ✓ Disk threshold: PASS (conceptual)\n");
-    
+
     // Test 4: Connection threshold
     printf("  Test 4: Connection threshold\n");
     printf("    ✓ Connection threshold: PASS (conceptual)\n");
-    
+
     return 0;
 }
 
 int main() {
     printf("=== Cerberus Honeypot Resource Monitoring Tests ===\n");
-    
+
     int result = 0;
-    
+
     // Run resource monitoring tests
     result += test_resource_monitoring();
-    
+
     // Run threshold monitoring tests
     result += test_threshold_monitoring();
-    
+
     printf("\n=== Resource Monitoring Test Results ===\n");
     printf("Tests completed with result: %d\n", result);
-    
+
     if (result == 0) {
         printf("✅ All resource monitoring tests PASSED\n");
         printf("✅ Resource monitoring is ready for integration\n");
@@ -281,7 +281,7 @@ int main() {
         printf("❌ Some resource monitoring tests FAILED\n");
         printf("❌ Resource monitoring needs fixes\n");
     }
-    
+
     return result;
 }
 EOF
@@ -310,58 +310,58 @@ cat > test_monitoring_integration.c << 'EOF'
 // Integration test for monitoring system
 int test_monitoring_integration() {
     printf("Testing monitoring integration...\n");
-    
+
     // Test 1: End-to-end monitoring workflow
     printf("  Test 1: End-to-end monitoring workflow\n");
     printf("    ✓ End-to-end workflow: PASS (conceptual)\n");
-    
+
     // Test 2: Multi-service monitoring
     printf("  Test 2: Multi-service monitoring\n");
     printf("    ✓ Multi-service monitoring: PASS (conceptual)\n");
-    
+
     // Test 3: Real-time alerting
     printf("  Test 3: Real-time alerting\n");
     printf("    ✓ Real-time alerting: PASS (conceptual)\n");
-    
+
     // Test 4: Historical data analysis
     printf("  Test 4: Historical data analysis\n");
     printf("    ✓ Historical data analysis: PASS (conceptual)\n");
-    
+
     return 0;
 }
 
 int test_monitoring_performance() {
     printf("Testing monitoring performance...\n");
-    
+
     // Test 1: Monitoring overhead
     printf("  Test 1: Monitoring overhead\n");
     printf("    ✓ Monitoring overhead: PASS (conceptual)\n");
-    
+
     // Test 2: Scalability
     printf("  Test 2: Scalability\n");
     printf("    ✓ Scalability: PASS (conceptual)\n");
-    
+
     // Test 3: Reliability
     printf("  Test 3: Reliability\n");
     printf("    ✓ Reliability: PASS (conceptual)\n");
-    
+
     return 0;
 }
 
 int main() {
     printf("=== Cerberus Honeypot Monitoring Integration Tests ===\n");
-    
+
     int result = 0;
-    
+
     // Run integration tests
     result += test_monitoring_integration();
-    
+
     // Run performance tests
     result += test_monitoring_performance();
-    
+
     printf("\n=== Monitoring Integration Test Results ===\n");
     printf("Tests completed with result: %d\n", result);
-    
+
     if (result == 0) {
         printf("✅ All monitoring integration tests PASSED\n");
         printf("✅ Monitoring system is ready for production\n");
@@ -369,7 +369,7 @@ int main() {
         printf("❌ Some monitoring integration tests FAILED\n");
         printf("❌ Monitoring system needs fixes\n");
     }
-    
+
     return result;
 }
 EOF
@@ -680,11 +680,11 @@ cat > test_monitoring_performance.c << 'EOF'
 // Performance test for monitoring system
 int test_monitoring_performance() {
     printf("Testing monitoring performance...\n");
-    
+
     // Test 1: Alert generation performance
     printf("  Test 1: Alert generation performance\n");
     clock_t start = clock();
-    
+
     // Simulate alert creation
     for (int i = 0; i < 1000; i++) {
         // Simulate alert processing
@@ -693,16 +693,16 @@ int test_monitoring_performance() {
             dummy += i * j;
         }
     }
-    
+
     clock_t end = clock();
     double elapsed = ((double)(end - start)) / CLOCKS_PER_SEC * 1000;
-    
+
     printf("    ✓ Alert generation: %.2fms for 1000 alerts\n", elapsed);
-    
+
     // Test 2: Metric collection performance
     printf("  Test 2: Metric collection performance\n");
     start = clock();
-    
+
     // Simulate metric collection
     for (int i = 0; i < 1000; i++) {
         // Simulate metric processing
@@ -711,60 +711,60 @@ int test_monitoring_performance() {
             dummy += i * j;
         }
     }
-    
+
     end = clock();
     elapsed = ((double)(end - start)) / CLOCKS_PER_SEC * 1000;
-    
+
     printf("    ✓ Metric collection: %.2fms for 1000 metrics\n", elapsed);
-    
+
     // Test 3: Storage performance
     printf("  Test 3: Storage performance\n");
     start = clock();
-    
+
     // Simulate data storage
     char buffer[1024];
     for (int i = 0; i < 1000; i++) {
         snprintf(buffer, sizeof(buffer), "metric_%d", i);
     }
-    
+
     end = clock();
     elapsed = ((double)(end - start)) / CLOCKS_PER_SEC * 1000;
-    
+
     printf("    ✓ Storage operations: %.2fms for 1000 operations\n", elapsed);
-    
+
     return 0;
 }
 
 int test_monitoring_scalability() {
     printf("Testing monitoring scalability...\n");
-    
+
     // Test 1: Concurrent alert handling
     printf("  Test 1: Concurrent alert handling\n");
     printf("    ✓ Concurrent alert handling: PASS (conceptual)\n");
-    
+
     // Test 2: Large dataset processing
     printf("  Test 2: Large dataset processing\n");
     printf("    ✓ Large dataset processing: PASS (conceptual)\n");
-    
+
     // Test 3: Memory efficiency
     printf("  Test 3: Memory efficiency\n");
     printf("    ✓ Memory efficiency: PASS (conceptual)\n");
-    
+
     return 0;
 }
 
 int main() {
     printf("=== Cerberus Honeypot Monitoring Performance Tests ===\n");
-    
+
     int result = 0;
-    
+
     // Run performance tests
     result += test_monitoring_performance();
     result += test_monitoring_scalability();
-    
+
     printf("\n=== Monitoring Performance Test Results ===\n");
     printf("Tests completed with result: %d\n", result);
-    
+
     if (result == 0) {
         printf("✅ All monitoring performance tests PASSED\n");
         printf("✅ Monitoring system meets performance requirements\n");
@@ -772,7 +772,7 @@ int main() {
         printf("❌ Some monitoring performance tests FAILED\n");
         printf("❌ Monitoring system needs optimization\n");
     }
-    
+
     return result;
 }
 EOF

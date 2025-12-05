@@ -198,7 +198,7 @@ class Output(cowrie.core.output.Output):
 # SUCH DAMAGE.
 
 """
-Send downloaded/uplaoded files to Cuckoo
+Send downloaded/uploaded files to Cuckoo
 
 --- datadog.py ---
 """
@@ -643,7 +643,7 @@ class ReconnectingConnectionPool(adbapi.ConnectionPool):
     by checking exceptions by error code and only disconnecting the current
     connection instead of all of them.
 
-     CR_CONN_HOST_ERROR: 2003: Cant connect to MySQL server on server (10061)
+     CR_CONN_HOST_ERROR: 2003: Can't connect to MySQL server on server (10061)
      CR_SERVER_GONE_ERROR: 2006: MySQL server has gone away
      CR_SERVER_LOST 2013: Lost connection to MySQL server
      ER_LOCK_DEADLOCK 1213: Deadlock found when trying to get lock)
@@ -906,7 +906,7 @@ class CustomJSONEncoder(json.JSONEncoder):
 
 --- s3.py ---
 """
-Send downloaded/uplaoded files to S3 (or compatible)
+Send downloaded/uploaded files to S3 (or compatible)
 """
 
 from __future__ import annotations
@@ -1190,5 +1190,3 @@ class XMPPLoggerProtocol(muc.MUCClient):  # type: ignore
         self.nick = nick
         self.last = {}
         self.activity = None
-
-

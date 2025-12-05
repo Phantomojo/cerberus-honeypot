@@ -274,7 +274,7 @@ Low volume:  Every 30 minutes
 ```
 
 ### 3. Resource Limits
-**Current**: 
+**Current**:
 - Morph: 25% CPU, 128MB RAM
 - Quorum: 50% CPU, 256MB RAM
 

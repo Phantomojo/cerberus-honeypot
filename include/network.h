@@ -1,9 +1,9 @@
 #ifndef NETWORK_H
 #define NETWORK_H
 
-#include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 
 #define MAX_IP_ADDR 32
 #define MAX_INTERFACE_NAME 16
@@ -12,33 +12,33 @@
 
 // Network interface structure
 typedef struct {
-    char name[MAX_INTERFACE_NAME];      // eth0, wlan0, wan0, etc.
-    char ip_address[MAX_IP_ADDR];       // 192.168.1.1
-    char netmask[MAX_IP_ADDR];          // 255.255.255.0
-    char gateway[MAX_IP_ADDR];          // 192.168.1.254
-    uint32_t mtu;                        // MTU size (1500, 1492, etc.)
-    bool is_primary;                     // Primary interface?
+    char name[MAX_INTERFACE_NAME]; // eth0, wlan0, wan0, etc.
+    char ip_address[MAX_IP_ADDR];  // 192.168.1.1
+    char netmask[MAX_IP_ADDR];     // 255.255.255.0
+    char gateway[MAX_IP_ADDR];     // 192.168.1.254
+    uint32_t mtu;                  // MTU size (1500, 1492, etc.)
+    bool is_primary;               // Primary interface?
 } network_interface_t;
 
 // Routing table entry
 typedef struct {
-    char destination[MAX_IP_ADDR];       // 0.0.0.0/0 or 192.168.1.0/24
-    char gateway[MAX_IP_ADDR];           // Via gateway IP
-    char interface[MAX_INTERFACE_NAME];  // eth0, wlan0, etc.
-    uint32_t metric;                     // Route metric (1-9999)
+    char destination[MAX_IP_ADDR];      // 0.0.0.0/0 or 192.168.1.0/24
+    char gateway[MAX_IP_ADDR];          // Via gateway IP
+    char interface[MAX_INTERFACE_NAME]; // eth0, wlan0, etc.
+    uint32_t metric;                    // Route metric (1-9999)
 } routing_entry_t;
 
 // ARP cache entry
 typedef struct {
-    char ip[MAX_IP_ADDR];                // IP address
-    char mac[32];                         // MAC address
-    char interface[MAX_INTERFACE_NAME];  // Interface
-    bool is_permanent;                   // Permanent or dynamic entry?
+    char ip[MAX_IP_ADDR];               // IP address
+    char mac[32];                       // MAC address
+    char interface[MAX_INTERFACE_NAME]; // Interface
+    bool is_permanent;                  // Permanent or dynamic entry?
 } arp_entry_t;
 
 // Network configuration container
 typedef struct {
-    network_interface_t interfaces[5];   // Up to 5 interfaces
+    network_interface_t interfaces[5]; // Up to 5 interfaces
     int interface_count;
     routing_entry_t routing_table[MAX_ROUTING_ENTRIES];
     int routing_count;

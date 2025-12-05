@@ -68,29 +68,29 @@ typedef struct {
     // === IDENTITY ===
     device_profile_t profile;     // What device we're pretending to be
     char hostname[64];
-    
+
     // === TIME (Everything derives from these!) ===
     time_t boot_time;             // When the "system" booted
     uint32_t uptime_seconds;      // Calculated: now - boot_time
-    
+
     // === ENTITIES ===
     process_t processes[128];     // Fake processes
     int process_count;
-    
+
     user_t users[32];             // Fake users
     int user_count;
-    
+
     file_t files[512];            // Tracked files
     int file_count;
-    
+
     interface_t interfaces[8];    // Network interfaces
     int interface_count;
-    
+
     // === DERIVED VALUES (calculated from above) ===
     uint32_t total_memory_kb;
     uint32_t used_memory_kb;
     float load_average[3];
-    
+
 } system_state_t;
 ```
 
@@ -101,21 +101,21 @@ The key insight: **derived values are CALCULATED, not random**.
 ```
 RULE: Memory Usage
     used_memory = SUM(process.memory_kb for each process)
-    
+
 RULE: Load Average  
     load = COUNT(processes where state == RUNNING) / cpu_cores
-    
+
 RULE: Log Timestamps
     FOR each log entry:
         timestamp MUST be >= boot_time
         timestamp MUST be <= now
         timestamps MUST be in chronological order
-        
+
 RULE: File Timestamps
     file.mtime <= now
     file.mtime >= boot_time (for files created after boot)
     file.atime >= file.mtime (accessed after modified)
-    
+
 RULE: Process Start Times
     process.start_time >= boot_time
     process.start_time <= now
@@ -133,12 +133,12 @@ int generate_proc_meminfo(system_state_t* state, char* buf, size_t size) {
     for (int i = 0; i < state->process_count; i++) {
         used += state->processes[i].memory_kb;
     }
-    
+
     uint32_t total = state->profile.total_ram_kb;
     uint32_t free = total - used;
     uint32_t buffers = free * 10 / 100;  // ~10% buffers
     uint32_t cached = free * 25 / 100;   // ~25% cached
-    
+
     snprintf(buf, size,
         "MemTotal:        %8u kB\n"
         "MemFree:         %8u kB\n"
@@ -163,26 +163,26 @@ When we morph, we don't change random values. We:
 void state_morph(system_state_t* state, uint32_t new_seed) {
     // Save profile (identity stays same unless explicitly changed)
     device_profile_t saved_profile = state->profile;
-    
+
     // Reset PRNG with new seed
     prng_seed(new_seed);
-    
+
     // Generate new boot_time (1-365 days ago)
     int days_ago = rand_between(1, 365);
     state->boot_time = time(NULL) - (days_ago * 86400);
-    
+
     // Generate new processes (but consistent with device type)
     generate_processes_for_device(state, &saved_profile);
-    
+
     // Generate new network config
     generate_network_config(state, &saved_profile);
-    
+
     // Recalculate ALL derived values
     state_recalculate(state);
-    
+
     // Regenerate logs (spanning new uptime period)
     generate_logs(state, days_ago);
-    
+
     // Result: Completely different but internally consistent!
 }
 ```

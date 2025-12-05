@@ -48,4 +48,3 @@ The [honeypot] section in config may NOT automatically update the shell response
 - /etc/hostname → Should contain: Netgear_R7000
 - /proc/version → Should show: Linux version 2.6.36.4brcmarm
 - Command handlers → Should use config values
-

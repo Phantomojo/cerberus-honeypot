@@ -68,7 +68,7 @@ bool is_path_traversal(const char* filepath);
    ```c
    // Before (unsafe):
    FILE* f = fopen(filepath, "r");
-   
+
    // After (safe):
    FILE* f = fopen_safe(filepath, "r");
    ```

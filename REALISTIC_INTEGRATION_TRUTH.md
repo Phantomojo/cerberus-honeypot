@@ -141,4 +141,3 @@ It's like building a beautiful API with no client to call it.
 **Integration Level: 10-15%** (realistically)
 **Your Code Quality: 90%+** (well-designed)
 **The Missing Piece: Integration layer between C outputs and Cowrie**
-

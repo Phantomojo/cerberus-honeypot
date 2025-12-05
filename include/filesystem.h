@@ -1,8 +1,11 @@
 #ifndef FILESYSTEM_H
 #define FILESYSTEM_H
 
-#include <time.h>
 #include <stdbool.h>
+#include <time.h>
+#include <stddef.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #define MAX_FILES 100
 #define MAX_PATH_LEN 512
@@ -34,7 +37,7 @@ typedef struct {
 typedef struct {
     char* command_name;
     bool available;
-    char* output_file;  // Location of predefined output
+    char* output_file; // Location of predefined output
 } device_command_t;
 
 // Functions
@@ -46,8 +49,14 @@ void create_session_log_files(filesystem_snapshot_t* fs, const char* session_id)
 void vary_permissions(filesystem_snapshot_t* fs);
 char** get_device_specific_commands(const char* device_type, int* count);
 char** get_available_binaries(const char* architecture, int* count);
-int generate_ls_output(filesystem_snapshot_t* fs, const char* path, char* output, size_t output_size);
-int generate_find_output(filesystem_snapshot_t* fs, const char* pattern, char* output, size_t output_size);
+int generate_ls_output(filesystem_snapshot_t* fs,
+                       const char* path,
+                       char* output,
+                       size_t output_size);
+int generate_find_output(filesystem_snapshot_t* fs,
+                         const char* pattern,
+                         char* output,
+                         size_t output_size);
 int generate_du_output(filesystem_snapshot_t* fs, char* output, size_t output_size);
 void free_filesystem_snapshot(filesystem_snapshot_t* fs);
 

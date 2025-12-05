@@ -39,7 +39,7 @@
 2. **Make them executable and properly formatted**
    - Current issue: Some are text files, not executables
    - Fix: Make them proper shell scripts with `#!/bin/sh`
-   
+
 3. **Add more filesystem-based commands**
    - Create scripts for common recon tools attackers use
    - Examples: `nmap`, `wget`, `curl`, `nc`, `python`, `gcc`
@@ -63,7 +63,7 @@
 
 ---
 
-### Option 2: **Cowrie Python Patching** 
+### Option 2: **Cowrie Python Patching**
 **Difficulty:** Medium-High  
 **Timeline:** 1-2 weeks  
 **Effectiveness:** 90%+
@@ -76,9 +76,9 @@
    # File: /cowrie/cowrie-git/src/cowrie/commands/cerberus_loader.py
    import os
    import json
-   
+
    CERBERUS_DYNAMIC = "/data/cowrie-dynamic"
-   
+
    def load_cerberus_output(command_name):
        """Check if Cerberus has generated output for this command"""
        path = f"{CERBERUS_DYNAMIC}/bin/{command_name}"
@@ -86,7 +86,7 @@
            with open(path, 'r') as f:
                return f.read()
        return None
-   
+
    def load_network_config():
        """Load Cerberus network configuration"""
        config_path = f"{CERBERUS_DYNAMIC}/network-config.json"
@@ -99,25 +99,25 @@
 2. **Patch key commands one by one**
    - Start with high-value targets: `ifconfig`, `netstat`, `free`, `df`
    - Modify each Python file to check Cerberus first:
-   
+
    ```python
    # In /cowrie/cowrie-git/src/cowrie/commands/ifconfig.py
    from cowrie.commands.cerberus_loader import load_cerberus_output, load_network_config
-   
+
    def call(self):
        # Try Cerberus first
        cerberus_output = load_cerberus_output("ifconfig")
        if cerberus_output:
            self.write(cerberus_output)
            return
-       
+
        # Or use Cerberus network config
        config = load_network_config()
        if config:
            # Generate ifconfig from your JSON
            self.write(self.format_from_cerberus(config))
            return
-       
+
        # Fall back to original Cowrie behavior
        self.original_call()
    ```

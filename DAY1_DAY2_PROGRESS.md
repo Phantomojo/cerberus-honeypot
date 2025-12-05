@@ -256,4 +256,3 @@ services/cowrie/custom-commands/
 **Estimated time to completion**: 30-60 minutes
 
 **Confidence level**: High - the code is solid, just need correct mounting strategy.
-

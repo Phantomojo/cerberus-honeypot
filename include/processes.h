@@ -2,8 +2,9 @@
 #define PROCESSES_H
 
 #include <stdbool.h>
-#include <time.h>
 #include <stdint.h>
+#include <time.h>
+#include <sys/types.h>
 
 #define MAX_PROCESSES 100
 #define MAX_PROCESS_NAME 64
@@ -18,7 +19,7 @@ typedef struct {
     uint32_t memory_kb;
     uint32_t cpu_percent;
     time_t start_time;
-    char state;  // R, S, D, Z, T, W, X
+    char state; // R, S, D, Z, T, W, X
     uint32_t thread_count;
 } process_t;
 

@@ -46,39 +46,39 @@ cat > test_encryption.c << 'EOF'
 // Simple encryption test without dependencies
 int test_basic_encryption() {
     printf("Testing basic encryption concepts...\n");
-    
+
     // Test 1: Key validation
     printf("  Test 1: Key validation\n");
     const char* good_key = "this_is_a_32_byte_key_for_testing";
     const char* short_key = "short";
     const char* long_key = "this_key_is_way_too_long_and_should_be_rejected_for_security_reasons";
-    
+
     if (strlen(good_key) == 32) {
         printf("    ✓ Good key length validation: PASS\n");
     } else {
         printf("    ✗ Good key length validation: FAIL\n");
     }
-    
+
     if (strlen(short_key) >= 16) {
         printf("    ✓ Short key length validation: PASS\n");
     } else {
         printf("    ✗ Short key length validation: FAIL\n");
     }
-    
+
     if (strlen(long_key) > 32) {
         printf("    ✓ Long key rejection: PASS\n");
     } else {
         printf("    ✗ Long key rejection: FAIL\n");
     }
-    
+
     // Test 2: Buffer validation
     printf("  Test 2: Buffer validation\n");
     char small_buffer[10];
     char large_input[50];
-    
+
     memset(large_input, 'A', 49);
     large_input[49] = '\0';
-    
+
     // Test safe copy
     if (strlen(large_input) < sizeof(small_buffer)) {
         strcpy(small_buffer, large_input);
@@ -86,7 +86,7 @@ int test_basic_encryption() {
     } else {
         printf("    ✗ Safe copy with invalid input: FAIL (should have been prevented)\n");
     }
-    
+
     // Test unsafe copy
     if (strlen(large_input) >= sizeof(small_buffer)) {
         strcpy(small_buffer, large_input);
@@ -94,13 +94,13 @@ int test_basic_encryption() {
     } else {
         printf("    ✗ Unsafe copy with small input: FAIL (should have succeeded)\n");
     }
-    
+
     return 0;
 }
 
 int test_encryption_framework() {
     printf("Testing encryption framework availability...\n");
-    
+
     // Check if encryption headers exist
     if (system("test -f include/encryption.h") == 0) {
         printf("    ✓ Encryption headers available\n");
@@ -113,20 +113,20 @@ int test_encryption_framework() {
 
 int main() {
     printf("=== Cerberus Honeypot Encryption Tests ===\n");
-    
+
     int result = 0;
-    
+
     // Run basic encryption tests
     result += test_basic_encryption();
-    
+
     // Test encryption framework
     if (!test_encryption_framework()) {
         result += 1;
     }
-    
+
     printf("\n=== Encryption Test Results ===\n");
     printf("Tests completed with result: %d\n", result);
-    
+
     if (result == 0) {
         printf("✅ All encryption tests PASSED\n");
         printf("✅ Encryption framework is ready for integration\n");
@@ -134,7 +134,7 @@ int main() {
         printf("❌ Some encryption tests FAILED\n");
         printf("❌ Encryption framework needs fixes\n");
     }
-    
+
     return result;
 }
 EOF
@@ -156,7 +156,7 @@ echo ""
 echo "5. Testing encryption algorithm support..."
 if [ -f "include/encryption.h" ]; then
     echo "   ✓ Encryption framework exists"
-    
+
     # Create algorithm test
     cat > test_algorithms.c << 'EOF'
 #include <stdio.h>
@@ -164,33 +164,33 @@ if [ -f "include/encryption.h" ]; then
 
 int main() {
     printf("Testing encryption algorithm support...\n");
-    
+
     // Test AES-256-GCM
     if (crypt_is_algorithm_supported(CRYPT_ALGO_AES256_GCM)) {
         printf("  ✓ AES-256-GCM: SUPPORTED\n");
     } else {
         printf("  ✗ AES-256-GCM: NOT SUPPORTED\n");
     }
-    
+
     // Test ChaCha20-Poly1305
     if (crypt_is_algorithm_supported(CRYPT_ALGO_CHACHA20_POLY1305)) {
         printf("  ✓ ChaCha20-Poly1305: SUPPORTED\n");
     } else {
         printf("  ✗ ChaCha20-Poly1305: NOT SUPPORTED\n");
     }
-    
+
     // Test XChaCha20-Poly1305
     if (crypt_is_algorithm_supported(CRYPT_ALGO_XCHACHA20_POLY1305)) {
         printf("  ✓ XChaCha20-Poly1305: SUPPORTED\n");
     } else {
         printf("  ✗ XChaCha20-Poly1305: NOT SUPPORTED\n");
     }
-    
+
     printf("Algorithm support test completed\n");
     return 0;
 }
 EOF
-    
+
     gcc -Iinclude test_algorithms.c -o test_algorithms 2>/dev/null
     if [ $? -eq 0 ]; then
         ./test_algorithms
@@ -213,11 +213,11 @@ cat > test_key_derivation.c << 'EOF'
 
 int test_weak_password_detection() {
     printf("Testing weak password detection...\n");
-    
+
     const char* weak_passwords[] = {
         "password", "123456", "admin", "root", "cerberus", "honeypot"
     };
-    
+
     int weak_count = 0;
     for (size_t i = 0; i < sizeof(weak_passwords) / sizeof(weak_passwords[0]); i++) {
         if (strlen(weak_passwords[i]) < 8) {
@@ -225,48 +225,48 @@ int test_weak_password_detection() {
             weak_count++;
         }
     }
-    
+
     printf("Weak passwords found: %d\n", weak_count);
     return weak_count > 0 ? 1 : 0;
 }
 
 int test_key_derivation_parameters() {
     printf("Testing key derivation parameters...\n");
-    
+
     // Test iteration count
     if (100000 < 100000) {
         printf("  ✗ PBKDF2 iterations: SECURE (>=100000)\n");
     } else {
         printf("  ✗ PBKDF2 iterations: INSECURE (<100000)\n");
     }
-    
+
     // Test salt length
     if (16 >= 16) {
         printf("  ✓ Salt length: SECURE (>=16 bytes)\n");
     } else {
         printf("  ✗ Salt length: INSECURE (<16 bytes)\n");
     }
-    
+
     return 0;
 }
 
 int main() {
     printf("=== Key Derivation Security Tests ===\n");
-    
+
     int result = 0;
-    
+
     result += test_weak_password_detection();
     result += test_key_derivation_parameters();
-    
+
     printf("\n=== Key Derivation Test Results ===\n");
     printf("Tests completed with result: %d\n", result);
-    
+
     if (result == 0) {
         printf("✅ All key derivation security tests PASSED\n");
     } else {
         printf("❌ Some key derivation security tests FAILED\n");
     }
-    
+
     return result;
 }
 EOF
@@ -350,7 +350,7 @@ crypt_key_derivation_t derivation = {
 };
 
 // Derive key from password
-crypt_derive_key("my_secure_password", strlen("my_secure_password"), 
+crypt_derive_key("my_secure_password", strlen("my_secure_password"),
                 &derivation, derived_key, sizeof(derived_key));
 \`\`\`
 
@@ -445,7 +445,7 @@ echo ""
 echo "8. Testing encryption integration..."
 if [ -f "include/encryption.h" ] && [ -f "src/security/encryption.c" ]; then
     echo "   ✓ Encryption modules available for integration"
-    
+
     # Create integration test
     cat > test_encryption_integration.c << 'EOF'
 #include <stdio.h>
@@ -453,7 +453,7 @@ if [ -f "include/encryption.h" ] && [ -f "src/security/encryption.c" ]; then
 
 int main() {
     printf("Testing encryption integration...\n");
-    
+
     // Test encryption context creation
     crypt_context_t ctx;
     if (crypt_init(&ctx, CRYPT_ALGO_AES256_GCM) == CRYPT_SUCCESS) {
@@ -462,23 +462,23 @@ int main() {
         printf("  ✗ Encryption context creation: FAIL\n");
         return 1;
     }
-    
+
     // Test key setting
     uint8_t test_key[32];
     memset(test_key, 0x42, 32);
-    
+
     if (crypt_set_key(&ctx, test_key, 32) == CRYPT_SUCCESS) {
         printf("  ✓ Key setting: PASS\n");
     } else {
         printf("  ✗ Key setting: FAIL\n");
         return 1;
     }
-    
+
     printf("Encryption integration test completed\n");
     return 0;
 }
 EOF
-    
+
     gcc -Iinclude test_encryption_integration.c -o test_encryption_integration 2>/dev/null
     if [ $? -eq 0 ]; then
         ./test_encryption_integration

@@ -12,7 +12,7 @@ This document outlines the setup plan, architecture, and implementation roadmap 
   - Modifies Cowrie banners
   - Swaps web UI themes
   - Runs as daemon or cron job
-  
+
 - **Quorum Engine** (`build/quorum`)
   - Scans logs from all services
   - Detects coordinated attacks (same IP across multiple services)
@@ -69,11 +69,11 @@ This document outlines the setup plan, architecture, and implementation roadmap 
 1. Configure Cowrie:
    - Edit `services/cowrie/etc/cowrie.cfg`
    - Set up banners for morphing
-   
+
 2. Configure Web UIs:
    - Create multiple HTML themes in `services/fake-router-web/html/themes/`
    - Create multiple HTML themes in `services/fake-camera-web/html/themes/`
-   
+
 3. Configure RTSP:
    - Add test video files to `services/rtsp/media/`
    - Configure stream paths in `services/rtsp/conf/mediamtx.yml`
@@ -90,7 +90,7 @@ This document outlines the setup plan, architecture, and implementation roadmap 
    - Banner rotation
    - Theme swapping
    - Logging
-   
+
 2. Implement quorum logic:
    - Log file parsing
    - IP address extraction
@@ -160,7 +160,7 @@ cerberus-honeypot/
 
 ## Security Considerations
 
-⚠️ **IMPORTANT**: 
+⚠️ **IMPORTANT**:
 - Never expose honeypots on production networks
 - Use isolated VMs, containers, or cloud instances
 - Monitor all network traffic
@@ -195,4 +195,3 @@ cerberus-honeypot/
 - Logs centralized for analysis
 - Morphing happens on schedule (configurable)
 - Quorum checks run periodically (configurable)
-

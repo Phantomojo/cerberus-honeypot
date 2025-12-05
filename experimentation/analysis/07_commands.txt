@@ -57,7 +57,7 @@ yum.py
 
 === COMMAND IMPLEMENTATION SAMPLES ===
 --- ls command ---
-# Copyright (c) 2009 Upi Tamminen <desaster@gmail.com>
+# Copyright (c) 2009 Upi Tamminen <disaster@gmail.com>
 # See the COPYRIGHT file for more information
 
 from __future__ import annotations
@@ -109,7 +109,7 @@ class Command_ls(HoneyPotCommand):
         except getopt.GetoptError as err:
 
 --- cat command ---
-# Copyright (c) 2010 Upi Tamminen <desaster@gmail.com>
+# Copyright (c) 2010 Upi Tamminen <disaster@gmail.com>
 # See the COPYRIGHT file for more information
 
 """
@@ -161,7 +161,7 @@ class Command_cat(HoneyPotCommand):
         if len(args) > 0:
 
 --- wget command ---
-# Copyright (c) 2009 Upi Tamminen <desaster@gmail.com>
+# Copyright (c) 2009 Upi Tamminen <disaster@gmail.com>
 # See the COPYRIGHT file for more information
 
 from __future__ import annotations
@@ -263,4 +263,3 @@ Options: (H) means HTTP/HTTPS only, (F) means FTP only
  -b, --cookie STRING/FILE  String or file to read cookies from (H)
  -c, --cookie-jar FILE  Write cookies to this file after operation (H)
      --create-dirs   Create necessary local directory hierarchy
-
