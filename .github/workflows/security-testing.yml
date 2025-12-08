@@ -28,7 +28,7 @@ jobs:
           flawfinder --min-cvss 2 --html src/ 2>flawfinder.html || true
 
       - name: Upload static analysis results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: static-analysis-results
           path: |
@@ -63,7 +63,7 @@ jobs:
           timeout 60s bash -c "valgrind --leak-check=full --show-leak-kinds=all ./build/morph profiles.conf" 2>valgrind-results.log || true
 
       - name: Upload memory safety results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: memory-safety-results
           path: |
@@ -93,7 +93,7 @@ jobs:
           [ -f MEMORY_SAFETY_REPORT.md ] || echo "# Memory Safety Report\n\nNo issues detected in CI run." > MEMORY_SAFETY_REPORT.md
 
       - name: Upload validation results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: input-validation-results
           path: |
@@ -116,7 +116,7 @@ jobs:
           ./scripts/sandbox_test.sh || true
 
       - name: Upload sandbox results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: sandbox-results
           path: |
@@ -149,7 +149,7 @@ jobs:
           touch gitleaks-report.json
 
       - name: Upload security scan results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: security-scan-results
           path: |
@@ -203,7 +203,7 @@ jobs:
           readelf -h ./build/morph > build-security-results/header.txt || true
 
       - name: Upload build security results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: always()
         with:
           name: build-security-results
@@ -327,7 +327,7 @@ jobs:
           EOF
 
       - name: Upload security report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: security-report
           path: SECURITY_REPORT.md
