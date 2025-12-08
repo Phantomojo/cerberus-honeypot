@@ -25,7 +25,7 @@ jobs:
       TRIVY_CACHE_DIR: .trivycache
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Cache Trivy DB
         uses: actions/cache@v4
@@ -78,7 +78,7 @@ jobs:
       DOCKERFILE_PATH: docker/Dockerfile
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Ensure Dockerfile path (fallback to Dockerfile at repo root)
         id: df
@@ -133,7 +133,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install build and coverage tools
         run: |
