@@ -173,7 +173,7 @@ jobs:
           genhtml coverage.info --output-directory coverage_html --title "CERBERUS Coverage" --legend --branch-coverage
 
       - name: Upload coverage artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: lcov-coverage
           path: |
