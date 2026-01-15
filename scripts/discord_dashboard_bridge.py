@@ -12,13 +12,13 @@ from datetime import datetime, timezone
 
 # Project Paths
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-LOG_FILE = os.path.join(BASE_DIR, "services/cowrie/logs/cowrie.log")
+LOG_FILE = os.path.join(BASE_DIR, "services/cowrie/logs/cowrie.json")
 STATE_FILE = os.path.join(BASE_DIR, "build/morph-state.txt")
 
 # Configuration (Use environment variable or edit here)
 WEBHOOK_URL = os.environ.get('DISCORD_WEBHOOK_URL', 'https://discord.com/api/webhooks/1461396752476147732/7AWPteoO0kSlaafXlH0AXJ-hQjlySclz2OSYQaX-8kA03ZzRMkcBaDZdpiEUlyYAsOtL')
 # If using a Forum Channel, specify a thread name to create a new post, or thread_id to post to existing
-THREAD_NAME = "🛡️ Cerberus Live Dashboard - " + datetime.now().strftime("%Y-%m-%d %H:%M")
+THREAD_NAME = "🛡️ Cerberus Live Dashboard - " + datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M")
 THREAD_ID = os.environ.get('DISCORD_THREAD_ID', None) 
 
 def post_to_discord(content, title="Cerberus Status", color=0x3498db):
@@ -65,8 +65,8 @@ def get_current_profile():
     return "N/A"
 
 def monitor():
-    print("🚀 Cerberus-to-Discord Bridge Started")
-    print("Monitoring for morphs and SSH activity...")
+    print("🚀 Cerberus-to-Discord Bridge Started (JSON mode)")
+    print(f"Monitoring: {LOG_FILE}")
 
     last_profile = get_current_profile()
     post_to_discord(f"🛡️ **Cerberus System Online**\nInitial Profile: `{last_profile}`", "System Start", 0x2ecc71)
@@ -94,18 +94,25 @@ def monitor():
                     f.seek(log_size)
                     new_lines = f.readlines()
                     for line in new_lines:
-                        line = line.strip()
-                        if "New connection" in line:
-                            ip = line.split('connection: ')[1].split(' ')[0] if 'connection: ' in line else "Unknown"
-                            post_to_discord(f"🌐 **New Connection Detected**\nSource: `{ip}`", "Intrusion Alert", 0x34495e)
-                        elif "login attempt" in line:
-                            status = "SUCCESS" if "succeeded" in line else "FAILED"
-                            user_pass = line.split('attempt [')[1].split(']')[0] if '[' in line else "Unknown"
-                            color = 0xe74c3c if "failed" in line.lower() else 0xf1c40f
-                            post_to_discord(f"🔑 **Login Attempt: {status}**\nCredentials: `{user_pass}`", "Authentication Event", color)
-                        elif "CMD:" in line:
-                            cmd = line.split('CMD: ')[1]
-                            post_to_discord(f"⌨️ **Command Executed**\n`$ {cmd}`", "Shell Activity", 0xe67e22)
+                        try:
+                            data = json.loads(line.strip())
+                            eventid = data.get('eventid')
+                            src_ip = data.get('src_ip', 'Unknown')
+                            
+                            if eventid == "cowrie.session.connect":
+                                post_to_discord(f"🌐 **New Connection Detected**\nSource: `{src_ip}`", "Intrusion Alert", 0x34495e)
+                            elif eventid == "cowrie.login.success":
+                                user = data.get('username', 'Unknown')
+                                pwd = data.get('password', 'Unknown')
+                                post_to_discord(f"🔑 **Login SUCCESS**\nUser: `{user}`\nPass: `{pwd}`\nSource: `{src_ip}`", "Authentication Event", 0xf1c40f)
+                            elif eventid == "cowrie.login.failed":
+                                user = data.get('username', 'Unknown')
+                                pwd = data.get('password', 'Unknown')
+                                post_to_discord(f"🔒 **Login Failed**\nUser: `{user}`\nPass: `{pwd}`\nSource: `{src_ip}`", "Authentication Event", 0xe74c3c)
+                            elif eventid == "cowrie.command.input":
+                                cmd = data.get('input', '')
+                                post_to_discord(f"⌨️ **Command Executed**\n`$ {cmd}`\nSource: `{src_ip}`", "Shell Activity", 0xe67e22)
+                        except: continue
                 log_size = current_size
 
             # 3. Periodic Quorum Check (every 10 seconds or so)

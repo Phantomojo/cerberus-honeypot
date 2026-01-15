@@ -11,9 +11,11 @@ services:
       - "2222:2222" # SSH (mapped to non-standard port)
       - "2323:2323" # Telnet (mapped to non-standard port)
     volumes:
-      - ../services/cowrie/data:/data
-      - ../services/cowrie/logs:/var/log/cowrie
-      - ../services/cowrie/etc:/etc/cowrie
+      - ../services/cowrie/data:/cowrie/cowrie-git/var/lib/cowrie/data
+      - ../services/cowrie/logs:/cowrie/cowrie-git/var/log/cowrie:rw
+      - ../services/cowrie/etc/cowrie.cfg:/cowrie/cowrie-git/etc/cowrie.cfg:ro
+      - ../services/cowrie/etc/cowrie.cfg.local:/cowrie/cowrie-git/etc/cowrie.cfg.local:ro
+      - ../services/cowrie/etc/userdb.txt:/cowrie/cowrie-git/etc/userdb.txt:ro
       - ../services/cowrie/honeyfs:/cowrie/cowrie-git/share/cowrie/honeyfs:rw
       - ../build/cowrie-dynamic:/data/cowrie-dynamic:ro
     environment:

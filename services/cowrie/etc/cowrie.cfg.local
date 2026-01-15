@@ -4,11 +4,11 @@
 
 [output_jsonlog]
 enabled = true
-logfile = log/cowrie.json
+logfile = var/log/cowrie/cowrie.json
 
 [output_textlog]
 enabled = true
-logfile = log/cowrie.log
+logfile = var/log/cowrie/cowrie.log
 
 [ssh]
 # SSH settings
