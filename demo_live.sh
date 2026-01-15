@@ -67,21 +67,45 @@ echo ""
 read -p "Press ENTER to start SSH session..."
 ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p 2222 root@localhost
 
-# SECTION 7: Quorum Detection
+# SECTION 7: Live Dashboard
 echo ""
-echo "=== SECTION 7: Quorum Detection ==="
+echo "=== SECTION 7: LIVE DASHBOARD ==="
+echo "Option A: Local Terminal Dashboard"
+echo "Launch it in a separate terminal during the demo!"
+echo "Run: python3 scripts/dashboard.py"
+echo ""
+echo "Option B: Discord-as-Dashboard (RECOMMENDED)"
+echo "This mirrors ALL honeypot events to your Discord channel!"
+echo "Run: python3 scripts/discord_dashboard_bridge.py"
+echo ""
+read -p "Launch Local Dashboard now? (y/n): " launch_dash
+if [ "$launch_dash" = "y" ]; then
+    python3 scripts/dashboard.py
+fi
+
+# SECTION 8: Discord Alerts
+echo ""
+echo "=== SECTION 8: DISCORD ALERT SYSTEM ==="
+echo "The system can push alerts directly to your team on Discord."
+echo "To test the integration (requires Webhook URL in scripts/discord_notifier.py):"
+python3 scripts/discord_notifier.py "Team, Cerberus Live Exhibit is starting! Prepare for attacker ingestion."
+pause
+
+# SECTION 9: Quorum Detection
+echo ""
+echo "=== SECTION 9: Quorum Detection ==="
 echo "Testing coordinated attack detection..."
 ./build/quorum /tmp/test_quorum_logs
 pause
 
-# SECTION 8: Test Results
-echo "=== SECTION 8: Test Suite Results ==="
+# SECTION 10: Test Results
+echo "=== SECTION 10: Test Suite Results ==="
 echo "Quick test summary:"
 make test 2>&1 | grep -E "PASS|passed|All tests"
 pause
 
-# SECTION 9: Integration Proof
-echo "=== SECTION 9: Cowrie Integration ==="
+# SECTION 11: Integration Proof
+echo "=== SECTION 11: Cowrie Integration ==="
 echo "Showing cerberus_loader in Cowrie container:"
 docker exec cerberus-cowrie ls -la /cowrie/cowrie-git/src/cowrie/commands/ 2>/dev/null | grep cerberus || echo "Container files verified!"
 pause
