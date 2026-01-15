@@ -1,10 +1,14 @@
+#define _GNU_SOURCE
 #include "sandbox.h"
 
 #include "utils.h"
 
 #include <errno.h>
 #include <fcntl.h>
-#include <signal.h>
+#include <grp.h>
+#include <linux/sched.h>
+#include <pwd.h>
+#include <sched.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -162,34 +166,45 @@ sandbox_result_t apply_resource_limits(const sandbox_config_t* config) {
     return SANDBOX_SUCCESS;
 }
 
-// Setup network namespace (simplified)
+// Setup network namespace using unshare
 sandbox_result_t setup_network_namespace(const sandbox_config_t* config) {
-    // This is a simplified implementation
-    // In production, you'd use unshare() with CLONE_NEWNET
-    // For now, we'll just log the intent
+    if (!config->network_isolated) {
+        return SANDBOX_SUCCESS;
+    }
 
-    log_event_level(LOG_INFO, "setup_network_namespace: Network isolation requested");
+    log_event_level(LOG_INFO, "setup_network_namespace: Isolating network namespace");
 
-    // TODO: Implement proper network namespace with unshare()
-    // This requires CAP_SYS_ADMIN capabilities
+    // UNshare the network namespace
+    if (unshare(CLONE_NEWNET) != 0) {
+        log_event_level(LOG_ERROR, "setup_network_namespace: Failed to unshare network namespace");
+        return SANDBOX_ERROR_SYSTEM;
+    }
+
+    // After unshare, we need to bring up loopback if we want any internal net activity
+    // But since we are strictly isolating, we leave it down unless needed.
 
     return SANDBOX_SUCCESS;
 }
 
-// Setup filesystem restrictions
+// Setup filesystem restrictions with mount namespaces
 sandbox_result_t setup_filesystem_restrictions(const sandbox_config_t* config) {
-    // Create read-only mounts if specified
-    if (strlen(config->readonly_paths) > 0) {
-        // TODO: Implement mount namespace with read-only mounts
-        // This requires proper privilege handling
-        log_event_level(LOG_INFO, "setup_filesystem_restrictions: Read-only paths requested");
+    log_event_level(LOG_INFO, "setup_filesystem_restrictions: Setting up mount namespace");
+
+    // Unshare mount namespace
+    if (unshare(CLONE_NEWNS) != 0) {
+        log_event_level(LOG_ERROR,
+                        "setup_filesystem_restrictions: Failed to unshare mount namespace");
+        return SANDBOX_ERROR_CHROOT;
     }
 
-    // Create tmpfs for temporary files
-    if (strlen(config->tmpfs_size) > 0) {
-        // TODO: Mount tmpfs in sandbox
-        log_event_level(LOG_INFO, "setup_filesystem_restrictions: Temporary filesystem requested");
+    // Make all mounts private to this namespace
+    if (mount(NULL, "/", NULL, MS_REC | MS_PRIVATE, NULL) != 0) {
+        log_event_level(LOG_ERROR, "setup_filesystem_restrictions: Failed to make mounts private");
+        return SANDBOX_ERROR_CHROOT;
     }
+
+    // If we have a chroot, we will mount necessary things there later in the child
+    // but we can prepare read-only paths here if they are outside chroot.
 
     return SANDBOX_SUCCESS;
 }
@@ -197,15 +212,45 @@ sandbox_result_t setup_filesystem_restrictions(const sandbox_config_t* config) {
 // Drop privileges
 sandbox_result_t drop_privileges(const sandbox_config_t* config) {
     if (strlen(config->user) > 0) {
-        // TODO: Implement proper user/group switching
-        // This requires running as root initially
-        log_event_level(LOG_INFO, "drop_privileges: Privilege drop requested");
+        log_event_level(LOG_INFO, "drop_privileges: Dropping privileges to non-root user");
 
-        // For now, just validate the user exists
-        if (!is_valid_sandbox_user(config->user)) {
-            log_event_level(LOG_ERROR, "drop_privileges: Invalid sandbox user");
+        struct passwd* pw = getpwnam(config->user);
+        if (!pw) {
+            log_event_level(LOG_ERROR, "drop_privileges: User not found");
             return SANDBOX_ERROR_USER;
         }
+
+        struct group* gr = getgrnam(config->group[0] != '\0' ? config->group : config->user);
+        gid_t gid = pw->pw_gid;
+        if (gr) {
+            gid = gr->gr_gid;
+        }
+
+        // Initialize supplementary groups
+        if (initgroups(config->user, gid) != 0) {
+            log_event_level(LOG_ERROR, "drop_privileges: Failed to initgroups");
+            return SANDBOX_ERROR_USER;
+        }
+
+        // Drop GID
+        if (setgid(gid) != 0) {
+            log_event_level(LOG_ERROR, "drop_privileges: Failed to setgid");
+            return SANDBOX_ERROR_USER;
+        }
+
+        // Drop UID
+        if (setuid(pw->pw_uid) != 0) {
+            log_event_level(LOG_ERROR, "drop_privileges: Failed to setuid");
+            return SANDBOX_ERROR_USER;
+        }
+
+        // Verify we can't regain root
+        if (setuid(0) != -1 || getuid() == 0) {
+            log_event_level(LOG_ERROR, "drop_privileges: Privilege drop verification failed");
+            return SANDBOX_ERROR_USER;
+        }
+
+        log_event_level(LOG_INFO, "drop_privileges: Successfully dropped privileges");
     }
 
     return SANDBOX_SUCCESS;

@@ -1,0 +1,59 @@
+"""
+Generic AI Command - powered by HoneyGPT
+This handler catches commands and forwards them to the AI bridge.
+"""
+
+from __future__ import annotations
+import socket
+from cowrie.shell.command import HoneyPotCommand
+
+# HoneyGPT service address (inside Docker network)
+HONEYGPT_HOST = "honeygpt"
+HONEYGPT_PORT = 50051
+
+class Command_generic_ai(HoneyPotCommand):
+    """
+    Generic command that forwards input to the HoneyGPT AI service.
+    """
+
+    def call(self):
+        full_command = " ".join([self.args[0]] + self.args[1:]) if self.args else self.environ.get('COMMAND_LINE', '')
+        if not full_command:
+            # Try to reconstruct from call info if possible
+            full_command = self.environ.get('last_command', 'unknown')
+
+        # Connect to HoneyGPT Bridge
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.settimeout(30)
+                s.connect((HONEYGPT_HOST, HONEYGPT_PORT))
+                s.sendall(full_command.encode('utf-8'))
+                response = s.recv(8192).decode('utf-8')
+                self.write(response)
+                if not response.endswith('\n'):
+                    self.write('\n')
+        except Exception as e:
+            self.write(f"sh: {full_command}: command not found\n")
+
+# Entry point for Cowrie
+commands = {}
+aicmd = Command_generic_ai
+
+# Map common missing commands to the AI
+targets = [
+    'python', 'python3', 'pip', 'wget', 'curl',
+    'iptables', 'ip', 'ifconfig', 'tcpdump',
+    'nmap', 'nc', 'netcat', 'gcc', 'g++', 'make',
+    'sudo', 'apt', 'apt-get', 'yum', 'df', 'top',
+    'free', 'uptime', 'dmesg', 'mysql', 'ps',
+    # Router-specific commands
+    'nvram', 'show', 'enable', 'configure', 'config',
+    'router', 'wireless', 'vlan', 'interface'
+]
+
+for t in targets:
+    commands[t] = aicmd
+    commands[f'/bin/{t}'] = aicmd
+    commands[f'/usr/bin/{t}'] = aicmd
+    commands[f'/sbin/{t}'] = aicmd
+    commands[f'/usr/sbin/{t}'] = aicmd

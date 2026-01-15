@@ -30,6 +30,7 @@ char* str_dup(const char* str);
 // Path utilities
 int create_dir(const char* dirpath);
 int get_file_size(const char* filepath);
+int execute_command_safely(const char* cmd, char* const argv[]);
 
 // Path security functions
 bool is_safe_path(const char* filepath);

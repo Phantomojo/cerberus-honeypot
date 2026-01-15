@@ -198,7 +198,8 @@ crypt_result_t crypt_encrypt(const crypt_context_t* ctx,
     }
 
     // Generate random IV
-    if (crypt_generate_random_bytes(ctx->iv, crypt_get_iv_size(ctx->algorithm)) != CRYPT_SUCCESS) {
+    if (crypt_generate_random_bytes((uint8_t*)ctx->iv, crypt_get_iv_size(ctx->algorithm)) !=
+        CRYPT_SUCCESS) {
         return CRYPT_ERROR_INVALID_IV;
     }
 

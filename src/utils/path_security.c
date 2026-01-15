@@ -259,7 +259,7 @@ FILE* fopen_safe(const char* filepath, const char* mode) {
 
     int fd = open(sanitized_path, flags, perm);
     if (fd < 0) {
-        char msg[512];
+        char msg[1024]; // Sufficient for "Failed to open..." + path
         snprintf(msg, sizeof(msg), "Failed to open file (sanitized): %s", sanitized_path);
         log_event_level(LOG_DEBUG, msg);
         return NULL;

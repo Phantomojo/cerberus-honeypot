@@ -3,8 +3,8 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include <time.h>
 #include <sys/types.h>
+#include <time.h>
 
 #define MAX_PROCESSES 100
 #define MAX_PROCESS_NAME 64

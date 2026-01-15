@@ -618,6 +618,7 @@ rand_bool 15 && echo "/dev/sda1 /mnt/usb vfat rw,noatime 0 0" >> "${HONEYFS_DIR}
 rand_bool 20 && echo "/dev/mmcblk0p1 /mnt/sd vfat rw,noatime 0 0" >> "${HONEYFS_DIR}/proc/mounts"
 
 # /proc/net/dev - Network stats
+mkdir -p "${HONEYFS_DIR}/proc/net"
 cat > "${HONEYFS_DIR}/proc/net/dev" << EOF
 Inter-|   Receive                                                |  Transmit
  face |bytes    packets errs drop fifo frame compressed multicast|bytes    packets errs drop fifo colls carrier compressed

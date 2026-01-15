@@ -1,0 +1,5 @@
+requests
+pexpect
+pydantic
+pytest
+python-dotenv

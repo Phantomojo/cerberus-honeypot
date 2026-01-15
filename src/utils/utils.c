@@ -8,6 +8,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -358,4 +359,36 @@ int write_config_value(const char* filepath, const char* key, const char* value)
     int rc = fprintf(f, "%s=%s\n", key, value);
     fclose(f);
     return (rc >= 0) ? 0 : -1;
+}
+
+int execute_command_safely(const char* cmd, char* const argv[]) {
+    if (!cmd || !argv)
+        return -1;
+
+    pid_t pid = fork();
+    if (pid == -1) {
+        log_event_level(LOG_ERROR, "execute_command_safely: fork failed");
+        return -1;
+    }
+
+    if (pid == 0) {
+        // Child process
+        execvp(cmd, argv);
+        // If we reach here, exec failed
+        perror("execvp");
+        exit(1);
+    }
+
+    // Parent process
+    int status;
+    if (waitpid(pid, &status, 0) == -1) {
+        log_event_level(LOG_ERROR, "execute_command_safely: waitpid failed");
+        return -1;
+    }
+
+    if (WIFEXITED(status)) {
+        return WEXITSTATUS(status);
+    }
+
+    return -1;
 }

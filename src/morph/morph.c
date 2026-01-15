@@ -764,16 +764,15 @@ int setup_honeyfs_for_profile(const char* device_name, const char* profile_type)
 
     // Build the command to run our setup script
     // The script creates a realistic fake filesystem based on device type
-    char cmd[512];
-    snprintf(cmd,
-             sizeof(cmd),
-             "./scripts/setup_honeyfs.sh services/cowrie/honeyfs %s \"%s\" >/dev/null 2>&1",
-             profile_type,
-             device_name);
+    char* argv[] = {"./scripts/setup_honeyfs.sh",
+                    "services/cowrie/honeyfs",
+                    (char*)profile_type,
+                    (char*)device_name,
+                    NULL};
 
     // Check if script exists before trying to run it
     if (file_exists("scripts/setup_honeyfs.sh")) {
-        int result = system(cmd);
+        int result = execute_command_safely(argv[0], argv);
         if (result == 0) {
             char msg[256];
             snprintf(msg, sizeof(msg), "Honeyfs configured for %s (%s)", device_name, profile_type);

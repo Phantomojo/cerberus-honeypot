@@ -2,10 +2,10 @@
 #define FILESYSTEM_H
 
 #include <stdbool.h>
-#include <time.h>
 #include <stddef.h>
-#include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/types.h>
+#include <time.h>
 
 #define MAX_FILES 100
 #define MAX_PATH_LEN 512
