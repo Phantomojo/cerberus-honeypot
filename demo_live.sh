@@ -78,6 +78,11 @@ echo "Option B: Discord-as-Dashboard (RECOMMENDED)"
 echo "This mirrors ALL honeypot events to your Discord channel!"
 echo "Run: python3 scripts/discord_dashboard_bridge.py"
 echo ""
+echo "Option C: Web Operational Dashboard (Visual High-Fidelity)"
+echo "A sleek, dark-mode web UI with topology map."
+echo "Run: python3 scripts/web_dashboard.py"
+echo "View at: http://localhost:5000"
+echo ""
 read -p "Launch Local Dashboard now? (y/n): " launch_dash
 if [ "$launch_dash" = "y" ]; then
     python3 scripts/dashboard.py

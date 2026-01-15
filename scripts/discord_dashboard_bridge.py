@@ -108,6 +108,17 @@ def monitor():
                             post_to_discord(f"⌨️ **Command Executed**\n`$ {cmd}`", "Shell Activity", 0xe67e22)
                 log_size = current_size
 
+            # 3. Periodic Quorum Check (every 10 seconds or so)
+            if int(time.time()) % 10 == 0:
+                try:
+                    # Run quorum engine
+                    res = subprocess.run([os.path.join(BASE_DIR, "build/quorum")], capture_output=True, text=True, timeout=5)
+                    if res.returncode == 1: # Alert detected
+                        # Extract the alert details (IP and services)
+                        alert_text = res.stdout.split("ALERT:")[1].split("---")[0] if "ALERT:" in res.stdout else "Coordinated attack detected!"
+                        post_to_discord(f"🚨 **QUORUM ALERT: COORDINATED ATTACK**\n{alert_text.strip()}", "Security Alert", 0xff0000)
+                except: pass
+
             time.sleep(2)
     except KeyboardInterrupt:
         print("\nStopping bridge...")
