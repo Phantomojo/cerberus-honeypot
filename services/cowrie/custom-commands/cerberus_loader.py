@@ -14,11 +14,11 @@ CERBERUS_DYNAMIC = "/data/cowrie-dynamic"
 def load_cerberus_output(command_name: str, args: list = None) -> Optional[str]:
     """
     Load command output from Cerberus dynamic files.
-    
+
     Args:
         command_name: Name of the command (e.g., 'docker', 'systemctl')
         args: Command arguments (for commands that have different outputs based on args)
-    
+
     Returns:
         Command output as string, or None if not found
     """
@@ -30,7 +30,7 @@ def load_cerberus_output(command_name: str, args: list = None) -> Optional[str]:
                 return f.read()
         except Exception:
             pass
-    
+
     # Try usr/bin/
     path = os.path.join(CERBERUS_DYNAMIC, "usr/bin", command_name)
     if os.path.exists(path):
@@ -39,14 +39,14 @@ def load_cerberus_output(command_name: str, args: list = None) -> Optional[str]:
                 return f.read()
         except Exception:
             pass
-    
+
     return None
 
 
 def load_network_config() -> Optional[dict]:
     """
     Load Cerberus network configuration.
-    
+
     Returns:
         Network config dict, or None if not found
     """
@@ -63,7 +63,7 @@ def load_network_config() -> Optional[dict]:
 def load_behavior_config() -> Optional[dict]:
     """
     Load Cerberus behavioral adaptation config.
-    
+
     Returns:
         Behavior config dict, or None if not found
     """
@@ -85,4 +85,3 @@ def load_behavior_config() -> Optional[dict]:
 def cerberus_available() -> bool:
     """Check if Cerberus dynamic directory exists."""
     return os.path.exists(CERBERUS_DYNAMIC)
-

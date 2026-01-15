@@ -14,11 +14,11 @@ echo "Setting up CERBERUS services..."
 # Setup Cowrie
 setup_cowrie() {
     echo -e "${GREEN}Setting up Cowrie honeypot...${NC}"
-    
+
     if [ ! -d "services/cowrie" ]; then
         mkdir -p services/cowrie/{logs,data,etc}
     fi
-    
+
     # Create basic Cowrie config if it doesn't exist
     if [ ! -f "services/cowrie/etc/cowrie.cfg" ]; then
         cat > services/cowrie/etc/cowrie.cfg <<EOF
@@ -32,7 +32,7 @@ logfile = log/cowrie.log
 EOF
         echo "Created basic Cowrie configuration"
     fi
-    
+
     # Clone Cowrie if not present (optional, can use Docker image)
     if [ ! -d "services/cowrie/cowrie" ]; then
         echo "Cowrie source not found. Using Docker image (recommended)."
@@ -44,9 +44,9 @@ EOF
 # Setup Router Web UI
 setup_router_web() {
     echo -e "${GREEN}Setting up fake router web UI...${NC}"
-    
+
     mkdir -p services/fake-router-web/{html,conf}
-    
+
     # Create nginx config
     cat > services/fake-router-web/conf/nginx.conf <<'EOF'
 events {
@@ -56,26 +56,26 @@ events {
 http {
     include       /etc/nginx/mime.types;
     default_type  application/octet-stream;
-    
+
     sendfile        on;
     keepalive_timeout  65;
-    
+
     server {
         listen       80;
         server_name  localhost;
         root         /usr/share/nginx/html;
         index        index.html;
-        
+
         location / {
             try_files $uri $uri/ /index.html;
         }
-        
+
         access_log  /var/log/nginx/router-access.log;
         error_log   /var/log/nginx/router-error.log;
     }
 }
 EOF
-    
+
     # Create basic router HTML
     cat > services/fake-router-web/html/index.html <<'EOF'
 <!DOCTYPE html>
@@ -99,16 +99,16 @@ EOF
 </body>
 </html>
 EOF
-    
+
     echo "Router web UI configured"
 }
 
 # Setup Camera Web UI
 setup_camera_web() {
     echo -e "${GREEN}Setting up fake camera web UI...${NC}"
-    
+
     mkdir -p services/fake-camera-web/{html,conf}
-    
+
     # Create nginx config
     cat > services/fake-camera-web/conf/nginx.conf <<'EOF'
 events {
@@ -118,26 +118,26 @@ events {
 http {
     include       /etc/nginx/mime.types;
     default_type  application/octet-stream;
-    
+
     sendfile        on;
     keepalive_timeout  65;
-    
+
     server {
         listen       80;
         server_name  localhost;
         root         /usr/share/nginx/html;
         index        index.html;
-        
+
         location / {
             try_files $uri $uri/ /index.html;
         }
-        
+
         access_log  /var/log/nginx/camera-access.log;
         error_log   /var/log/nginx/camera-error.log;
     }
 }
 EOF
-    
+
     # Create basic camera HTML
     cat > services/fake-camera-web/html/index.html <<'EOF'
 <!DOCTYPE html>
@@ -163,16 +163,16 @@ EOF
 </body>
 </html>
 EOF
-    
+
     echo "Camera web UI configured"
 }
 
 # Setup RTSP Server
 setup_rtsp() {
     echo -e "${GREEN}Setting up RTSP server...${NC}"
-    
+
     mkdir -p services/rtsp/{conf,media}
-    
+
     # Create MediaMTX config
     cat > services/rtsp/conf/mediamtx.yml <<'EOF'
 # MediaMTX configuration for CERBERUS honeynet
@@ -185,7 +185,7 @@ paths:
     runOnInit: echo "RTSP stream started"
     runOnInitRestart: yes
 EOF
-    
+
     echo "RTSP server configured"
 }
 
@@ -207,4 +207,3 @@ main() {
 }
 
 main
-

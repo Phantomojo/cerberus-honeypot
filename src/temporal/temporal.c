@@ -1,16 +1,18 @@
 /**
  * temporal.c - Temporal evolution module
- * 
+ *
  * Simulates system aging, log accumulation, and configuration changes
  * to make the honeypot appear to have a realistic history.
  */
+
+#include "temporal.h"
+
+#include "utils.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include "temporal.h"
-#include "utils.h"
 
 // Common kernel messages
 static const char* kernel_messages[] = {
@@ -28,8 +30,7 @@ static const char* kernel_messages[] = {
     "kernel: [0.111281] ACPI Exception: AE_NOT_FOUND, Module [DSDT], Line 0",
     "kernel: [0.121381] ACPI: System BIOS age 0 ACPI Subsystem version",
     "systemd[1]: Started Session 1 of user root.",
-    "systemd[1]: Startup finished in 2.341s (kernel) + 1.823s (userspace) = 4.164s"
-};
+    "systemd[1]: Startup finished in 2.341s (kernel) + 1.823s (userspace) = 4.164s"};
 static const int kernel_messages_count = sizeof(kernel_messages) / sizeof(kernel_messages[0]);
 
 // Realistic system messages
@@ -42,8 +43,7 @@ static const char* system_messages[] = {
     "dnsmasq[%d]: listening on 192.168.1.1#53",
     "dnsmasq[%d]: query[A] google.com from 192.168.1.50",
     "dhcpd: Received DHCPDISCOVER from 00:11:22:33:44:55 via eth0",
-    "kernel: [12345.678901] Out of memory: Kill process %d (%s) score %u or sacrifice child"
-};
+    "kernel: [12345.678901] Out of memory: Kill process %d (%s) score %u or sacrifice child"};
 static const int system_messages_count = sizeof(system_messages) / sizeof(system_messages[0]);
 
 /**
@@ -52,7 +52,7 @@ static const int system_messages_count = sizeof(system_messages) / sizeof(system
 int get_realistic_uptime_seconds(void) {
     // Biased toward recent boots, but some old systems
     int days = 1 + (rand() % 365);
-    
+
     // 20% chance of longer uptime (2-5 years)
     if (rand() % 100 < 20) {
         days = 365 + (rand() % (365 * 4));
@@ -75,7 +75,8 @@ time_t get_realistic_boot_time(void) {
  */
 system_state_t* create_initial_system_state(time_t boot_time) {
     system_state_t* state = (system_state_t*)malloc(sizeof(system_state_t));
-    if (!state) return NULL;
+    if (!state)
+        return NULL;
 
     memset(state, 0, sizeof(system_state_t));
     state->timestamp = boot_time;
@@ -85,9 +86,7 @@ system_state_t* create_initial_system_state(time_t boot_time) {
     state->log_entries_count = 0;
 
     // Random kernel versions
-    static const char* kernels[] = {
-        "3.10.49", "3.0.8", "2.6.36.4", "4.4.0", "2.6.30"
-    };
+    static const char* kernels[] = {"3.10.49", "3.0.8", "2.6.36.4", "4.4.0", "2.6.30"};
     strncpy(state->kernel_version, kernels[rand() % 5], 127);
 
     // Random update timestamps
@@ -102,7 +101,8 @@ system_state_t* create_initial_system_state(time_t boot_time) {
  * Advance system time
  */
 void advance_system_time(system_state_t* state, uint32_t seconds) {
-    if (!state) return;
+    if (!state)
+        return;
     state->uptime_seconds += seconds;
     state->timestamp += seconds;
 }
@@ -111,7 +111,8 @@ void advance_system_time(system_state_t* state, uint32_t seconds) {
  * Simulate system aging
  */
 void simulate_system_aging(system_state_t* state) {
-    if (!state) return;
+    if (!state)
+        return;
 
     // Update uptime gradually
     advance_system_time(state, 3600 + (rand() % 86400));
@@ -124,7 +125,7 @@ void simulate_system_aging(system_state_t* state) {
     // Occasional reboots (less common as uptime increases)
     if (state->uptime_seconds > 86400 && rand() % 1000 < 3) {
         state->total_boots++;
-        state->uptime_seconds = rand() % 3600;  // Reset to short uptime
+        state->uptime_seconds = rand() % 3600; // Reset to short uptime
     }
 }
 
@@ -132,7 +133,8 @@ void simulate_system_aging(system_state_t* state) {
  * Accumulate log files
  */
 void accumulate_log_files(system_state_t* state) {
-    if (!state) return;
+    if (!state)
+        return;
 
     // Add kernel messages
     if (state->log_entries_count < MAX_LOG_ENTRIES && rand() % 100 < 10) {
@@ -153,13 +155,13 @@ void accumulate_log_files(system_state_t* state) {
  * Simulate configuration changes
  */
 void simulate_configuration_changes(system_state_t* state) {
-    if (!state) return;
+    if (!state)
+        return;
 
     // Occasional configuration updates
     if (rand() % 100 < 3) {
         char msg[256];
-        snprintf(msg, sizeof(msg), "Configuration file updated: %s",
-                 "/etc/config");
+        snprintf(msg, sizeof(msg), "Configuration file updated: %s", "/etc/config");
         add_log_entry(state, "INFO", "config", msg);
     }
 }
@@ -168,11 +170,10 @@ void simulate_configuration_changes(system_state_t* state) {
  * Simulate service restarts
  */
 void simulate_service_restarts(system_state_t* state) {
-    if (!state) return;
+    if (!state)
+        return;
 
-    static const char* services[] = {
-        "sshd", "dnsmasq", "httpd", "ntpd", "syslog", "cron"
-    };
+    static const char* services[] = {"sshd", "dnsmasq", "httpd", "ntpd", "syslog", "cron"};
 
     if (rand() % 100 < 2) {
         const char* service = services[rand() % 6];
@@ -186,7 +187,8 @@ void simulate_service_restarts(system_state_t* state) {
  * Generate uptime output
  */
 int generate_system_uptime(system_state_t* state, char* output, size_t output_size) {
-    if (!state || !output || output_size < 256) return -1;
+    if (!state || !output || output_size < 256)
+        return -1;
 
     uint32_t uptime = state->uptime_seconds;
     uint32_t days = uptime / 86400;
@@ -197,14 +199,21 @@ int generate_system_uptime(system_state_t* state, char* output, size_t output_si
     float load5 = (float)(rand() % 30) / 10.0f;
     float load15 = (float)(rand() % 40) / 10.0f;
 
-    snprintf(output, output_size,
+    snprintf(output,
+             output_size,
              " %02u:%02u:%02u up %u day%s, %2u:%02u, %d user%s, load average: %.2f, %.2f, %.2f\n",
-             0, 0, 0,  // Current time (would be filled in real use)
-             days, days > 1 ? "s" : "",
-             hours, mins,
+             0,
+             0,
+             0, // Current time (would be filled in real use)
+             days,
+             days > 1 ? "s" : "",
+             hours,
+             mins,
              1,
              "s",
-             load1, load5, load15);
+             load1,
+             load5,
+             load15);
 
     return strlen(output);
 }
@@ -213,15 +222,24 @@ int generate_system_uptime(system_state_t* state, char* output, size_t output_si
  * Generate kernel messages output
  */
 int generate_kernel_messages(system_state_t* state, char* output, size_t output_size) {
-    if (!state || !output || output_size < 512) return -1;
+    if (!state || !output || output_size < 512)
+        return -1;
 
     output[0] = '\0';
-    
+
     // Add various kernel messages
     for (int i = 0; i < 5 && strlen(output) < output_size - 256; i++) {
         const char* msg = kernel_messages[rand() % kernel_messages_count];
-        strcat(output, msg);
-        strcat(output, "\n");
+
+        size_t cur = strlen(output);
+        if (cur < output_size - 1) {
+            strncat(output, msg, output_size - 1 - cur);
+        }
+
+        cur = strlen(output);
+        if (cur < output_size - 1) {
+            strncat(output, "\n", output_size - 1 - cur);
+        }
     }
 
     return strlen(output);
@@ -231,7 +249,8 @@ int generate_kernel_messages(system_state_t* state, char* output, size_t output_
  * Generate syslog output
  */
 int generate_syslog(system_state_t* state, char* output, size_t output_size) {
-    if (!state || !output || output_size < 1024) return -1;
+    if (!state || !output || output_size < 1024)
+        return -1;
 
     output[0] = '\0';
     char buffer[512];
@@ -243,23 +262,33 @@ int generate_syslog(system_state_t* state, char* output, size_t output_size) {
     strftime(date_str, sizeof(date_str), "%b %d %H:%M:%S", tm);
 
     snprintf(buffer, sizeof(buffer), "%s device-hostname kernel: Linux version\n", date_str);
-    strcat(output, buffer);
+    {
+        size_t cur = strlen(output);
+        if (cur < output_size - 1) {
+            strncat(output, buffer, output_size - 1 - cur);
+        }
+    }
 
     // Add some log entries
     for (int i = 0; i < 10 && strlen(output) < output_size - 256; i++) {
         const char* msg = system_messages[rand() % system_messages_count];
-        
+
         time_t entry_time = now - (rand() % 3600);
         tm = localtime(&entry_time);
         strftime(date_str, sizeof(date_str), "%b %d %H:%M:%S", tm);
 
-        snprintf(buffer, sizeof(buffer), "%s device-hostname %s: %s\n",
-                 date_str, 
+        snprintf(buffer,
+                 sizeof(buffer),
+                 "%s device-hostname %s: %s\n",
+                 date_str,
                  (rand() % 2 == 0) ? "kernel" : "sshd",
                  msg);
 
         if (strlen(output) + strlen(buffer) < output_size) {
-            strcat(output, buffer);
+            size_t cur = strlen(output);
+            if (cur < output_size - 1) {
+                strncat(output, buffer, output_size - 1 - cur);
+            }
         }
     }
 
@@ -269,9 +298,14 @@ int generate_syslog(system_state_t* state, char* output, size_t output_size) {
 /**
  * Add log entry
  */
-void add_log_entry(system_state_t* state, const char* level, const char* source, const char* message) {
-    if (!state || !level || !source || !message) return;
-    if (state->log_entries_count >= MAX_LOG_ENTRIES) return;
+void add_log_entry(system_state_t* state,
+                   const char* level,
+                   const char* source,
+                   const char* message) {
+    if (!state || !level || !source || !message)
+        return;
+    if (state->log_entries_count >= MAX_LOG_ENTRIES)
+        return;
 
     // In a full implementation, would store this
     // For now, just count it

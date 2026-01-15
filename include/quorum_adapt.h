@@ -1,9 +1,9 @@
 #ifndef QUORUM_ADAPT_H
 #define QUORUM_ADAPT_H
 
-#include <time.h>
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
+#include <time.h>
 
 #define MAX_ATTACK_PATTERNS 50
 #define MAX_ATTACKERS 100
@@ -11,9 +11,9 @@
 // Attack pattern signature
 typedef struct {
     const char* pattern_name;
-    const char* signature[10];  // Multiple strings that identify this pattern
+    const char* signature[10]; // Multiple strings that identify this pattern
     int signature_count;
-    uint32_t severity;  // 1-10, 10 being most severe
+    uint32_t severity; // 1-10, 10 being most severe
     uint32_t occurrence_count;
     time_t first_seen;
     time_t last_seen;
@@ -27,7 +27,7 @@ typedef struct {
     uint32_t successful_exploits;
     time_t first_contact;
     time_t last_contact;
-    bool is_coordinated;  // Part of coordinated attack?
+    bool is_coordinated; // Part of coordinated attack?
     attack_pattern_t* patterns[10];
     int pattern_count;
 } attacker_profile_t;
@@ -36,7 +36,7 @@ typedef struct {
 typedef struct {
     uint32_t total_unique_attackers;
     uint32_t coordinated_attack_count;
-    float overall_threat_level;  // 0.0-1.0
+    float overall_threat_level; // 0.0-1.0
     time_t assessment_time;
     bool should_trigger_rapid_morph;
 } threat_assessment_t;

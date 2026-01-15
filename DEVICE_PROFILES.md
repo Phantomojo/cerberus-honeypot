@@ -84,4 +84,3 @@ The morphing engine rotates through profiles automatically:
 6. Saves new state
 
 This makes the honeynet appear to change device types, making it harder for attackers to fingerprint the system.
-

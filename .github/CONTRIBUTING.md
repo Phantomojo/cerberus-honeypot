@@ -178,15 +178,15 @@ cerberus-honeypot/
 int function_name(type_t* param1, int param2) {
     /* Local variable declarations at top */
     int result = 0;
-    
+
     /* Validate inputs */
     if (!param1) return -1;
-    
+
     /* Main logic with clear comments */
     for (int i = 0; i < limit; i++) {
         /* Loop body */
     }
-    
+
     return result;
 }
 ```
@@ -196,7 +196,7 @@ int function_name(type_t* param1, int param2) {
 - **Indentation**: 4 spaces (no tabs)
 - **Line length**: 100 characters max
 - **Braces**: Same line for functions and control structures
-- **Naming**: 
+- **Naming**:
   - Functions: `snake_case`
   - Types: `snake_case_t`
   - Constants: `UPPER_SNAKE_CASE`
