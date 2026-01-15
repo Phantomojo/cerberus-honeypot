@@ -1,0 +1,22 @@
+[Unit]
+Description=CERBERUS HoneyGPT AI Bridge
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/ph/cerberus-honeypot
+ExecStart=/home/ph/cerberus-honeypot/venv/bin/python3 src/honeygpt/main.py
+Restart=always
+RestartSec=10
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=cerberus-honeygpt
+
+[Install]
+WantedBy=default.target

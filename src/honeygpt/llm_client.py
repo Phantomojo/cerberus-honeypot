@@ -23,12 +23,12 @@ class LLMClient:
         logging.info(f"Ollama URL: {self.ollama_url}")
 
         # Warm-up: Send a test query to load model into VRAM
-        try:
-            logging.info("Warming up GPU model (loading into VRAM)...")
-            self._warmup()
-            logging.info("Model warm-up complete")
-        except Exception as e:
-            logging.warning(f"Model warm-up failed: {e}. Will load on first query.")
+        # try:
+        #     logging.info("Warming up GPU model (loading into VRAM)...")
+        #     self._warmup()
+        #     logging.info("Model warm-up complete")
+        # except Exception as e:
+        #     logging.warning(f"Model warm-up failed: {e}. Will load on first query.")
 
     def _warmup(self):
         """Pre-load model into GPU VRAM for faster first response."""

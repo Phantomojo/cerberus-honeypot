@@ -182,6 +182,43 @@ int scan_logs_for_ips(void) {
     return ip_count;
 }
 
+int detect_lateral_movement(void) {
+    int lateral_alerts = 0;
+    const char* lateral_keywords[] = {"nmap", "ping", "arp", "route", "netstat", "ssh ", "telnet "};
+    const char* internal_ranges[] = {"172.17.", "192.168.", "10.0."};
+    int kw_count = sizeof(lateral_keywords) / sizeof(char*);
+    int range_count = sizeof(internal_ranges) / sizeof(char*);
+
+    log_event_level(LOG_INFO, "Scanning for lateral movement attempts...");
+
+    // We scan the tracking entries directly if they contain command context,
+    // but better yet, we parse the last log cycle for these patterns specifically.
+    // For Pillar 2, we implement a specific cross-module check.
+
+    for (int i = 0; i < ip_count; i++) {
+        ip_tracking_t* entry = &ip_tracking[i];
+
+        // This is a placeholder for deep packet/command inspection
+        // In a real micro-net, we'd check if this IP is trying to touch
+        // internal neighbors.
+
+        // Placeholder check for high hit counts on single IPs often indicates
+        // internal enumeration attempts.
+        if (entry->hit_count > 50 && entry->service_count == 1) {
+            char alert[512];
+            snprintf(alert,
+                     sizeof(alert),
+                     "ALERT: Potential Lateral Enumeration detected from %s\n"
+                     "  Signature: Internal Port Sweeping\n---\n",
+                     entry->ip);
+            log_event_file(LOG_WARN, alert_log_path, alert);
+            lateral_alerts++;
+        }
+    }
+
+    return lateral_alerts;
+}
+
 int detect_coordinated_attacks(void) {
     int alert_count = 0;
 
@@ -327,6 +364,9 @@ int run_quorum_logic(void) {
 
     // Detect coordinated attacks
     int alert_count = detect_coordinated_attacks();
+
+    // Pillar 2: Lateral Movement Detection
+    alert_count += detect_lateral_movement();
 
     return alert_count;
 }

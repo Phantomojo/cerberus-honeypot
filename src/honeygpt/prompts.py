@@ -28,12 +28,15 @@ class PromptManager:
             {"cmd": "cat /proc/cpuinfo", "out": "Processor: ARMv7 Processor rev 1 (v7l)\nBogoMIPS: 1196.03", "impact": 1},
         ]
 
-    def build_prompt(self, command: str, system_state: str, attacker_context: str = "") -> str:
-        """Compose optimized prompt for Qwen2.5's JSON output capabilities."""
+    def build_prompt(self, command: str, system_state: str, attacker_context: str = "", reasoning: str = "") -> str:
+        """Compose optimized prompt for Qwen2.5's JSON output capabilities with HRM reasoning."""
         # Lightweight prompt for GPU efficiency
         prompt = f"{self.base_rules}\n\n"
         prompt += f"DEVICE: {json.dumps(self.device_profile)}\n"
         prompt += f"STATE: {system_state}\n\n"
+
+        if reasoning:
+            prompt += f"LOGICAL REASONING (MUST FOLLOW): {reasoning}\n\n"
 
         if attacker_context:
             prompt += f"THREAT LEVEL: {attacker_context}\n\n"
