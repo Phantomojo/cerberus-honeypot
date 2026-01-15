@@ -22,6 +22,7 @@ THREAD_NAME = "🛡️ Cerberus Live Dashboard - " + datetime.now().strftime("%Y
 THREAD_ID = os.environ.get('DISCORD_THREAD_ID', None) 
 
 def post_to_discord(content, title="Cerberus Status", color=0x3498db):
+    global THREAD_ID
     if not WEBHOOK_URL or "YOUR" in WEBHOOK_URL:
         print(f"[Offline Dashboard] {title}: {content}")
         return
@@ -48,7 +49,6 @@ def post_to_discord(content, title="Cerberus Status", color=0x3498db):
         # If we successfully created a forum thread, capture the ID so we keep posting to it
         if not THREAD_ID and response.status_code == 201:
             try:
-                global THREAD_ID
                 THREAD_ID = response.json().get('id')
                 print(f"✅ Created Forum Thread: {THREAD_NAME} (ID: {THREAD_ID})")
             except: pass
