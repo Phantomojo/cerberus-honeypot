@@ -16,7 +16,7 @@ LOG_FILE = os.path.join(BASE_DIR, "services/cowrie/logs/cowrie.log")
 STATE_FILE = os.path.join(BASE_DIR, "build/morph-state.txt")
 
 # Configuration (Use environment variable or edit here)
-WEBHOOK_URL = os.environ.get('DISCORD_WEBHOOK_URL', 'YOUR_WEBHOOK_URL_HERE')
+WEBHOOK_URL = os.environ.get('DISCORD_WEBHOOK_URL', 'https://discord.com/api/webhooks/1461396752476147732/7AWPteoO0kSlaafXlH0AXJ-hQjlySclz2OSYQaX-8kA03ZzRMkcBaDZdpiEUlyYAsOtL')
 # If using a Forum Channel, specify a thread name to create a new post, or thread_id to post to existing
 THREAD_NAME = "🛡️ Cerberus Live Dashboard - " + datetime.now().strftime("%Y-%m-%d %H:%M")
 THREAD_ID = os.environ.get('DISCORD_THREAD_ID', None) 
