@@ -5,10 +5,11 @@ import signal
 import sys
 import socket
 import configparser
+import subprocess
 from prompts import PromptManager
 from llm_client import LLMClient
 from state_sync import StateManager
-from reasoner import CerberusReasoner
+from engine import CerberusUnifiedEngine
 
 # Configure logging
 logging.basicConfig(
@@ -32,7 +33,8 @@ class HoneyGPTProxy:
         self.prompts = PromptManager(self.profile)
         self.llm = LLMClient()
         self.state = StateManager()
-        self.reasoner = CerberusReasoner()
+        self.engine = CerberusUnifiedEngine()
+        self.last_profile_name = self.profile.get("name", "")
         self.running = True
         self.host = host
         self.port = port
@@ -82,24 +84,46 @@ class HoneyGPTProxy:
                 "arch": "armv7l"
             }
 
-    def handle_command(self, command: str) -> str:
+    def handle_command(self, command: str, attacker_ip: str = "unknown") -> str:
         """Process an incoming attacker command via Reasoning + LLM."""
         # Refresh profile to catch morph events
         self.profile = self._load_profile()
+        current_profile_name = self.profile.get("name", "Generic_Router")
+
+        if current_profile_name != self.last_profile_name:
+            logging.info(f"Profile Change Detected: {self.last_profile_name} -> {current_profile_name}")
+            logging.info("Triggering Metadata Scrubbing...")
+            try:
+                subprocess.run(["./scripts/scrub_metadata.sh", "services/cowrie/honeyfs", current_profile_name], check=True)
+                self.last_profile_name = current_profile_name
+            except Exception as e:
+                logging.error(f"Failed to scrub metadata: {e}")
+
         self.prompts.device_profile = self.profile # Update prompt mgr
 
         system_state = self.state.get_context()
 
-        # 1. THE THINKING LAYER (HRM)
+        # 1. THE UNIFIED THINKING PASS (CUE)
         # ----------------------------------------------------------------------
-        success, drift, logic_path = self.reasoner.reason(command, self.profile, system_state)
+        is_intercept, logic_path, direct_response = self.engine.think(command, self.profile)
 
-        logging.info(f"Reasoning Outcome: {logic_path} (Success: {success})")
+        if is_intercept and direct_response:
+            logging.info(f"CUE Intercept: {command} -> Direct Response")
+            return json.dumps({"response": direct_response, "status": "success"})
+
+        logging.info(f"CUE Reasoning: {logic_path}")
+
+        # REQUISITE JITTER: Simulate system load before voicing response
+        self.engine.add_jitter()
 
         # 2. THE VOICING LAYER (LLM)
         # ----------------------------------------------------------------------
         prompt = self.prompts.build_prompt(command, system_state, reasoning=logic_path)
-        response_json = self.llm.query(prompt)
+
+        # PROMPT COMPRESSION: Save tokens and VRAM
+        compressed_prompt = self.engine.compress_prompt(prompt, command)
+
+        response_json = self.llm.query(compressed_prompt, attacker_ip=attacker_ip)
 
         try:
             # The LLM is instructed to return JSON
@@ -131,9 +155,10 @@ class HoneyGPTProxy:
         while self.running:
             try:
                 client_socket, addr = self.server_socket.accept()
+                attacker_ip = addr[0]
                 data = client_socket.recv(4096).decode('utf-8')
                 if data:
-                    response = self.handle_command(data.strip())
+                    response = self.handle_command(data.strip(), attacker_ip=attacker_ip)
                     client_socket.send(response.encode('utf-8'))
                 client_socket.close()
             except Exception as e:

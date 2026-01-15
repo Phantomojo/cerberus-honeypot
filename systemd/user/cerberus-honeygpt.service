@@ -6,6 +6,8 @@ After=network.target
 Type=simple
 WorkingDirectory=/home/ph/cerberus-honeypot
 ExecStart=/home/ph/cerberus-honeypot/venv/bin/python3 src/honeygpt/main.py
+Environment=OLLAMA_URL=http://localhost:11434/api/generate
+Environment=DEVICE_TYPE=router
 Restart=always
 RestartSec=10
 
