@@ -46,12 +46,28 @@ def post_to_discord(content, title="Cerberus Status", color=0x3498db):
 
     try:
         response = requests.post(WEBHOOK_URL, json=payload, params=params, timeout=5)
-        # If we successfully created a forum thread, capture the ID so we keep posting to it
+        # Diagnostic print for the user
+        if response.status_code not in [200, 201, 204]:
+            print(f"⚠️ Discord API Error ({response.status_code}): {response.text}")
+
+        # If we successfully created a forum thread (201), capture the ID
         if not THREAD_ID and response.status_code == 201:
             try:
-                THREAD_ID = response.json().get('id')
-                print(f"✅ Created Forum Thread: {THREAD_NAME} (ID: {THREAD_ID})")
+                data = response.json()
+                THREAD_ID = data.get('id')
+                if THREAD_ID:
+                    print(f"✅ Created & Locked Forum Thread: {THREAD_NAME} (ID: {THREAD_ID})")
+            except Exception as e:
+                print(f"⚠️ Failed to parse Discord response: {e}")
+        elif not THREAD_ID and response.status_code == 200:
+            # Sometimes Discord returns 200 even for thread creation via webhook
+            try:
+                data = response.json()
+                if 'id' in data:
+                    THREAD_ID = data['id']
+                    print(f"✅ Locked existing or new thread (ID: {THREAD_ID})")
             except: pass
+
     except Exception as e:
         print(f"Failed to post to Discord: {e}")
 
