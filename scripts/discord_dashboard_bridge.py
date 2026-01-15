@@ -17,6 +17,9 @@ STATE_FILE = os.path.join(BASE_DIR, "build/morph-state.txt")
 
 # Configuration (Use environment variable or edit here)
 WEBHOOK_URL = os.environ.get('DISCORD_WEBHOOK_URL', 'YOUR_WEBHOOK_URL_HERE')
+# If using a Forum Channel, specify a thread name to create a new post, or thread_id to post to existing
+THREAD_NAME = "🛡️ Cerberus Live Dashboard - " + datetime.now().strftime("%Y-%m-%d %H:%M")
+THREAD_ID = os.environ.get('DISCORD_THREAD_ID', None) 
 
 def post_to_discord(content, title="Cerberus Status", color=0x3498db):
     if not WEBHOOK_URL or "YOUR" in WEBHOOK_URL:
@@ -31,8 +34,24 @@ def post_to_discord(content, title="Cerberus Status", color=0x3498db):
             "timestamp": datetime.utcnow().isoformat()
         }]
     }
+    
+    # Handle Forum Channels or Threads
+    params = {}
+    if THREAD_ID:
+        params['thread_id'] = THREAD_ID
+    elif THREAD_NAME:
+        # thread_name is only used if the webhook is for a forum channel
+        payload['thread_name'] = THREAD_NAME
+
     try:
-        requests.post(WEBHOOK_URL, json=payload, timeout=5)
+        response = requests.post(WEBHOOK_URL, json=payload, params=params, timeout=5)
+        # If we successfully created a forum thread, capture the ID so we keep posting to it
+        if not THREAD_ID and response.status_code == 201:
+            try:
+                global THREAD_ID
+                THREAD_ID = response.json().get('id')
+                print(f"✅ Created Forum Thread: {THREAD_NAME} (ID: {THREAD_ID})")
+            except: pass
     except Exception as e:
         print(f"Failed to post to Discord: {e}")
 
