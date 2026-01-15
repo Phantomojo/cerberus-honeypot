@@ -2,6 +2,14 @@
 # CERBERUS DEMO - Quick Command Runner
 # Use this during the live demo for easy copy-paste
 
+# Auto-detect virtual environment
+VENV_PATH="/home/ph/cerberus-honeypot/venv/bin/python3"
+if [ -f "$VENV_PATH" ]; then
+    PYTHON_CMD="$VENV_PATH"
+else
+    PYTHON_CMD="python3"
+fi
+
 echo "=========================================="
 echo "CERBERUS HONEYPOT - LIVE DEMO"
 echo "=========================================="
@@ -76,16 +84,16 @@ echo "Run: python3 scripts/dashboard.py"
 echo ""
 echo "Option B: Discord-as-Dashboard (RECOMMENDED)"
 echo "This mirrors ALL honeypot events to your Discord channel!"
-echo "Run: python3 scripts/discord_dashboard_bridge.py"
+echo "Run: $PYTHON_CMD scripts/discord_dashboard_bridge.py"
 echo ""
 echo "Option C: Web Operational Dashboard (Visual High-Fidelity)"
 echo "A sleek, dark-mode web UI with topology map."
-echo "Run: python3 scripts/web_dashboard.py"
+echo "Run: $PYTHON_CMD scripts/web_dashboard.py"
 echo "View at: http://localhost:5000"
 echo ""
 read -p "Launch Local Dashboard now? (y/n): " launch_dash
 if [ "$launch_dash" = "y" ]; then
-    python3 scripts/dashboard.py
+    $PYTHON_CMD scripts/dashboard.py
 fi
 
 # SECTION 8: Discord Alerts
@@ -93,7 +101,7 @@ echo ""
 echo "=== SECTION 8: DISCORD ALERT SYSTEM ==="
 echo "The system can push alerts directly to your team on Discord."
 echo "To test the integration (requires Webhook URL in scripts/discord_notifier.py):"
-python3 scripts/discord_notifier.py "Team, Cerberus Live Exhibit is starting! Prepare for attacker ingestion."
+$PYTHON_CMD scripts/discord_notifier.py "Team, Cerberus Live Exhibit is starting! Prepare for attacker ingestion."
 pause
 
 # SECTION 9: Quorum Detection
