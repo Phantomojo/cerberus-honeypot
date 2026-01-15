@@ -20,15 +20,38 @@ class CerberusReasoner:
             logging.warning("Torch not found. Cerberus Reasoner running in legacy mode.")
 
         self.model_path = model_path
+        self.state_file = "build/neural_state.json"
         self.model = None
 
         # INTERNAL STATE TENSOR (Cerberus "Core Mood")
         # [Integrity, ThreatLevel, DeceptionFrequency, ComplexityLevel]
         if self.torch_available:
-            self.state_vector = torch.tensor([1.0, 0.0, 0.5, 0.5], device=self.device)
+            self.state_vector = self._load_state()
             logging.info(f"Cerberus Neural State Vector initialized on {self.device}: {self.state_vector}")
 
         logging.info(f"Cerberus Reasoner initializing on {self.device}...")
+
+    def _load_state(self) -> Any:
+        import torch
+        import json
+        import os
+        if os.path.exists(self.state_file):
+            try:
+                with open(self.state_file, 'r') as f:
+                    data = json.load(f)
+                    return torch.tensor(data["vector"], device=self.device)
+            except: pass
+        return torch.tensor([1.0, 0.0, 0.5, 0.5], device=self.device)
+
+    def _save_state(self):
+        import json
+        import os
+        if not self.torch_available: return
+        try:
+            os.makedirs(os.path.dirname(self.state_file), exist_ok=True)
+            with open(self.state_file, 'w') as f:
+                json.dump({"vector": self.state_vector.tolist()}, f)
+        except: pass
 
     def reason(self, command: str, profile: Dict[str, Any], state: Dict[str, Any]) -> Tuple[bool, Dict[str, Any], str]:
         """
@@ -69,6 +92,7 @@ class CerberusReasoner:
         deltas = torch.tensor([integrity_delta, threat_delta, 0.1, 0.05], device=self.device)
         self.state_vector = torch.clamp(self.state_vector + deltas, 0.0, 1.0)
         logging.info(f"Neural State Adjusted: {self.state_vector}")
+        self._save_state()
 
 if __name__ == "__main__":
     # Basic self-test

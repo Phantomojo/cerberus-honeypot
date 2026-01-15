@@ -23,6 +23,7 @@ QUORUM_BIN = os.path.join(BASE_DIR, "build/quorum")
 
 # Global State with Persistence
 HISTORY_FILE = os.path.join(BASE_DIR, "build/web_history.json")
+NEURAL_FILE = os.path.join(BASE_DIR, "build/neural_state.json")
 EVENT_HISTORY = []
 CREDENTIAL_COUNTS = {}
 ACTIVE_SESSIONS = {}
@@ -303,6 +304,28 @@ HTML_TEMPLATE = """
                 </div>
 
                 <div style="margin-top: 1rem;">
+                    <div class="panel-header" style="padding: 0.5rem 0; border: none;">Neural Brain Status</div>
+                    <div class="status-card" style="margin-bottom: 0.5rem; background: rgba(16, 185, 129, 0.1);">
+                        <h4 style="color: var(--success);">SYSTEM_INTEGRITY</h4>
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            <div style="flex-grow: 1; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px;">
+                                <div id="neural-integrity-bar" style="width: 100%; height: 100%; background: var(--success); box-shadow: 0 0 10px var(--success);"></div>
+                            </div>
+                            <span id="val-integrity" style="font-size: 0.7rem; font-family: 'JetBrains Mono';">100%</span>
+                        </div>
+                    </div>
+                    <div class="status-card" style="margin-bottom: 0.5rem; background: rgba(239, 68, 68, 0.1);">
+                        <h4 style="color: var(--danger);">NEURAL_THREAT_LOAD</h4>
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            <div style="flex-grow: 1; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px;">
+                                <div id="neural-threat-bar" style="width: 0%; height: 100%; background: var(--danger); box-shadow: 0 0 10px var(--danger);"></div>
+                            </div>
+                            <span id="val-threat-load" style="font-size: 0.7rem; font-family: 'JetBrains Mono';">0%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 1rem;">
                     <div class="panel-header" style="padding: 0.5rem 0; border: none;">Service Grid</div>
                     <div id="service-grid">
                         <!-- Services dynamically here -->
@@ -423,6 +446,13 @@ graph TD
                 // 1. Profile & Basic Stats
                 document.getElementById('val-profile').innerText = data.profile;
                 document.getElementById('val-threats').innerText = data.quorum.length;
+                
+                // 1.1 Neural Tensors
+                const [ni, nt, nd] = data.neural;
+                document.getElementById('val-integrity').innerText = Math.round(ni * 100) + '%';
+                document.getElementById('neural-integrity-bar').style.width = (ni * 100) + '%';
+                document.getElementById('val-threat-load').innerText = Math.round(nt * 100) + '%';
+                document.getElementById('neural-threat-bar').style.width = (nt * 100) + '%';
 
                 if (data.quorum.length > 0) {
                     document.getElementById('flash-overlay').classList.add('critical-flash');
@@ -510,12 +540,20 @@ def index():
 
 @app.route('/api/data')
 def api_data():
+    neural = {"vector": [1.0, 0.0, 0.5, 0.5]}
+    if os.path.exists(NEURAL_FILE):
+        try:
+            with open(NEURAL_FILE, 'r') as f:
+                neural = json.load(f)
+        except: pass
+
     return jsonify({
         "profile": get_current_profile(),
         "services": get_docker_stats(),
         "events": EVENT_HISTORY,
         "heatmap": CREDENTIAL_COUNTS,
-        "quorum": QUORUM_ALERTS
+        "quorum": QUORUM_ALERTS,
+        "neural": neural.get("vector", [1.0, 0.0, 0.5, 0.5])
     })
 
 @app.route('/api/morph', methods=['POST'])
