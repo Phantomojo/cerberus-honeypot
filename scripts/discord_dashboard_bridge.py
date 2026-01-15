@@ -3,7 +3,7 @@ import os
 import time
 import requests
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 
 # ==============================================================================
 # DISCORD DASHBOARD BRIDGE
@@ -32,7 +32,7 @@ def post_to_discord(content, title="Cerberus Status", color=0x3498db):
             "title": title,
             "description": content,
             "color": color,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }]
     }
     
