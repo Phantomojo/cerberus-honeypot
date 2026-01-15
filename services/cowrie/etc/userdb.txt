@@ -1,3 +1,5 @@
-root:x
-admin:x
-*:x
+root:x:root
+admin:x:admin
+root:x:*
+admin:x:*
+*:x:*

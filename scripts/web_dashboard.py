@@ -13,7 +13,7 @@ app = Flask(__name__)
 
 # Project Paths
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-LOG_FILE = os.path.join(BASE_DIR, "services/cowrie/logs/cowrie.log")
+LOG_FILE = os.path.join(BASE_DIR, "services/cowrie/logs/cowrie.json")
 STATE_FILE = os.path.join(BASE_DIR, "build/morph-state.txt")
 
 def get_current_profile():
@@ -47,22 +47,41 @@ def get_recent_events():
     events = []
     if os.path.exists(LOG_FILE):
         try:
-            # Get last 10 interesting lines
-            cmd = ["grep", "-E", "New connection|login attempt|CMD:", LOG_FILE]
+            # Tail the last 50 lines of JSON
+            cmd = ["tail", "-n", "50", LOG_FILE]
             output = subprocess.check_output(cmd).decode().strip().split('\n')
-            for line in reversed(output[-10:]):
+            for line in reversed(output):
                 if not line: continue
-                ts = line.split(']')[0][1:] if ']' in line else datetime.now().strftime("%H:%M:%S")
-                msg = line.split(']')[-1].strip() if ']' in line else line
-                
-                type = "info"
-                if "CMD:" in msg: type = "command"
-                elif "succeeded" in msg: type = "success"
-                elif "failed" in msg: type = "warn"
-                
-                events.append({"time": ts[:19], "msg": msg, "type": type})
+                try:
+                    data = json.loads(line)
+                    eventid = data.get('eventid')
+                    ts = data.get('timestamp', '').split('T')[-1][:8]
+                    src = data.get('src_ip', 'Local')
+                    
+                    msg = ""
+                    etype = "info"
+                    
+                    if eventid == "cowrie.session.connect":
+                        msg = f"Inbound connection from {src}"
+                        etype = "info"
+                    elif eventid == "cowrie.login.success":
+                        msg = f"SUCCESSFUL LOGIN: {data.get('username')} from {src}"
+                        etype = "success"
+                    elif eventid == "cowrie.login.failed":
+                        msg = f"Login Failed: {data.get('username')} from {src}"
+                        etype = "warn"
+                    elif eventid == "cowrie.command.input":
+                        msg = f"CMD: {data.get('input')}"
+                        etype = "command"
+                    else: continue
+                    
+                    events.append({"time": ts, "msg": msg, "type": etype})
+                    if len(events) >= 12: break
+                except: continue
         except: pass
     return events
+
+import json
 
 # HTML Template with inline CSS/JS
 HTML_TEMPLATE = """
