@@ -66,6 +66,18 @@ def test_ghost_intercepts():
     assert "root" in resp
     assert "Jan15" in resp
 
+def test_quantum_superposition_logic():
+    engine = CerberusUnifiedEngine()
+
+    # Verify superposition shift on complex command
+    long_cmd = "A" * 100
+    logic = engine.q_superpose_logic(long_cmd)
+    assert engine.q_state[3] > 0.5
+
+    # Verify q_collapse (might need multiple runs due to randomness, but we check if it returns bool)
+    collapse = engine.q_collapse()
+    assert isinstance(collapse, bool)
+
 def test_adversarial_memory_tracking():
     client = LLMClient()
     dummy_ip = "1.2.3.4"

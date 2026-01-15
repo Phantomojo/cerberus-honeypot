@@ -100,7 +100,7 @@ EOF
 esac
 
 # 3. SCRUB /proc/meminfo
-MEM_KB=$((MEM_MB * 1024))
+MEM_KB=$((MEM_MB*1024))
 cat > "$HONEYFS_DIR/proc/meminfo" << EOF
 MemTotal:        ${MEM_KB} kB
 MemFree:         $((MEM_KB / 4)) kB

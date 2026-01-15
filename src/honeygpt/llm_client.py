@@ -20,8 +20,16 @@ class LLMClient:
         self.response_times = []  # Track performance for benchmarking
         self.attacker_memory = {}  # IP -> List of last 5 commands
 
-        logging.info(f"Initialized LLMClient with GPU-accelerated model: {self.model}")
-        logging.info(f"Ollama URL: {self.ollama_url}")
+        logging.info(f"Initialized LLMClient on {self.ollama_url}")
+
+        # DYNAMIC MODEL SELECTION (Polish)
+        self.available_models = self._get_available_models()
+        if self.model not in self.available_models and self.available_models:
+             # Try to find a variant
+             qwen_models = [m for m in self.available_models if "qwen" in m.lower()]
+             if qwen_models:
+                 self.model = qwen_models[0]
+                 logging.info(f"CUE: Selected available variant model: {self.model}")
 
         # Warm-up: Send a test query to load model into VRAM
         # try:
@@ -100,11 +108,21 @@ class LLMClient:
             return result
 
         except Exception as e:
-            response_time = time.time() - start_time
-            logging.error(f"Ollama Query failed after {response_time:.2f}s: {e}. Falling back to MOCK.")
-            return self._mock_response(prompt)
+            logging.error(f"Ollama Query failed: {e}. Falling back to MOCK.")
+            return self._mock_fallback(prompt)
 
-    def _mock_response(self, prompt: str) -> str:
+    def _get_available_models(self) -> List[str]:
+        """Fetch list of actually loaded models in Ollama."""
+        try:
+            tags_url = self.ollama_url.replace("/generate", "/tags")
+            r = requests.get(tags_url, timeout=2)
+            if r.status_code == 200:
+                models = r.json().get("models", [])
+                return [m["name"] for m in models]
+        except: pass
+        return []
+
+    def _mock_fallback(self, prompt: str) -> str:
         """Fallback for testing with specialized deceptive logic."""
         # 1. Broaden Capabilities: Adversarial Context Detection
         if "REASONING" in prompt and "Integrity Drift" in prompt:

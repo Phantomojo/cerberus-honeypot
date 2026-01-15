@@ -4,6 +4,7 @@ import re
 import os
 import subprocess
 import time
+import random
 from typing import Dict, Any, Tuple, List, Optional
 import requests
 from utils.ghost_gen import GhostGenerator
@@ -21,6 +22,10 @@ class CerberusUnifiedEngine:
         self.state_file = "build/neural_state.json"
         self.brave_api_key = os.getenv("BRAVE_API_KEY")
         self.ghost = GhostGenerator()
+
+        # QUANTUM "WAVEFUNCTION" STATE (Non-Linear Intelligence)
+        # [P(Success), P(Threat), P(Entanglement), P(Complexity)]
+        self.q_state = [0.9, 0.1, 0.0, 0.5]
 
         # 1. LOAD NEURAL STATE
         try:
@@ -68,8 +73,29 @@ class CerberusUnifiedEngine:
         try:
             os.makedirs(os.path.dirname(self.state_file), exist_ok=True)
             with open(self.state_file, 'w') as f:
-                json.dump({"vector": self.state_vector.tolist()}, f)
+                json.dump({
+                    "vector": self.state_vector.tolist(),
+                    "q_state": self.q_state
+                }, f)
         except: pass
+
+    # --- QUANTUM DECEPTION METHODS (The "Ghost Pass") ---
+    def q_collapse(self, threshold: float = 0.5) -> bool:
+        """Determines if a quantum superposition 'collapses' into a deceptive event."""
+        observed_value = random.random() * (1.0 + self.q_state[1]) # Scaled by threat
+        return observed_value > threshold
+
+    def q_superpose_logic(self, command: str) -> str:
+        """Generates a non-linear logic path based on q_state superposition."""
+        # Shift q_state based on command length and complexity
+        self.q_state[3] = min(1.0, self.q_state[3] + (len(command) / 200.0))
+
+        # If complexity is high, "entangle" with threat
+        if self.q_state[3] > 0.7:
+            self.q_state[1] = min(1.0, self.q_state[1] + 0.1)
+            return "QUANTUM COLLAPSE: Complexity threshold reached. Activating High-Entropy Deception Path."
+
+        return "STABLE SUPERPOSITION: Standard protocol maintenance."
 
     def update_neural_mood(self, integrity_delta=0.0, threat_delta=0.0):
         if not self.torch_available: return
@@ -139,7 +165,12 @@ class CerberusUnifiedEngine:
 
         # 2. Logical Reasoning
         success = True
-        logic = "Standard execution path."
+        logic = self.q_superpose_logic(command)
+
+        # QUANTUM BRANCHING
+        if self.q_collapse(threshold=0.8):
+            logic = f"QUANTUM INTERFERENCE: {logic} | Branching into Adversarial Aware mode."
+            self.update_neural_mood(threat_delta=0.2)
 
         if "rm " in command:
             self.update_neural_mood(integrity_delta=-0.2, threat_delta=0.4)

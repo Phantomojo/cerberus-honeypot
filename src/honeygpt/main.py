@@ -6,6 +6,7 @@ import sys
 import socket
 import configparser
 import subprocess
+import threading
 from prompts import PromptManager
 from llm_client import LLMClient
 from state_sync import StateManager
@@ -34,7 +35,7 @@ class HoneyGPTProxy:
         self.llm = LLMClient()
         self.state = StateManager()
         self.engine = CerberusUnifiedEngine()
-        self.last_profile_name = self.profile.get("name", "")
+        self.last_profile_name = "" # Force first-run scrubbing
         self.running = True
         self.host = host
         self.port = port
@@ -144,27 +145,37 @@ class HoneyGPTProxy:
             return response_json
 
     def run(self):
-        """Socket listener for command interception."""
+        """Socket listener for command interception (Multi-threaded)."""
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.server_socket.bind((self.host, self.port))
-        self.server_socket.listen(5)
+        self.server_socket.listen(10)
 
-        logging.info(f"HoneyGPT AI Bridge listening on {self.host}:{self.port}")
+        logging.info(f"HoneyGPT AI Bridge listening on {self.host}:{self.port} (Multi-threaded)")
 
         while self.running:
             try:
                 client_socket, addr = self.server_socket.accept()
-                attacker_ip = addr[0]
-                data = client_socket.recv(4096).decode('utf-8')
-                if data:
-                    response = self.handle_command(data.strip(), attacker_ip=attacker_ip)
-                    client_socket.send(response.encode('utf-8'))
-                client_socket.close()
+                t = threading.Thread(target=self._client_handler, args=(client_socket, addr))
+                t.daemon = True
+                t.start()
             except Exception as e:
-                logging.error(f"Error in listener loop: {e}")
-                if not self.running:
-                    break
+                if self.running:
+                    logging.error(f"Error accepting connection: {e}")
+                break
+
+    def _client_handler(self, client_socket, addr):
+        """Thread worker for handling individual client connections."""
+        try:
+            attacker_ip = addr[0]
+            data = client_socket.recv(4096).decode('utf-8')
+            if data:
+                response = self.handle_command(data.strip(), attacker_ip=attacker_ip)
+                client_socket.send(response.encode('utf-8'))
+        except Exception as e:
+            logging.error(f"Error in client handler: {e}")
+        finally:
+            client_socket.close()
 
     def stop(self):
         self.running = False
