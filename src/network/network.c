@@ -109,7 +109,7 @@ char* get_random_interface_name(void) {
 }
 
 // Create network configuration
-network_config_t* create_network_config(const char* base_ip) {
+network_config_t* create_network_config(const char* base_ip, const char* profile_type) {
     // Validate input
     if (sec_validate_ip_address(base_ip) != SEC_VALID) {
         return NULL;
@@ -153,7 +153,67 @@ network_config_t* create_network_config(const char* base_ip) {
         config->interfaces[1].is_primary = false;
     }
 
+    // Passive Fingerprinting: Mask TTL and Window Size
+    // 64 is common for Linux, 128 for Windows, 255 for some routers
+    int ttl_options[] = {64, 128, 255};
+    config->ttl = ttl_options[rand() % 3];
+    config->tcp_window = (rand() % 4 + 1) * 1460; // Common multiples of MSS
+
+    // Carrot & Stick: Generate tempting neighbors
+    void generate_neighbor_variations(network_config_t * config, const char* type);
+    generate_neighbor_variations(config, profile_type);
+
     return config;
+}
+
+// Generate neighbor variations based on profile type (Carrot & Stick)
+void generate_neighbor_variations(network_config_t* config, const char* profile_type) {
+    if (!config)
+        return;
+
+    config->neighbor_count = 0;
+    uint8_t octets[4];
+    parse_ip(config->interfaces[0].ip_address, octets);
+
+    if (strcmp(profile_type, "router") == 0) {
+        // Neighbors for a router: High value targets
+        struct {
+            char* host;
+            char* type;
+        } router_carrots[] = {{"NAS-Storage", "Storage"},
+                              {"Admin-PC", "Workstation"},
+                              {"SmartFridge", "IoT"},
+                              {"LivingRoom-TV", "IoT"}};
+        int count = sizeof(router_carrots) / sizeof(router_carrots[0]);
+        for (int i = 0; i < 3 && config->neighbor_count < MAX_NEIGHBORS; i++) {
+            neighbor_t* n = &config->neighbors[config->neighbor_count++];
+            strncpy(n->hostname, router_carrots[i].host, 63);
+            strncpy(n->type, router_carrots[i].type, 31);
+            octets[3] = (rand() % 250) + 2;
+            format_ip(octets, n->ip, MAX_IP_ADDR);
+            snprintf(
+                n->mac, 32, "00:50:56:%02x:%02x:%02x", rand() % 256, rand() % 256, rand() % 256);
+        }
+    } else {
+        // Neighbors for a camera: Surveillance infrastructure
+        struct {
+            char* host;
+            char* type;
+        } camera_carrots[] = {{"NVR-System", "Server"},
+                              {"Camera-Store", "Camera"},
+                              {"Camera-Entry", "Camera"},
+                              {"PoE-Switch", "Infrastructure"}};
+        int count = sizeof(camera_carrots) / sizeof(camera_carrots[0]);
+        for (int i = 0; i < 3 && config->neighbor_count < MAX_NEIGHBORS; i++) {
+            neighbor_t* n = &config->neighbors[config->neighbor_count++];
+            strncpy(n->hostname, camera_carrots[i].host, 63);
+            strncpy(n->type, camera_carrots[i].type, 31);
+            octets[3] = (rand() % 250) + 2;
+            format_ip(octets, n->ip, MAX_IP_ADDR);
+            snprintf(
+                n->mac, 32, "00:1A:2B:%02x:%02x:%02x", rand() % 256, rand() % 256, rand() % 256);
+        }
+    }
 }
 
 // Generate interface variations
@@ -281,6 +341,20 @@ void generate_arp_variations(network_config_t* config) {
                  "%s",
                  tmp_interface);
         config->arp_cache[config->arp_count].is_permanent = true;
+        config->arp_count++;
+    }
+
+    // Add Neighbors (Carrots) to ARP table
+    for (int i = 0; i < config->neighbor_count && config->arp_count < MAX_ARP_ENTRIES; i++) {
+        neighbor_t* n = &config->neighbors[i];
+        snprintf(
+            config->arp_cache[config->arp_count].ip, sizeof(config->arp_cache[0].ip), "%s", n->ip);
+        snprintf(config->arp_cache[config->arp_count].mac, 32, "%s", n->mac);
+        snprintf(config->arp_cache[config->arp_count].interface,
+                 sizeof(config->arp_cache[0].interface),
+                 "%s",
+                 tmp_interface);
+        config->arp_cache[config->arp_count].is_permanent = false;
         config->arp_count++;
     }
 
@@ -509,7 +583,37 @@ char* serialize_network_config(network_config_t* config) {
     }
 
     {
-        const char* tail = "  ]\n}\n";
+        strncat(json, "  ],\n  \"neighbors\": [\n", 4096 - strlen(json) - 1);
+        for (int i = 0; i < config->neighbor_count; i++) {
+            neighbor_t* n = &config->neighbors[i];
+            char entry[512];
+            snprintf(entry,
+                     sizeof(entry),
+                     "    {\n"
+                     "      \"hostname\": \"%s\",\n"
+                     "      \"ip\": \"%s\",\n"
+                     "      \"mac\": \"%s\",\n"
+                     "      \"type\": \"%s\"\n"
+                     "    }%s\n",
+                     n->hostname,
+                     n->ip,
+                     n->mac,
+                     n->type,
+                     i < config->neighbor_count - 1 ? "," : "");
+            strncat(json, entry, 4096 - strlen(json) - 1);
+        }
+    }
+
+    {
+        char tail[256];
+        snprintf(tail,
+                 sizeof(tail),
+                 "  ],\n"
+                 "  \"ttl\": %d,\n"
+                 "  \"tcp_window\": %d\n"
+                 "}\n",
+                 config->ttl,
+                 config->tcp_window);
         size_t cur = strlen(json);
         size_t rem = (4096 > cur + 1) ? (4096 - 1 - cur) : 0;
         strncat(json, tail, rem);

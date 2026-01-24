@@ -52,7 +52,7 @@ class LLMClient:
         }
         requests.post(self.ollama_url, json=warmup_payload, timeout=180)
 
-    def query(self, prompt: str, history: List[Dict[str, str]] = None, attacker_ip: str = "unknown") -> Optional[str]:
+    def query(self, prompt: str, history: List[Dict[str, str]] = None, attacker_ip: str = "unknown", raw_command: str = "") -> Optional[str]:
         """Query the Local LLM (Ollama) with GPU acceleration and adversarial memory."""
         # Update Attacker Memory
         if attacker_ip not in self.attacker_memory:
@@ -93,7 +93,7 @@ class LLMClient:
                 }
             }
 
-            response = requests.post(self.ollama_url, json=payload, timeout=120)
+            response = requests.post(self.ollama_url, json=payload, timeout=300)
             response.raise_for_status()
 
             result = response.json().get("response", "")
@@ -109,7 +109,7 @@ class LLMClient:
 
         except Exception as e:
             logging.error(f"Ollama Query failed: {e}. Falling back to MOCK.")
-            return self._mock_fallback(prompt)
+            return self._mock_fallback(prompt, raw_command)
 
     def _get_available_models(self) -> List[str]:
         """Fetch list of actually loaded models in Ollama."""
@@ -122,44 +122,44 @@ class LLMClient:
         except: pass
         return []
 
-    def _mock_fallback(self, prompt: str) -> str:
+    def _mock_fallback(self, prompt: str, command: str = "") -> str:
         """Fallback for testing with specialized deceptive logic."""
+        # Check command first for specific matches
+        cmd_lower = command.lower()
+
         # 1. Broaden Capabilities: Adversarial Context Detection
-        if "REASONING" in prompt and "Integrity Drift" in prompt:
-             return "Warning: High-dimensional integrity failure detected. Segmenting terminal session..."
+        if "integrity drift" in prompt.lower():
+             logging.info("Fallback: Integrity Drift context detected")
 
-        # 2. Broaden Capabilities: Device-Specific Personalities
-        if "Medical" in prompt or "DICOM" in prompt:
-            if "ls" in prompt: return "patient_records/  imaging_logs/  dicom_engine/  sys/"
-            if "cat" in prompt: return "GE_HEALTHCARE_IMAGE_NODE_v4.1. Access Denied."
+        if cmd_lower == "who":
+             return self._gen_who()
+        if cmd_lower == "whoami":
+             return "root"
+        if cmd_lower == "last":
+             return self._gen_last()
+        if cmd_lower in ["ps", "top"]:
+             return self._gen_ps()
+        if cmd_lower == "uptime":
+             return self._gen_uptime()
+        if cmd_lower == "uname":
+             arch = "x86_64"
+             if "mips" in prompt.lower(): arch = "mips"
+             return self._gen_uname(arch)
+        if cmd_lower == "df":
+             return self._gen_df()
+        if cmd_lower.startswith("nvram"):
+             return "NETGEAR_5G"
 
-        if "Cisco" in prompt or "Industrial" in prompt:
-            if "ls" in prompt: return "ios-xe/  vlan_db/  running-config.bak  firmware/"
-            if "conf t" in prompt: return "Protocol Error: Unauthorized access attempt to Layer-3 switch."
-
-        if "EV_Charger" in prompt or "OCPP" in prompt:
-            if "ls" in prompt: return "ocpp_core/  charging_sessions/  meter_data/  fw_update/"
-            if "cat ocpp" in prompt: return "OCPP 1.6J JSON-over-WebSocket active. Status: Operating."
-
-        if "Satellite" in prompt or "VxWorks" in prompt:
-            if "ls" in prompt: return "telemetry/  ephemeris/  uplink_queue/  rtos_core/"
-            if "uname" in prompt: return "VxWorks 7.0 (S-Band Terminal)"
-
-        if "Drone" in prompt or "MAVLink" in prompt:
-            if "ls" in prompt: return "flight_plans/  telemetry_logs/  swarm_controller/  mavlink/"
-            if "cat telemetry" in prompt: return "Drone ID: DJI-2024-ALPHA. GPS: 51.5074 N, 0.1278 W. Status: Armed."
-
-        if "Water_PLC" in prompt or "Modbus" in prompt:
-            if "ls" in prompt: return "holding_registers/  pump_logic/  scada_sync/  io_config/"
-            if "cat pump" in prompt: return "Pump #02: ACTIVE. Pressure: 45.2 PSI. Flow: 250 GPM."
+        # 2. Device-Specific personalities (Exact matches)
+        if cmd_lower == "dicom":
+            return "GE_HEALTHCARE_IMAGE_NODE_v4.1. Access Denied."
+        if cmd_lower == "ocpp":
+             return "OCPP 1.6J JSON-over-WebSocket active. Status: Operating."
 
         # Base Realistic Mocks
-        if "ls" in prompt:
+        if cmd_lower == "ls":
             return "bin  etc  home  lib  proc  root  sbin  sys  tmp  usr  var"
-        if "uname" in prompt:
-            return "Linux cerberus-iot 5.15.0-generic #1 SMP x86_64 GNU/Linux"
-        if "nvram" in prompt:
-            return "NETGEAR_5G"
+
         return "Command executed successfully (Cerberus Adaptive Mock)"
 
     def get_avg_response_time(self) -> float:

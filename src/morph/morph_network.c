@@ -187,9 +187,9 @@ int generate_cowrie_proc_route(network_config_t* config) {
 /**
  * Morph network configuration and update Cowrie
  */
-int morph_network_config(const char* base_ip) {
+int morph_network_config(const char* base_ip, const char* profile_type) {
     // Create network config
-    network_config_t* config = create_network_config(base_ip);
+    network_config_t* config = create_network_config(base_ip, profile_type);
     if (!config) {
         log_event_level(LOG_ERROR, "Failed to create network config");
         return -1;
@@ -212,6 +212,17 @@ int morph_network_config(const char* base_ip) {
     result |= generate_cowrie_arp(config);
     result |= generate_cowrie_netstat(config);
     result |= generate_cowrie_proc_route(config);
+
+    // Generate network masking sysctl config
+    char sysctl_path[512];
+    snprintf(sysctl_path, sizeof(sysctl_path), "%s/sysctl.conf", COWRIE_DYNAMIC_DIR);
+    FILE* sf = fopen(sysctl_path, "w");
+    if (sf) {
+        fprintf(sf, "net.ipv4.ip_default_ttl=%d\n", config->ttl);
+        fprintf(sf, "net.ipv4.tcp_rmem=4096 %d 6291456\n", config->tcp_window);
+        fprintf(sf, "net.ipv4.tcp_wmem=4096 %d 4194304\n", config->tcp_window);
+        fclose(sf);
+    }
 
     // Save configuration for reference
     char* json = serialize_network_config(config);

@@ -90,9 +90,13 @@ honeynet/
 - **Quorum Engine (`src/quorum/`):**  
   Correlates attack events across honeypot services, detecting coordinated probing/attacks.
 - **External IoT Emulators:**  
-  - Cowrie (SSH/Telnet honeypot)
+  - Cowrie (SSH/Telnet honeypot with **Deep Hardware Emulation**)
   - Static nginx web UIs (router/camera)
   - RTSP server
+
+- **Autonomous Intelligence:**
+  - **AIA Engine:** Self-hunting identity acquisition via Shodan web-scraping.
+  - **Precision Cloner:** 1:1 metadata and CVE mirroring for high-fidelity lures.
 
 ---
 
@@ -105,11 +109,11 @@ honeynet/
 
 ---
 
-**For setup details, see:**
-- `DEPENDENCIES.md` - System requirements and dependencies
-- `SETUP_PLAN.md` - Architecture and implementation plan
-- `TESTING.md` - Comprehensive testing guide
-- `docs/` - Project concept PDFs and design diagrams
+## 📚 Documentation
+- **[INSTALL.md](./INSTALL.md)**: The Golden Path to deployment.
+- **[TECHNICAL_SPEC.md](./TECHNICAL_SPEC.md)**: Deep dive into the morphing architecture.
+- **[docs/context/](./docs/context/)**: Presentation slides and briefing documents.
+- **[docs/archive/](./docs/archive/)**: Historical research and sprint logs.
 
 ---
 

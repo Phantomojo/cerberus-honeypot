@@ -9,6 +9,7 @@
 #define MAX_INTERFACE_NAME 16
 #define MAX_ROUTING_ENTRIES 10
 #define MAX_ARP_ENTRIES 20
+#define MAX_NEIGHBORS 5
 
 // Network interface structure
 typedef struct {
@@ -36,6 +37,14 @@ typedef struct {
     bool is_permanent;                  // Permanent or dynamic entry?
 } arp_entry_t;
 
+// Neighbor (Carrot) target structure
+typedef struct {
+    char hostname[64];
+    char ip[MAX_IP_ADDR];
+    char mac[32];
+    char type[32]; // "NAS", "DVR", "AdminPC", etc.
+} neighbor_t;
+
 // Network configuration container
 typedef struct {
     network_interface_t interfaces[5]; // Up to 5 interfaces
@@ -44,10 +53,14 @@ typedef struct {
     int routing_count;
     arp_entry_t arp_cache[MAX_ARP_ENTRIES];
     int arp_count;
+    neighbor_t neighbors[MAX_NEIGHBORS];
+    int neighbor_count;
+    int ttl;        // OS TTL (64 for Linux, 128 for Windows)
+    int tcp_window; // TCP Window Size
 } network_config_t;
 
 // Network variation functions
-network_config_t* create_network_config(const char* base_ip);
+network_config_t* create_network_config(const char* base_ip, const char* profile_type);
 void generate_interface_variations(network_config_t* config);
 void generate_routing_variations(network_config_t* config);
 void generate_arp_variations(network_config_t* config);

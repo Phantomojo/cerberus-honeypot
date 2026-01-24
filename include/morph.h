@@ -18,8 +18,11 @@ typedef struct {
     char kernel_version[MAX_KERNEL_VERSION];
     char arch[MAX_PROFILE_NAME];
     char mac_address[MAX_MAC_ADDR];
+    char shell_prompt[MAX_PROFILE_NAME];
     int memory_mb;
     int cpu_mhz;
+    int is_vulnerable; // 1 = Simulates kernel vulnerabilities
+    char cves[256];    // Comma-separated list of simulated CVEs
 } device_profile_t;
 
 // Profile management

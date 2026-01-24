@@ -1,9 +1,12 @@
 CC=gcc
-# Production flags: optimized with security hardening
-CFLAGS=-Iinclude -Wall -Wextra -O2 -march=native -fstack-protector-strong -D_FORTIFY_SOURCE=2
+# Production flags: simplified for container compatibility
+CFLAGS=-Iinclude -Wall -Wextra -O2
 # Development flags: with sanitizers for debugging
 CFLAGS_DEBUG=-Iinclude -Wall -Wextra -g -fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer -fsanitize=leak
 BUILD=build
+
+$(BUILD):
+	mkdir -p $(BUILD)
 
 # Core modules
 SRC_MORPH=src/morph/morph.c
@@ -31,23 +34,30 @@ INCLUDES=include/morph.h include/quorum.h include/utils.h \
          include/behavior.h include/temporal.h include/quorum_adapt.h \
          include/state_engine.h include/security_utils.h include/sandbox.h include/encryption.h
 
-all: $(BUILD)/morph $(BUILD)/quorum $(BUILD)/state_engine_test
+all: $(BUILD)/morph $(BUILD)/quorum $(BUILD)/state_engine_test $(BUILD)/test_security $(BUILD)/test_sandbox
 
 # Morphing engine with all phase modules
 $(BUILD)/morph: $(SRC_MORPH) $(SRC_UTILS) $(SRC_SECURITY) $(SRC_SANDBOX) $(SRC_ENCRYPTION) $(SRC_NETWORK) $(SRC_MORPH_NETWORK) \
-                $(SRC_FILESYSTEM) $(SRC_PROCESSES) $(SRC_BEHAVIOR) $(SRC_TEMPORAL) $(INCLUDES)
+                $(SRC_FILESYSTEM) $(SRC_PROCESSES) $(SRC_BEHAVIOR) $(SRC_TEMPORAL) $(INCLUDES) | $(BUILD)
 	$(CC) $(CFLAGS) -o $(BUILD)/morph \
 		$(SRC_MORPH) $(SRC_UTILS) $(SRC_SECURITY) $(SRC_SANDBOX) $(SRC_ENCRYPTION) $(SRC_NETWORK) $(SRC_MORPH_NETWORK) \
 		$(SRC_FILESYSTEM) $(SRC_PROCESSES) $(SRC_BEHAVIOR) $(SRC_TEMPORAL)
-	@./scripts/add_dynamic_commands.sh
 
 # Quorum engine with adaptation module
-$(BUILD)/quorum: $(SRC_QUORUM) $(SRC_UTILS) $(SRC_SECURITY) $(SRC_SANDBOX) $(SRC_ENCRYPTION) $(SRC_QUORUM_ADAPT) $(INCLUDES)
+$(BUILD)/quorum: $(SRC_QUORUM) $(SRC_UTILS) $(SRC_SECURITY) $(SRC_SANDBOX) $(SRC_ENCRYPTION) $(SRC_QUORUM_ADAPT) $(INCLUDES) | $(BUILD)
 	$(CC) $(CFLAGS) -o $(BUILD)/quorum $(SRC_QUORUM) $(SRC_UTILS) $(SRC_SECURITY) $(SRC_SANDBOX) $(SRC_ENCRYPTION) $(SRC_QUORUM_ADAPT)
 
 # State engine test binary
 $(BUILD)/state_engine_test: $(SRC_STATE) $(SRC_UTILS) $(SRC_SECURITY) $(SRC_SANDBOX) $(SRC_ENCRYPTION) tests/test_state_engine.c $(INCLUDES)
 	$(CC) $(CFLAGS) -o $(BUILD)/state_engine_test tests/test_state_engine.c $(SRC_STATE) $(SRC_UTILS) $(SRC_SECURITY) $(SRC_SANDBOX) $(SRC_ENCRYPTION)
+
+# Security tests
+$(BUILD)/test_security: test_security.c $(SRC_SECURITY) $(SRC_UTILS) $(INCLUDES)
+	$(CC) $(CFLAGS) -o $(BUILD)/test_security test_security.c $(SRC_SECURITY) $(SRC_UTILS)
+
+# Sandbox isolation tests
+$(BUILD)/test_sandbox: test_sandbox.c $(SRC_SANDBOX) $(SRC_SECURITY) $(SRC_UTILS) $(SRC_ENCRYPTION) $(INCLUDES)
+	$(CC) $(CFLAGS) -o $(BUILD)/test_sandbox test_sandbox.c $(SRC_SANDBOX) $(SRC_SECURITY) $(SRC_UTILS) $(SRC_ENCRYPTION)
 
 # Debug builds with sanitizers
 debug: CFLAGS=$(CFLAGS_DEBUG)

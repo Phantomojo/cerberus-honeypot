@@ -1,9 +1,12 @@
 CC=gcc
-# Production flags: optimized with security hardening
-CFLAGS=-Iinclude -Wall -Wextra -O2 -march=native -fstack-protector-strong -D_FORTIFY_SOURCE=2
+# Production flags: simplified for container compatibility
+CFLAGS=-Iinclude -Wall -Wextra -O2
 # Development flags: with sanitizers for debugging
 CFLAGS_DEBUG=-Iinclude -Wall -Wextra -g -fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer -fsanitize=leak
 BUILD=build
+
+$(BUILD):
+	mkdir -p $(BUILD)
 
 # Core modules
 SRC_MORPH=src/morph/morph.c
@@ -35,14 +38,13 @@ all: $(BUILD)/morph $(BUILD)/quorum $(BUILD)/state_engine_test $(BUILD)/test_sec
 
 # Morphing engine with all phase modules
 $(BUILD)/morph: $(SRC_MORPH) $(SRC_UTILS) $(SRC_SECURITY) $(SRC_SANDBOX) $(SRC_ENCRYPTION) $(SRC_NETWORK) $(SRC_MORPH_NETWORK) \
-                $(SRC_FILESYSTEM) $(SRC_PROCESSES) $(SRC_BEHAVIOR) $(SRC_TEMPORAL) $(INCLUDES)
+                $(SRC_FILESYSTEM) $(SRC_PROCESSES) $(SRC_BEHAVIOR) $(SRC_TEMPORAL) $(INCLUDES) | $(BUILD)
 	$(CC) $(CFLAGS) -o $(BUILD)/morph \
 		$(SRC_MORPH) $(SRC_UTILS) $(SRC_SECURITY) $(SRC_SANDBOX) $(SRC_ENCRYPTION) $(SRC_NETWORK) $(SRC_MORPH_NETWORK) \
 		$(SRC_FILESYSTEM) $(SRC_PROCESSES) $(SRC_BEHAVIOR) $(SRC_TEMPORAL)
-	@test -x ./scripts/add_dynamic_commands.sh && ./scripts/add_dynamic_commands.sh || true
 
 # Quorum engine with adaptation module
-$(BUILD)/quorum: $(SRC_QUORUM) $(SRC_UTILS) $(SRC_SECURITY) $(SRC_SANDBOX) $(SRC_ENCRYPTION) $(SRC_QUORUM_ADAPT) $(INCLUDES)
+$(BUILD)/quorum: $(SRC_QUORUM) $(SRC_UTILS) $(SRC_SECURITY) $(SRC_SANDBOX) $(SRC_ENCRYPTION) $(SRC_QUORUM_ADAPT) $(INCLUDES) | $(BUILD)
 	$(CC) $(CFLAGS) -o $(BUILD)/quorum $(SRC_QUORUM) $(SRC_UTILS) $(SRC_SECURITY) $(SRC_SANDBOX) $(SRC_ENCRYPTION) $(SRC_QUORUM_ADAPT)
 
 # State engine test binary

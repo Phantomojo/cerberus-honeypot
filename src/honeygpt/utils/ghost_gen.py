@@ -12,7 +12,7 @@ class GhostGenerator:
         self.ips = ["192.168.1.10", "10.0.0.5", "172.16.0.2", "127.0.0.1"]
         self.start_time = datetime.now() - timedelta(days=2)
 
-    def generate_who_output(self) -> str:
+    def _gen_who(self) -> str:
         """Simulates current active sessions."""
         active_users = random.sample(self.users, k=random.randint(1, 3))
         output = ""
@@ -23,7 +23,48 @@ class GhostGenerator:
             output += f"{user:<10} {pts:<10} {date} ({ip})\n"
         return output
 
-    def generate_last_output(self, limit: int = 5) -> str:
+    def generate(self, command: str, arch: str = "x86_64") -> str:
+        cmd_words = command.strip().split()
+        if not cmd_words:
+            return "Command not found."
+
+        base_cmd = cmd_words[0]
+
+        if base_cmd == "who":
+            return self._gen_who()
+        if base_cmd == "whoami":
+            return self._gen_whoami()
+        if base_cmd == "last":
+            return self._gen_last()
+        if base_cmd in ["ps", "top"]:
+            return self._gen_ps()
+        if base_cmd == "uptime":
+            return self._gen_uptime()
+        if base_cmd == "uname":
+            return self._gen_uname(arch)
+        if base_cmd == "df":
+            return self._gen_df()
+
+        return f"sh: {base_cmd}: command not found"
+
+    def _gen_whoami(self) -> str:
+        return random.choice(self.users)
+
+    def _gen_uptime(self) -> str:
+        uptime = f"{random.randint(1, 400)} days, {random.randint(1, 23)}:{random.randint(10, 59)}"
+        load = f"{random.uniform(0.1, 0.5):.2f}, {random.uniform(0.1, 0.5):.2f}, {random.uniform(0.1, 0.5):.2f}"
+        return f" {time.strftime('%H:%M:%S')} up {uptime},  1 user,  load average: {load}"
+
+    def _gen_uname(self, arch: str) -> str:
+        return f"Linux CerberusNode 4.19.0-6-{arch} #1 SMP Debian 10.2-1 ({time.strftime('%Y-%m-%d')}) {arch} GNU/Linux"
+
+    def _gen_df(self) -> str:
+        return """Filesystem     1K-blocks      Used Available Use% Mounted on
+/dev/sda1       41251136  12251136  29000000  30% /
+tmpfs            4096000         0   4096000   0% /dev/shm
+/dev/sdb1      104857600  45123440  59734160  44% /data"""
+
+    def _gen_last(self, limit: int = 5) -> str:
         """Simulates recent login history."""
         output = ""
         for i in range(limit):
@@ -36,7 +77,7 @@ class GhostGenerator:
         output += "\nwtmp begins Thu Jan  1 00:00:01 2026\n"
         return output
 
-    def generate_process_noise(self) -> str:
+    def _gen_ps(self) -> str:
         """Simulates a living kernel with active background tasks."""
         noise = [
             "[kworker/0:1-eve]",

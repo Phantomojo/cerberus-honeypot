@@ -14,11 +14,10 @@ if [ -z "$PROFILE_NAME" ]; then
 fi
 
 # Load variables from profiles.conf for this profile
-# Note: Simple parser, assumes standard ini-like format
 parse_conf() {
     local section="$1"
     local key="$2"
-    grep -A 20 "\[$section\]" profiles.conf | grep "^$key=" | cut -d'=' -f2-
+    sed -n "/^\[$section\]/,/^\[/p" profiles.conf | grep "^$key=" | head -n 1 | cut -d'=' -f2- | tr -d '\r' | xargs
 }
 
 KERNEL_VER=$(parse_conf "$PROFILE_NAME" "kernel_version")

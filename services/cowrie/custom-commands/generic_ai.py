@@ -7,8 +7,8 @@ from __future__ import annotations
 import socket
 from cowrie.shell.command import HoneyPotCommand
 
-# HoneyGPT service address (inside Docker network)
-HONEYGPT_HOST = "honeygpt"
+# HoneyGPT service address (Connect to Host)
+HONEYGPT_HOST = "172.17.0.1"
 HONEYGPT_PORT = 50051
 
 class Command_generic_ai(HoneyPotCommand):
@@ -28,10 +28,24 @@ class Command_generic_ai(HoneyPotCommand):
                 s.settimeout(30)
                 s.connect((HONEYGPT_HOST, HONEYGPT_PORT))
                 s.sendall(full_command.encode('utf-8'))
-                response = s.recv(8192).decode('utf-8')
-                self.write(response)
-                if not response.endswith('\n'):
-                    self.write('\n')
+                raw_response = s.recv(8192).decode('utf-8')
+
+                import json
+                try:
+                    data = json.loads(raw_response)
+                    text = data.get("response", "")
+                    self.write(text)
+                    if not text.endswith('\n'):
+                        self.write('\n')
+
+                    # DYNAMIC PROMPT SYNC: Update the shell hostname if the AI morphed
+                    if "hostname" in data and hasattr(self.protocol, 'hostname'):
+                        self.protocol.hostname = data["hostname"]
+                except:
+                    # Fallback for plain text
+                    self.write(raw_response)
+                    if not raw_response.endswith('\n'):
+                        self.write('\n')
         except Exception as e:
             self.write(f"sh: {full_command}: command not found\n")
 
@@ -45,7 +59,7 @@ targets = [
     'iptables', 'ip', 'ifconfig', 'tcpdump',
     'nmap', 'nc', 'netcat', 'gcc', 'g++', 'make',
     'sudo', 'apt', 'apt-get', 'yum', 'df', 'top',
-    'free', 'uptime', 'dmesg', 'mysql', 'ps',
+    'free', 'uptime', 'dmesg', 'mysql', 'ps', 'hostname', 'uname',
     # Router-specific commands
     'nvram', 'show', 'enable', 'configure', 'config',
     'router', 'wireless', 'vlan', 'interface'

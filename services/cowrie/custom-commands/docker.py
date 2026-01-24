@@ -15,9 +15,10 @@ class Command_docker(HoneyPotCommand):
 
     def call(self):
         # Try to load from Cerberus first
+        client_ip = self.protocol.transport.getPeer().host
         try:
             from cowrie.commands.cerberus_loader import load_cerberus_output
-            output = load_cerberus_output("docker", self.args)
+            output = load_cerberus_output("docker", self.args, ip=client_ip)
             if output:
                 self.write(output)
                 if not output.endswith('\n'):

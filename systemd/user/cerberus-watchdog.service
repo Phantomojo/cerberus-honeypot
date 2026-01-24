@@ -1,0 +1,15 @@
+[Unit]
+Description=Cerberus Adaptive Morphing Watchdog
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/ph/cerberus-honeypot
+ExecStart=/bin/bash /home/ph/cerberus-honeypot/scripts/adaptive_watchdog.sh
+Restart=always
+RestartSec=10
+StandardOutput=append:/home/ph/cerberus-honeypot/logs/watchdog.log
+StandardError=append:/home/ph/cerberus-honeypot/logs/watchdog.log
+
+[Install]
+WantedBy=default.target

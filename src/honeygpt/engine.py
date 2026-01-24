@@ -22,8 +22,11 @@ class CerberusUnifiedEngine:
         self.state_file = "build/neural_state.json"
         self.brave_api_key = os.getenv("BRAVE_API_KEY")
         self.ghost = GhostGenerator()
+        self.entangle_path = "build/q_entanglement.json"
+        self.panic_mode = False
 
-        # QUANTUM "WAVEFUNCTION" STATE (Non-Linear Intelligence)
+        # ATTACKER OBSERVATION TRACKING (Observer Effect)
+        self.obs_memory = {} # IP -> {cmd: count}
         # [P(Success), P(Threat), P(Entanglement), P(Complexity)]
         self.q_state = [0.9, 0.1, 0.0, 0.5]
 
@@ -85,17 +88,72 @@ class CerberusUnifiedEngine:
         observed_value = random.random() * (1.0 + self.q_state[1]) # Scaled by threat
         return observed_value > threshold
 
-    def q_superpose_logic(self, command: str) -> str:
+    def q_superpose_logic(self, command: str, attacker_ip: str = "unknown") -> str:
         """Generates a non-linear logic path based on q_state superposition."""
-        # Shift q_state based on command length and complexity
-        self.q_state[3] = min(1.0, self.q_state[3] + (len(command) / 200.0))
+        # 1. THE OBSERVER EFFECT: Detect automated "watching"
+        self._track_observation(attacker_ip, command)
+        obs_lvl = self._get_observation_level(attacker_ip)
 
-        # If complexity is high, "entangle" with threat
-        if self.q_state[3] > 0.7:
+        # 2. WAVE-STATE SHIFT
+        self.q_state[3] = min(1.0, self.q_state[3] + (len(command) / 200.0) + (obs_lvl * 0.2))
+
+        # 3. ENTANGLEMENT SYNC
+        self._sync_entanglement()
+
+        # 4. DECISION BRANCHING
+        if self.q_state[3] > 0.8:
             self.q_state[1] = min(1.0, self.q_state[1] + 0.1)
-            return "QUANTUM COLLAPSE: Complexity threshold reached. Activating High-Entropy Deception Path."
+            return f"QUANTUM COLLAPSE: High Observation detected ({obs_lvl}). Shifting to High-Entropy Deception."
 
         return "STABLE SUPERPOSITION: Standard protocol maintenance."
+
+    def _track_observation(self, ip: str, cmd: str):
+        """Monitors command frequency to detect automated observation."""
+        if ip not in self.obs_memory: self.obs_memory[ip] = {}
+        self.obs_memory[ip][cmd] = self.obs_memory[ip].get(cmd, 0) + 1
+
+    def _get_observation_level(self, ip: str) -> float:
+        """Returns a score from 0 to 1 based on how 'observed' the system is."""
+        if ip not in self.obs_memory: return 0.0
+        max_repeats = max(self.obs_memory[ip].values())
+        return min(1.0, (max_repeats - 1) / 5.0) # Level up every 5 repeats
+
+    def _sync_entanglement(self):
+        """Synchronizes quantum state across files for multi-node entanglement."""
+        try:
+            state = {"q_state": self.q_state, "timestamp": time.time()}
+            if os.path.exists(self.entangle_path):
+                with open(self.entangle_path, 'r') as f:
+                    shared = json.load(f)
+                    # "Entangle" threat levels: Average them out to align nodes
+                    self.q_state[1] = (self.q_state[1] + shared["q_state"][1]) / 2.0
+
+            with open(self.entangle_path, 'w') as f:
+                json.dump(state, f)
+        except: pass
+
+    def egress_check(self, command: str) -> Tuple[bool, str]:
+        """Identifies and blocks malicious outbound activity."""
+        # 1. OUTGOING SCANS
+        if re.search(r"(nmap|zmap|masscan).*?(\d{1,3}\.){3}\d{1,3}", command):
+            return True, "Network unreachable: Egress scan detected. Target IP is outside permitted subnet."
+
+        # 2. DDOS PATTERNS
+        if re.search(r"ping.*?-f", command) or "hping3" in command:
+            return True, "Operation not permitted: High-frequency ICMP burst blocked."
+
+        # 3. REVERSE SHELLS / EXFIL
+        if re.search(r"/dev/tcp/|nc -e|python.*?socket", command):
+            return True, "Connection reset by peer: Suspicious outbound socket attempt."
+
+        return False, ""
+
+    def trigger_panic(self, reason: str):
+        """Moves the system into 'Brick Mode' simulating hardware failure."""
+        logging.critical(f"CERBERUS PANIC TRIGGERED: {reason}")
+        self.panic_mode = True
+        self.q_state[1] = 1.0 # Max Threat
+        self._save_neural_state()
 
     def update_neural_mood(self, integrity_delta=0.0, threat_delta=0.0):
         if not self.torch_available: return
@@ -146,8 +204,23 @@ class CerberusUnifiedEngine:
         return self.cache[query]
 
     # --- THE UNIFIED THINKING PASS ---
-    def think(self, command: str, profile: Dict[str, Any]) -> Tuple[bool, str, Optional[str]]:
+    def think(self, command: str, profile: Dict[str, Any], attacker_ip: str = "unknown") -> Tuple[bool, str, Optional[str]]:
         """A single pass that Reason/Spoofs/Searches in one flow."""
+        # 0. STRATEGIC SAFETY CHECKS
+        if self.panic_mode:
+            return True, "Kernel Panic", "FATAL: CPU0 Internal Error - MCE (Machine Check Exception). System halted."
+
+        # PANIC TRIGGER: Specific destructive commands or high-threat vectors
+        if command in ["kill -9 1", "shutdown -h now", "init 0"]:
+            self.trigger_panic(f"Direct system kill attempt: {command}")
+            return True, "Kernel Panic", "FATAL: System halted by supervisor request."
+
+        # EGRESS FILTERING
+        is_blocked, block_msg = self.egress_check(command)
+        if is_blocked:
+            self.update_neural_mood(threat_delta=0.3)
+            return True, "EGRESS BLOCK", block_msg
+
         profile_name = profile.get("name", "Generic_Router")
 
         # 1. Check for Stealth Intercept (Geo-Spoof)
@@ -155,17 +228,15 @@ class CerberusUnifiedEngine:
         if geo_resp:
             return True, "Geo-Spoofing Intercept.", geo_resp
 
-        # 1.1 Check for Ghost Intercept (Living System)
-        if "who" == command.strip():
-            return True, "Ghost-Admin Intercept.", self.ghost.generate_who_output()
-        if "last" in command:
-            return True, "Ghost-History Intercept.", self.ghost.generate_last_output()
-        if "ps " in command or "ps" == command.strip() or "top" in command:
-            return True, "Ghost-Process Intercept.", self.ghost.generate_process_noise()
+        # 3. Ghost Intercepts
+        cmd_words = command.strip().split()
+        if cmd_words and cmd_words[0] in ["who", "last", "ps", "top", "uptime", "uname", "df"]:
+            arch = profile.get("arch", "x86_64")
+            return True, "GHOST_INTERCEPT", self.ghost.generate(command, arch=arch)
 
         # 2. Logical Reasoning
         success = True
-        logic = self.q_superpose_logic(command)
+        logic = self.q_superpose_logic(command, attacker_ip=attacker_ip)
 
         # QUANTUM BRANCHING
         if self.q_collapse(threshold=0.8):

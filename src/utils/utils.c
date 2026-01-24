@@ -45,9 +45,9 @@ void log_event_level(log_level_t level, const char* msg) {
 }
 
 void log_to_file(const char* filepath, const char* msg) {
-    int fd = open(filepath, O_WRONLY | O_CREAT | O_APPEND, 0600);
+    int fd = open(filepath, O_WRONLY | O_CREAT | O_APPEND, 0644);
     if (fd >= 0) {
-        fchmod(fd, 0600);
+        fchmod(fd, 0644);
         FILE* f = fdopen(fd, "a");
         if (f) {
             time_t now = time(NULL);
@@ -62,9 +62,9 @@ void log_to_file(const char* filepath, const char* msg) {
 }
 
 void log_event_file(log_level_t level, const char* filepath, const char* msg) {
-    int fd = open(filepath, O_WRONLY | O_CREAT | O_APPEND, 0600);
+    int fd = open(filepath, O_WRONLY | O_CREAT | O_APPEND, 0644);
     if (fd >= 0) {
-        fchmod(fd, 0600);
+        fchmod(fd, 0644);
         FILE* f = fdopen(fd, "a");
         if (f) {
             time_t now = time(NULL);
@@ -125,11 +125,11 @@ int read_file(const char* filepath, char* buffer, size_t buffer_size) {
 }
 
 int write_file(const char* filepath, const char* content) {
-    int fd = open(filepath, O_WRONLY | O_CREAT | O_TRUNC, 0600);
+    int fd = open(filepath, O_WRONLY | O_CREAT | O_TRUNC, 0644);
     if (fd < 0) {
         return -1;
     }
-    fchmod(fd, 0600);
+    fchmod(fd, 0644);
     FILE* f = fdopen(fd, "w");
     if (!f) {
         close(fd);
@@ -143,11 +143,11 @@ int write_file(const char* filepath, const char* content) {
 }
 
 int append_file(const char* filepath, const char* content) {
-    int fd = open(filepath, O_WRONLY | O_CREAT | O_APPEND, 0600);
+    int fd = open(filepath, O_WRONLY | O_CREAT | O_APPEND, 0644);
     if (fd < 0) {
         return -1;
     }
-    fchmod(fd, 0600);
+    fchmod(fd, 0644);
     FILE* f = fdopen(fd, "a");
     if (!f) {
         close(fd);
@@ -166,12 +166,12 @@ int copy_file(const char* src, const char* dst) {
         return -1;
     }
 
-    int fd = open(dst, O_WRONLY | O_CREAT | O_TRUNC, 0600);
+    int fd = open(dst, O_WRONLY | O_CREAT | O_TRUNC, 0644);
     if (fd < 0) {
         fclose(src_f);
         return -1;
     }
-    fchmod(fd, 0600);
+    fchmod(fd, 0644);
     FILE* dst_f = fdopen(fd, "w");
     if (!dst_f) {
         close(fd);
@@ -345,11 +345,11 @@ int read_config_value(const char* filepath, const char* key, char* value, size_t
 int write_config_value(const char* filepath, const char* key, const char* value) {
     // Simple implementation: append to file
     // For production, should read, modify, and rewrite
-    int fd = open(filepath, O_WRONLY | O_CREAT | O_APPEND, 0600);
+    int fd = open(filepath, O_WRONLY | O_CREAT | O_APPEND, 0644);
     if (fd < 0) {
         return -1;
     }
-    fchmod(fd, 0600);
+    fchmod(fd, 0644);
     FILE* f = fdopen(fd, "a");
     if (!f) {
         close(fd);

@@ -17,6 +17,7 @@ typedef struct {
     time_t first_seen;
     time_t last_seen;
     int hit_count;
+    int kill_chain_state; // 0=RECON, 1=ACCESS, 2=EXPLOIT, 3=PERSIST
 } ip_tracking_t;
 
 typedef struct {

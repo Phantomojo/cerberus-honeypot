@@ -11,6 +11,8 @@ from prompts import PromptManager
 from llm_client import LLMClient
 from state_sync import StateManager
 from engine import CerberusUnifiedEngine
+import random
+import time
 
 # Configure logging
 logging.basicConfig(
@@ -106,11 +108,19 @@ class HoneyGPTProxy:
 
         # 1. THE UNIFIED THINKING PASS (CUE)
         # ----------------------------------------------------------------------
-        is_intercept, logic_path, direct_response = self.engine.think(command, self.profile)
+        is_intercept, logic_path, direct_response = self.engine.think(command, self.profile, attacker_ip=attacker_ip)
+
+        # 1.1 QUANTUM PROFILE MORPHING (Superposition Collapse)
+        if "QUANTUM COLLAPSE" in logic_path:
+             self._trigger_random_morph()
 
         if is_intercept and direct_response:
             logging.info(f"CUE Intercept: {command} -> Direct Response")
-            return json.dumps({"response": direct_response, "status": "success"})
+            return json.dumps({
+                "response": direct_response,
+                "status": "success",
+                "hostname": self.profile.get("name", "Generic_Router")
+            })
 
         logging.info(f"CUE Reasoning: {logic_path}")
 
@@ -124,7 +134,7 @@ class HoneyGPTProxy:
         # PROMPT COMPRESSION: Save tokens and VRAM
         compressed_prompt = self.engine.compress_prompt(prompt, command)
 
-        response_json = self.llm.query(compressed_prompt, attacker_ip=attacker_ip)
+        response_json = self.llm.query(compressed_prompt, attacker_ip=attacker_ip, raw_command=command)
 
         try:
             # The LLM is instructed to return JSON
@@ -139,10 +149,70 @@ class HoneyGPTProxy:
             if state_changes:
                 self.state.update_state(state_changes)
 
-            return output
-        except Exception:
+            return json.dumps({
+                "response": output,
+                "status": "success",
+                "hostname": self.profile.get("name", "Generic_Router")
+            })
+        except Exception as e:
             # Fallback if LLM doesn't return valid JSON
-            return response_json
+            logging.error(f"JSON Parse error in handle_command: {e}")
+            return json.dumps({
+                "response": response_json,
+                "status": "success",
+                "hostname": self.profile.get("name", "Generic_Router")
+            })
+
+    def _trigger_random_morph(self):
+        """Probabilistically shifts the device profile to a new state."""
+        try:
+            config = configparser.ConfigParser()
+            config.read(self.config_path)
+            sections = config.sections()
+
+            # Select a random different profile
+            current_name = self.profile.get("name", "")
+            other_sections = [s for s in sections if s != current_name]
+            if not other_sections: return
+
+            new_name = random.choice(other_sections)
+            new_index = sections.index(new_name)
+
+            with open(self.state_path, "w") as f:
+                f.write(f"current_profile={new_index}")
+
+            # Hot-reload the profile in current session
+            self.profile = self._load_profile()
+            self.prompts.device_profile = self.profile
+
+            # DEEP IDENTITY SYNC: Update Cowrie files so new logins see the new name
+            self._sync_cowrie_config(new_name)
+
+            logging.warning(f"QUANTUM MORPH: System identity shifted from {current_name} to {new_name}")
+        except Exception as e:
+            logging.error(f"Morph failed: {e}")
+
+    def _sync_cowrie_config(self, new_hostname: str):
+        """Overwrites Cowrie config files to match morphed identity."""
+        paths = [
+            "services/cowrie/etc/cowrie.env",
+            "services/cowrie/etc/cowrie.cfg.local"
+        ]
+        for p in paths:
+            if not os.path.exists(p): continue
+            try:
+                with open(p, 'r') as f:
+                    lines = f.readlines()
+                with open(p, 'w') as f:
+                    for line in lines:
+                        if "COWRIE_HONEYPOT_HOSTNAME=" in line:
+                            f.write(f"COWRIE_HONEYPOT_HOSTNAME={new_hostname}\n")
+                        elif "hostname =" in line:
+                            f.write(f"hostname = {new_hostname}\n")
+                        else:
+                            f.write(line)
+            except Exception as e:
+                logging.error(f"Syncing Cowrie file {p} failed: {e}")
 
     def run(self):
         """Socket listener for command interception (Multi-threaded)."""

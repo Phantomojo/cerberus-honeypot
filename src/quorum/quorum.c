@@ -15,6 +15,14 @@ static int ip_count = 0;
 static service_config_t service_configs[MAX_SERVICES];
 static int service_count = 0;
 static char alert_log_path[512] = "build/quorum-alerts.log";
+static char persistence_path[512] = "build/attacker-persistence.txt";
+
+typedef enum { STATE_RECON, STATE_ACCESS, STATE_EXPLOIT, STATE_PERSIST } kill_chain_state_t;
+
+// Forward declaration
+int update_kill_chain_state(const char* ip, int state);
+int add_to_persistence(const char* ip, int profile_index);
+int get_persisted_profile(const char* ip);
 
 // IP address validation (simple IPv4 check)
 bool is_valid_ip(const char* ip) {
@@ -142,6 +150,13 @@ int parse_log_file(const char* filepath, const char* service_name) {
         char ip[MAX_IP_STRING];
         if (extract_ip_from_line(line, ip) == 0) {
             add_ip_to_tracking(ip, service_name);
+
+            // KILL CHAIN: Detect escalation based on command patterns in the log
+            if (strstr(line, "wget") || strstr(line, "curl") || strstr(line, "Shadow")) {
+                update_kill_chain_state(ip, 2); // EXPLOIT
+            } else if (strstr(line, "ssh-keygen") || strstr(line, "crontab")) {
+                update_kill_chain_state(ip, 3); // PERSIST
+            }
         }
     }
 
@@ -219,6 +234,27 @@ int detect_lateral_movement(void) {
     return lateral_alerts;
 }
 
+static int emit_morph_signal(const char* ip, int services_hit) {
+    create_dir("build/signals");
+    char signal_path[] = "build/signals/emergency_morph.signal";
+    char content[512];
+    snprintf(content,
+             sizeof(content),
+             "type=coordinated_attack\n"
+             "attacker_ip=%s\n"
+             "services_hit=%d\n"
+             "timestamp=%ld\n",
+             ip,
+             services_hit,
+             time(NULL));
+
+    if (write_file(signal_path, content) == 0) {
+        log_event_level(LOG_INFO, "Emergency morph signal emitted");
+        return 0;
+    }
+    return -1;
+}
+
 int detect_coordinated_attacks(void) {
     int alert_count = 0;
 
@@ -227,9 +263,13 @@ int detect_coordinated_attacks(void) {
     for (int i = 0; i < ip_count; i++) {
         ip_tracking_t* entry = &ip_tracking[i];
 
-        // Coordinated attack: IP hitting multiple services
-        if (entry->service_count >= 2) {
+        // KILL CHAIN AWARE QUORUM:
+        // Alert if:
+        // 1. IP hits multiple services (Coordinated Probe)
+        // 2. IP hits one service but reaches EXPLOIT stage
+        if (entry->service_count >= 2 || entry->kill_chain_state >= 2) {
             generate_alert(entry);
+            emit_morph_signal(entry->ip, entry->service_count);
             alert_count++;
         }
     }
@@ -368,7 +408,53 @@ int run_quorum_logic(void) {
     // Pillar 2: Lateral Movement Detection
     alert_count += detect_lateral_movement();
 
+    // Persistence: Record identities for active attackers
+    for (int i = 0; i < ip_count; i++) {
+        if (ip_tracking[i].service_count > 0) {
+            // If they are deep into the kill chain, ensure they are pinned
+            add_to_persistence(ip_tracking[i].ip, get_current_profile_index());
+        }
+    }
+
     return alert_count;
+}
+
+int update_kill_chain_state(const char* ip, int state) {
+    for (int i = 0; i < ip_count; i++) {
+        if (strcmp(ip_tracking[i].ip, ip) == 0) {
+            // Only update if it's an escalation
+            if (state > ip_tracking[i].kill_chain_state) {
+                ip_tracking[i].kill_chain_state = state;
+                char msg[256];
+                snprintf(
+                    msg, sizeof(msg), "KILL CHAIN ESCALATION: IP %s moved to state %d", ip, state);
+                log_event_level(LOG_WARN, msg);
+
+                // If it hits EXPLOIT or PERSIST, emit a high-priority signal
+                if (state >= 2) {
+                    emit_morph_signal(ip, ip_tracking[i].service_count);
+                }
+            }
+            return 0;
+        }
+    }
+    return -1;
+}
+
+int add_to_persistence(const char* ip, int profile_index) {
+    char entry[128];
+    snprintf(entry, sizeof(entry), "%s=%d\n", ip, profile_index);
+    return log_event_file(LOG_INFO, persistence_path, entry);
+}
+
+int get_persisted_profile(const char* ip) {
+    if (!file_exists(persistence_path))
+        return -1;
+    char val[32];
+    if (read_config_value(persistence_path, ip, val, sizeof(val)) == 0) {
+        return atoi(val);
+    }
+    return -1;
 }
 
 int main(int argc, char* argv[]) {
