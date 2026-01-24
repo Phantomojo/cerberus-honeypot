@@ -1,0 +1,5 @@
+kernel: [0.000000] Memory: 262144K/262144K available
+kernel: [0.032081] Dentry cache hash table entries: 16384 (order: 4, 65536 bytes)
+kernel: [0.111281] ACPI Exception: AE_NOT_FOUND, Module [DSDT], Line 0
+kernel: [0.101987] SMP alternatives: switching to UP code
+systemd[1]: Startup finished in 2.341s (kernel) + 1.823s (userspace) = 4.164s

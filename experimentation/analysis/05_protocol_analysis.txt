@@ -46,7 +46,7 @@ File: research/cowrie/src/cowrie/ssh/connection.py
 # IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY DIRECT, INDIRECT,
 
 File: research/cowrie/src/cowrie/ssh/factory.py
-# Copyright (c) 2009-2014 Upi Tamminen <desaster@gmail.com>
+# Copyright (c) 2009-2014 Upi Tamminen <disaster@gmail.com>
 # See the COPYRIGHT file for more information
 
 """
@@ -90,7 +90,7 @@ from cowrie.core.fingerprint import (
 
 
 File: research/cowrie/src/cowrie/ssh/keys.py
-# Copyright (c) 2009-2014 Upi Tamminen <desaster@gmail.com>
+# Copyright (c) 2009-2014 Upi Tamminen <disaster@gmail.com>
 # See the COPYRIGHT file for more information
 
 """
@@ -112,7 +112,7 @@ from twisted.conch.ssh import keys
 from cowrie.core.config import CowrieConfig
 
 File: research/cowrie/src/cowrie/ssh/session.py
-# Copyright (c) 2009-2014 Upi Tamminen <desaster@gmail.com>
+# Copyright (c) 2009-2014 Upi Tamminen <disaster@gmail.com>
 # See the COPYRIGHT file for more information
 
 """
@@ -134,7 +134,7 @@ class HoneyPotSSHSession(session.SSHSession):
     """
 
 File: research/cowrie/src/cowrie/ssh/transport.py
-# Copyright (c) 2009-2014 Upi Tamminen <desaster@gmail.com>
+# Copyright (c) 2009-2014 Upi Tamminen <disaster@gmail.com>
 # See the COPYRIGHT file for more information
 
 """
@@ -156,7 +156,7 @@ from typing import Any
 from twisted.conch.ssh import transport
 
 File: research/cowrie/src/cowrie/ssh/userauth.py
-# Copyright (c) 2009-2014 Upi Tamminen <desaster@gmail.com>
+# Copyright (c) 2009-2014 Upi Tamminen <disaster@gmail.com>
 # See the COPYRIGHT file for more information
 
 
@@ -268,4 +268,3 @@ from twisted.conch.telnet import (
     AuthenticatingTelnetProtocol,
     ITelnetProtocol,
 )
-

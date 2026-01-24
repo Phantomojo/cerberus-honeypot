@@ -45,10 +45,10 @@ echo "[+] Deep configuration analysis..."
 echo "[+] Analyzing command execution..."
 {
   echo "=== COMMAND EXECUTION FLOW ==="
-  cat "$COWRIE/src/cowrie/shell/honeypot.py" | grep -A 20 "def lineReceived"
+  grep -A 20 "def lineReceived" "$COWRIE/src/cowrie/shell/honeypot.py"
   echo ""
   echo "=== COMMAND DISPATCH ==="
-  cat "$COWRIE/src/cowrie/shell/honeypot.py" | grep -A 20 "def call_command"
+  grep -A 20 "def call_command" "$COWRIE/src/cowrie/shell/honeypot.py"
 } > "$OUTPUT/18_command_execution.txt"
 
 # 6. Filesystem operations
@@ -79,7 +79,7 @@ echo "[+] Analyzing output plugins..."
   ls -la "$COWRIE/src/cowrie/output/"
   echo ""
   for plugin in "$COWRIE/src/cowrie/output"/*.py; do
-    echo "--- $(basename $plugin) ---"
+    echo "--- $(basename "$plugin") ---"
     head -30 "$plugin"
     echo ""
   done
@@ -92,7 +92,7 @@ echo "[+] Extracting protocol handlers..."
   grep "ssh_" "$COWRIE/src/cowrie/ssh"/*.py | head -100
   echo ""
   echo "=== TELNET NEGOTIATION ==="
-  grep "telnet\|IAC\|WILL\|WONT" "$COWRIE/src/cowrie/telnet"/*.py | head -100
+  grep "telnet\|IAC\|WILL\|WON'T" "$COWRIE/src/cowrie/telnet"/*.py | head -100
 } > "$OUTPUT/23_protocol_handlers.txt"
 
 # 11. Create architecture diagram (text-based)
@@ -195,4 +195,3 @@ echo "[+] Extracting code patterns..."
 echo ""
 echo "=== DEEP ANALYSIS COMPLETE ==="
 ls -lh "$OUTPUT/"
-

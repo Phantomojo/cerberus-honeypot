@@ -1,10 +1,13 @@
 FROM cowrie/cowrie:latest
 
 # Copy Cerberus custom command handlers
+COPY services/cowrie/custom-commands/uname.py /cowrie/cowrie-git/src/cowrie/commands/
 COPY services/cowrie/custom-commands/cerberus_loader.py /cowrie/cowrie-git/src/cowrie/commands/
 COPY services/cowrie/custom-commands/docker.py /cowrie/cowrie-git/src/cowrie/commands/
 COPY services/cowrie/custom-commands/systemctl.py /cowrie/cowrie-git/src/cowrie/commands/
 COPY services/cowrie/custom-commands/route.py /cowrie/cowrie-git/src/cowrie/commands/
+COPY services/cowrie/custom-commands/honeygpt_bridge.py /cowrie/cowrie-git/src/cowrie/commands/
+COPY services/cowrie/custom-commands/generic_ai.py /cowrie/cowrie-git/src/cowrie/commands/
 
 # Label for identification
 LABEL maintainer="CERBERUS Project"

@@ -28,40 +28,40 @@ cat > test_sandbox.c << 'EOF'
 
 int main() {
     printf("=== Sandbox Test Program ===\n");
-    
+
     // Test 1: Validate sandbox configuration
     printf("1. Testing sandbox configuration validation...\n");
     sandbox_config_t config = get_cowrie_sandbox_config();
-    
+
     if (validate_sandbox_config(&config)) {
         printf("   ✓ Cowrie sandbox configuration is valid\n");
     } else {
         printf("   ✗ Cowrie sandbox configuration is invalid\n");
     }
-    
+
     // Test 2: Check service-specific configurations
     printf("2. Testing service-specific sandbox configurations...\n");
-    
+
     sandbox_config_t rtsp_config = get_rtsp_sandbox_config();
     if (validate_sandbox_config(&rtsp_config)) {
         printf("   ✓ RTSP sandbox configuration is valid\n");
     } else {
         printf("   ✗ RTSP sandbox configuration is invalid\n");
     }
-    
+
     sandbox_config_t web_config = get_web_sandbox_config();
     if (validate_sandbox_config(&web_config)) {
         printf("   ✓ Web sandbox configuration is valid\n");
     } else {
         printf("   ✗ Web sandbox configuration is invalid\n");
     }
-    
+
     // Test 3: Test user validation
     printf("3. Testing sandbox user validation...\n");
-    
+
     const char* good_users[] = {"nobody", "cowrie", "www-data"};
     const char* bad_users[] = {"root", "admin", "user"};
-    
+
     for (int i = 0; i < 3; i++) {
         if (is_valid_sandbox_user(good_users[i])) {
             printf("   ✓ Valid user: %s\n", good_users[i]);
@@ -69,7 +69,7 @@ int main() {
             printf("   ✗ Invalid user: %s (should be valid)\n", good_users[i]);
         }
     }
-    
+
     for (int i = 0; i < 3; i++) {
         if (!is_valid_sandbox_user(bad_users[i])) {
             printf("   ✓ Invalid user: %s\n", bad_users[i]);
@@ -77,23 +77,23 @@ int main() {
             printf("   ✗ Valid user: %s (should be invalid)\n", bad_users[i]);
         }
     }
-    
+
     // Test 4: Test chroot path validation
     printf("4. Testing chroot path validation...\n");
-    
+
     const char* good_paths[] = {
         "/var/lib/cerberus/cowrie-chroot",
         "/var/lib/cerberus/rtsp-chroot",
         "/var/lib/cerberus/web-chroot"
     };
-    
+
     const char* bad_paths[] = {
         "/etc/passwd",
         "../../../etc",
         "/var/lib/cerberus/../../../etc",
         "/tmp"
     };
-    
+
     for (int i = 0; i < 3; i++) {
         if (is_safe_chroot_path(good_paths[i])) {
             printf("   ✓ Safe path: %s\n", good_paths[i]);
@@ -101,7 +101,7 @@ int main() {
             printf("   ✗ Unsafe path: %s (should be safe)\n", good_paths[i]);
         }
     }
-    
+
     for (int i = 0; i < 4; i++) {
         if (!is_safe_chroot_path(bad_paths[i])) {
             printf("   ✓ Unsafe path: %s\n", bad_paths[i]);
@@ -109,13 +109,13 @@ int main() {
             printf("   ✗ Safe path: %s (should be unsafe)\n", bad_paths[i]);
         }
     }
-    
+
     // Test 5: Test sandbox creation (dry run)
     printf("5. Testing sandbox creation (dry run)...\n");
-    
+
     // This will test the logic without actually creating chroot
     sandbox_result_t result = create_sandbox(&config);
-    
+
     if (result == SANDBOX_SUCCESS) {
         printf("   ✓ Sandbox creation logic succeeded\n");
     } else if (result == SANDBOX_ERROR_CHROOT) {
@@ -123,20 +123,20 @@ int main() {
     } else {
         printf("   ⚠ Sandbox creation returned: %d\n", result);
     }
-    
+
     // Test 6: Test active sandbox tracking
     printf("6. Testing active sandbox tracking...\n");
-    
+
     if (!is_sandbox_active("cowrie")) {
         printf("   ✓ Cowrie sandbox not initially active\n");
     } else {
         printf("   ✗ Cowrie sandbox already active\n");
     }
-    
+
     // Simulate activation
     printf("   Simulating sandbox activation...\n");
     // Note: In real implementation, this would be set by run_in_sandbox()
-    
+
     printf("=== Sandbox Tests Complete ===\n");
     return 0;
 }
@@ -325,25 +325,25 @@ SANDBOX_BASE="/var/lib/cerberus"
 check_sandbox_health() {
     local service=$1
     local sandbox_path="$SANDBOX_BASE/$service-chroot"
-    
+
     # Check if sandbox directory exists
     if [ ! -d "$sandbox_path" ]; then
         echo "ALERT: Sandbox directory missing for $service"
         return 1
     fi
-    
+
     # Check if service process is running
     if ! pgrep -f "$service" > /dev/null; then
         echo "ALERT: Service $service is not running"
         return 1
     fi
-    
+
     # Check resource usage
     local pid=$(pgrep -f "$service" | head -1)
     if [ -n "$pid" ]; then
         local memory=$(ps -p "$pid" -o rss= | tail -1)
         local memory_mb=$((memory / 1024))
-        
+
         case $service in
             "cowrie")
                 if [ $memory_mb -gt 256 ]; then
@@ -362,7 +362,7 @@ check_sandbox_health() {
                 ;;
         esac
     fi
-    
+
     return 0
 }
 
@@ -371,7 +371,7 @@ while true; do
     for service in "${SERVICES[@]}"; do
         check_sandbox_health "$service"
     done
-    
+
     sleep 30
 done
 EOM

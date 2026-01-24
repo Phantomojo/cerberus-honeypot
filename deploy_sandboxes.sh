@@ -167,25 +167,25 @@ SANDBOX_BASE="/var/lib/cerberus"
 check_sandbox_health() {
     local service=$1
     local sandbox_path="$SANDBOX_BASE/$service-chroot"
-    
+
     # Check if sandbox directory exists
     if [ ! -d "$sandbox_path" ]; then
         echo "ALERT: Sandbox directory missing for $service"
         return 1
     fi
-    
+
     # Check if service process is running
     if ! pgrep -f "$service" > /dev/null; then
         echo "ALERT: Service $service is not running"
         return 1
     fi
-    
+
     # Check resource usage
     local pid=$(pgrep -f "$service" | head -1)
     if [ -n "$pid" ]; then
         local memory=$(ps -p "$pid" -o rss= | tail -1)
         local memory_mb=$((memory / 1024))
-        
+
         case $service in
             "cowrie")
                 if [ $memory_mb -gt 256 ]; then
@@ -204,7 +204,7 @@ check_sandbox_health() {
                 ;;
         esac
     fi
-    
+
     return 0
 }
 
@@ -213,7 +213,7 @@ while true; do
     for service in "${SERVICES[@]}"; do
         check_sandbox_health "$service"
     done
-    
+
     sleep 30
 done
 EOM

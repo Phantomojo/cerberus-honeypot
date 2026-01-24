@@ -80,7 +80,7 @@ research/cowrie/src/cowrie/commands/base.py- builtin [shell-builtin [arg ...]]  
 research/cowrie/src/cowrie/commands/base.py- caller [expr]                                                                                  pwd [-LP]
 --
 research/cowrie/src/cowrie/commands/curl.py:     --egd-file FILE  EGD socket path for random data (SSL)
-research/cowrie/src/cowrie/commands/curl.py-     --engine ENGINGE  Crypto engine (SSL). "--engine list" for list
+research/cowrie/src/cowrie/commands/curl.py-     --engine ENGINE  Crypto engine (SSL). "--engine list" for list
 research/cowrie/src/cowrie/commands/curl.py- -f, --fail          Fail silently (no output at all) on HTTP errors (H)
 research/cowrie/src/cowrie/commands/curl.py- -F, --form CONTENT  Specify HTTP multipart POST data (H)
 --

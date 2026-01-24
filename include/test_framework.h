@@ -5,12 +5,7 @@
 #include <stddef.h>
 
 // Test result codes
-typedef enum {
-    TEST_PASS = 0,
-    TEST_FAIL = 1,
-    TEST_SKIP = 2,
-    TEST_ERROR = 3
-} test_result_t;
+typedef enum { TEST_PASS = 0, TEST_FAIL = 1, TEST_SKIP = 2, TEST_ERROR = 3 } test_result_t;
 
 // Test context structure
 typedef struct {
@@ -37,100 +32,115 @@ typedef struct {
 } test_suite_t;
 
 // Test assertion macros
-#define ASSERT_TRUE(ctx, condition) \
-    do { \
-        if (!(condition)) { \
-            snprintf((ctx)->failure_message, sizeof((ctx)->failure_message), \
-                     "ASSERT_TRUE failed: %s", #condition); \
-            return TEST_FAIL; \
-        } \
-    } while(0)
+#define ASSERT_TRUE(ctx, condition)                                                                \
+    do {                                                                                           \
+        if (!(condition)) {                                                                        \
+            snprintf((ctx)->failure_message,                                                       \
+                     sizeof((ctx)->failure_message),                                               \
+                     "ASSERT_TRUE failed: %s",                                                     \
+                     #condition);                                                                  \
+            return TEST_FAIL;                                                                      \
+        }                                                                                          \
+    } while (0)
 
-#define ASSERT_FALSE(ctx, condition) \
-    do { \
-        if (condition) { \
-            snprintf((ctx)->failure_message, sizeof((ctx)->failure_message), \
-                     "ASSERT_FALSE failed: %s", #condition); \
-            return TEST_FAIL; \
-        } \
-    } while(0)
+#define ASSERT_FALSE(ctx, condition)                                                               \
+    do {                                                                                           \
+        if (condition) {                                                                           \
+            snprintf((ctx)->failure_message,                                                       \
+                     sizeof((ctx)->failure_message),                                               \
+                     "ASSERT_FALSE failed: %s",                                                    \
+                     #condition);                                                                  \
+            return TEST_FAIL;                                                                      \
+        }                                                                                          \
+    } while (0)
 
-#define ASSERT_EQ(ctx, expected, actual) \
-    do { \
-        if ((expected) != (actual)) { \
-            snprintf((ctx)->failure_message, sizeof((ctx)->failure_message), \
-                     "ASSERT_EQ failed: expected %ld, got %ld", \
-                     (long)(expected), (long)(actual)); \
-            return TEST_FAIL; \
-        } \
-    } while(0)
+#define ASSERT_EQ(ctx, expected, actual)                                                           \
+    do {                                                                                           \
+        if ((expected) != (actual)) {                                                              \
+            snprintf((ctx)->failure_message,                                                       \
+                     sizeof((ctx)->failure_message),                                               \
+                     "ASSERT_EQ failed: expected %ld, got %ld",                                    \
+                     (long)(expected),                                                             \
+                     (long)(actual));                                                              \
+            return TEST_FAIL;                                                                      \
+        }                                                                                          \
+    } while (0)
 
-#define ASSERT_NE(ctx, expected, actual) \
-    do { \
-        if ((expected) == (actual)) { \
-            snprintf((ctx)->failure_message, sizeof((ctx)->failure_message), \
-                     "ASSERT_NE failed: expected not equal to %ld", \
-                     (long)(expected)); \
-            return TEST_FAIL; \
-        } \
-    } while(0)
+#define ASSERT_NE(ctx, expected, actual)                                                           \
+    do {                                                                                           \
+        if ((expected) == (actual)) {                                                              \
+            snprintf((ctx)->failure_message,                                                       \
+                     sizeof((ctx)->failure_message),                                               \
+                     "ASSERT_NE failed: expected not equal to %ld",                                \
+                     (long)(expected));                                                            \
+            return TEST_FAIL;                                                                      \
+        }                                                                                          \
+    } while (0)
 
-#define ASSERT_NULL(ctx, ptr) \
-    do { \
-        if ((ptr) != NULL) { \
-            snprintf((ctx)->failure_message, sizeof((ctx)->failure_message), \
-                     "ASSERT_NULL failed: pointer is not NULL"); \
-            return TEST_FAIL; \
-        } \
-    } while(0)
+#define ASSERT_NULL(ctx, ptr)                                                                      \
+    do {                                                                                           \
+        if ((ptr) != NULL) {                                                                       \
+            snprintf((ctx)->failure_message,                                                       \
+                     sizeof((ctx)->failure_message),                                               \
+                     "ASSERT_NULL failed: pointer is not NULL");                                   \
+            return TEST_FAIL;                                                                      \
+        }                                                                                          \
+    } while (0)
 
-#define ASSERT_NOT_NULL(ctx, ptr) \
-    do { \
-        if ((ptr) == NULL) { \
-            snprintf((ctx)->failure_message, sizeof((ctx)->failure_message), \
-                     "ASSERT_NOT_NULL failed: pointer is NULL"); \
-            return TEST_FAIL; \
-        } \
-    } while(0)
+#define ASSERT_NOT_NULL(ctx, ptr)                                                                  \
+    do {                                                                                           \
+        if ((ptr) == NULL) {                                                                       \
+            snprintf((ctx)->failure_message,                                                       \
+                     sizeof((ctx)->failure_message),                                               \
+                     "ASSERT_NOT_NULL failed: pointer is NULL");                                   \
+            return TEST_FAIL;                                                                      \
+        }                                                                                          \
+    } while (0)
 
-#define ASSERT_GT(ctx, a, b) \
-    do { \
-        if (!((a) > (b))) { \
-            snprintf((ctx)->failure_message, sizeof((ctx)->failure_message), \
-                     "ASSERT_GT failed: %ld is not greater than %ld", \
-                     (long)(a), (long)(b)); \
-            return TEST_FAIL; \
-        } \
-    } while(0)
+#define ASSERT_GT(ctx, a, b)                                                                       \
+    do {                                                                                           \
+        if (!((a) > (b))) {                                                                        \
+            snprintf((ctx)->failure_message,                                                       \
+                     sizeof((ctx)->failure_message),                                               \
+                     "ASSERT_GT failed: %ld is not greater than %ld",                              \
+                     (long)(a),                                                                    \
+                     (long)(b));                                                                   \
+            return TEST_FAIL;                                                                      \
+        }                                                                                          \
+    } while (0)
 
-#define ASSERT_LT(ctx, a, b) \
-    do { \
-        if (!((a) < (b))) { \
-            snprintf((ctx)->failure_message, sizeof((ctx)->failure_message), \
-                     "ASSERT_LT failed: %ld is not less than %ld", \
-                     (long)(a), (long)(b)); \
-            return TEST_FAIL; \
-        } \
-    } while(0)
+#define ASSERT_LT(ctx, a, b)                                                                       \
+    do {                                                                                           \
+        if (!((a) < (b))) {                                                                        \
+            snprintf((ctx)->failure_message,                                                       \
+                     sizeof((ctx)->failure_message),                                               \
+                     "ASSERT_LT failed: %ld is not less than %ld",                                 \
+                     (long)(a),                                                                    \
+                     (long)(b));                                                                   \
+            return TEST_FAIL;                                                                      \
+        }                                                                                          \
+    } while (0)
 
 // Security-specific assertions
-#define ASSERT_SECURE_INPUT(ctx, input, max_length) \
-    do { \
-        if (sec_validate_string((input), (max_length), false) != SEC_VALID) { \
-            snprintf((ctx)->failure_message, sizeof((ctx)->failure_message), \
-                     "ASSERT_SECURE_INPUT failed: input is invalid or too long"); \
-            return TEST_FAIL; \
-        } \
-    } while(0)
+#define ASSERT_SECURE_INPUT(ctx, input, max_length)                                                \
+    do {                                                                                           \
+        if (sec_validate_string((input), (max_length), false) != SEC_VALID) {                      \
+            snprintf((ctx)->failure_message,                                                       \
+                     sizeof((ctx)->failure_message),                                               \
+                     "ASSERT_SECURE_INPUT failed: input is invalid or too long");                  \
+            return TEST_FAIL;                                                                      \
+        }                                                                                          \
+    } while (0)
 
-#define ASSERT_NO_BUFFER_OVERFLOW(ctx, buffer, size) \
-    do { \
-        if (sec_validate_buffer((buffer), (size), (size)) != SEC_VALID) { \
-            snprintf((ctx)->failure_message, sizeof((ctx)->failure_message), \
-                     "ASSERT_NO_BUFFER_OVERFLOW failed: buffer validation failed"); \
-            return TEST_FAIL; \
-        } \
-    } while(0)
+#define ASSERT_NO_BUFFER_OVERFLOW(ctx, buffer, size)                                               \
+    do {                                                                                           \
+        if (sec_validate_buffer((buffer), (size), (size)) != SEC_VALID) {                          \
+            snprintf((ctx)->failure_message,                                                       \
+                     sizeof((ctx)->failure_message),                                               \
+                     "ASSERT_NO_BUFFER_OVERFLOW failed: buffer validation failed");                \
+            return TEST_FAIL;                                                                      \
+        }                                                                                          \
+    } while (0)
 
 // Test framework functions
 void test_framework_init(void);
@@ -161,6 +171,6 @@ void log_test_failure(const char* test_name, const char* message);
 // Test constants
 #define MAX_TEST_SUITES 20
 #define MAX_TESTS_PER_SUITE 50
-#define TEST_TIMEOUT_MS 30000  // 30 seconds
+#define TEST_TIMEOUT_MS 30000 // 30 seconds
 
 #endif // TEST_FRAMEWORK_H

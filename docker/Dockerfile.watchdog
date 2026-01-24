@@ -1,0 +1,42 @@
+# Stage 1: Builder
+FROM ubuntu:24.04 AS builder
+
+# Avoid interactive prompts
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /build-env
+COPY . .
+
+# Build the binaries (morph and quorum)
+RUN make clean && make build/morph build/quorum
+
+# Stage 2: Final Image
+FROM ubuntu:24.04
+
+# Avoid interactive prompts
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y \
+    docker.io \
+    bash \
+    procps \
+    coreutils \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy the built binaries from the builder stage
+COPY --from=builder /build-env/build/morph /usr/local/bin/morph
+COPY --from=builder /build-env/build/quorum /usr/local/bin/quorum
+
+# Copy scripts and config
+COPY profiles.conf /app/profiles.conf
+COPY scripts/adaptive_watchdog.sh /app/scripts/adaptive_watchdog.sh
+COPY scripts/morph_and_reload.sh /app/scripts/morph_and_reload.sh
+
+ENTRYPOINT ["/bin/bash", "/app/scripts/adaptive_watchdog.sh"]

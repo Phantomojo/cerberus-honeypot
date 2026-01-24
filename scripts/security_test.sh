@@ -37,16 +37,16 @@ cat > test_buffer_overflow.c << 'EOF'
 int main() {
     char small_buffer[10];
     char large_input[50];
-    
+
     // Initialize with safe pattern
     memset(large_input, 'A', 49);
     large_input[49] = '\0';
-    
+
     printf("Testing buffer overflow protection...\n");
-    
+
     // This should be prevented
     sec_result_t result = sec_safe_strcpy(small_buffer, large_input, sizeof(small_buffer));
-    
+
     if (result == SEC_BUFFER_OVERFLOW) {
         printf("   ✓ Buffer overflow correctly detected and prevented\n");
         return 0;
@@ -80,16 +80,16 @@ int main() {
         "....//....//....//etc/passwd",
         NULL
     };
-    
+
     printf("Testing path traversal protection...\n");
-    
+
     int passed = 0;
     int total = 0;
-    
+
     for (int i = 0; dangerous_paths[i] != NULL; i++) {
         total++;
         sec_result_t result = sec_validate_path(dangerous_paths[i], false);
-        
+
         if (result != SEC_VALID) {
             passed++;
             printf("   ✓ Blocked: %s\n", dangerous_paths[i]);
@@ -97,7 +97,7 @@ int main() {
             printf("   ✗ ALLOWED: %s - SECURITY ISSUE\n", dangerous_paths[i]);
         }
     }
-    
+
     printf("Path traversal test: %d/%d passed\n", passed, total);
     return (passed == total) ? 0 : 1;
 }
@@ -128,7 +128,7 @@ int main() {
         "0.0.0.0",
         NULL
     };
-    
+
     const char* bad_ips[] = {
         "999.999.999.999",
         "192.168.1",
@@ -139,12 +139,12 @@ int main() {
         "",
         NULL
     };
-    
+
     printf("Testing IP address validation...\n");
-    
+
     int good_passed = 0;
     int bad_passed = 0;
-    
+
     // Test good IPs
     for (int i = 0; good_ips[i] != NULL; i++) {
         sec_result_t result = sec_validate_ip_address(good_ips[i]);
@@ -155,7 +155,7 @@ int main() {
             printf("   ✗ Rejected: %s - should be valid\n", good_ips[i]);
         }
     }
-    
+
     // Test bad IPs
     for (int i = 0; bad_ips[i] != NULL; i++) {
         sec_result_t result = sec_validate_ip_address(bad_ips[i]);
@@ -166,10 +166,10 @@ int main() {
             printf("   ✗ ALLOWED: %s - SECURITY ISSUE\n", bad_ips[i]);
         }
     }
-    
-    printf("IP validation test: %d/%d good passed, %d/%d bad passed\n", 
+
+    printf("IP validation test: %d/%d good passed, %d/%d bad passed\n",
            good_passed, 6, bad_passed, 7);
-    
+
     return (good_passed == 6 && bad_passed == 7) ? 0 : 1;
 }
 EOF
@@ -198,7 +198,7 @@ int main() {
         "file_with_underscores.doc",
         NULL
     };
-    
+
     const char* bad_filenames[] = {
         "../../../etc/passwd",
         "file with spaces.txt",
@@ -209,12 +209,12 @@ int main() {
         "",
         NULL
     };
-    
+
     printf("Testing filename validation...\n");
-    
+
     int good_passed = 0;
     int bad_passed = 0;
-    
+
     // Test good filenames
     for (int i = 0; good_filenames[i] != NULL; i++) {
         sec_result_t result = sec_validate_filename(good_filenames[i]);
@@ -225,7 +225,7 @@ int main() {
             printf("   ✗ Rejected: %s - should be valid\n", good_filenames[i]);
         }
     }
-    
+
     // Test bad filenames
     for (int i = 0; bad_filenames[i] != NULL; i++) {
         sec_result_t result = sec_validate_filename(bad_filenames[i]);
@@ -236,10 +236,10 @@ int main() {
             printf("   ✗ ALLOWED: %s - SECURITY ISSUE\n", bad_filenames[i]);
         }
     }
-    
-    printf("Filename validation test: %d/%d good passed, %d/%d bad passed\n", 
+
+    printf("Filename validation test: %d/%d good passed, %d/%d bad passed\n",
            good_passed, 5, bad_passed, 7);
-    
+
     return (good_passed == 5 && bad_passed == 7) ? 0 : 1;
 }
 EOF
@@ -260,7 +260,7 @@ echo ""
 echo "=== Security Testing Complete ==="
 echo "Summary:"
 echo "- Input validation framework: ✓ Implemented"
-echo "- Buffer overflow protection: ✓ Implemented" 
+echo "- Buffer overflow protection: ✓ Implemented"
 echo "- Path traversal protection: ✓ Implemented"
 echo "- IP address validation: ✓ Implemented"
 echo "- Filename validation: ✓ Implemented"

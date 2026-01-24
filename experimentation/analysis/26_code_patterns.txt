@@ -75,4 +75,3 @@ experimentation/cowrie/src/cowrie/ssh/userauth.py-        """
             r = self.protocol.fs.resolve_path(tmppath, self.protocol.cwd)
         except Exception:
             return
-

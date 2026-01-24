@@ -123,10 +123,10 @@ if [ $QUORUM_EXIT -eq $EXIT_SUCCESS ] || [ $QUORUM_EXIT -eq $EXIT_ALERT ]; then
     if [ $QUORUM_EXIT -eq $EXIT_ALERT ]; then
         pass "Coordinated attack correctly detected"
     fi
-    
+
     # Display output for manual verification
     echo "   Quorum output:"
-    cat /tmp/quorum_test_output3.txt | grep -E "(INFO|WARN|ERROR|ALERT)" | sed 's/^/   /' || true
+    grep -E "(INFO|WARN|ERROR|ALERT)" /tmp/quorum_test_output3.txt | sed 's/^/   /' || true
 else
     fail "Quorum engine failed with coordinated attack logs (exit: $QUORUM_EXIT)"
     cat /tmp/quorum_test_output3.txt
@@ -149,16 +149,18 @@ fi
 
 # Test 10: Test with multiple different IPs
 echo "Test 10: Test with multiple unique IPs"
-echo "[$(date '+%Y-%m-%d %H:%M:%S')] Connection from 192.168.1.10" > services/cowrie/logs/cowrie.log
-echo "[$(date '+%Y-%m-%d %H:%M:%S')] Connection from 192.168.1.20" >> services/cowrie/logs/cowrie.log
-echo "[$(date '+%Y-%m-%d %H:%M:%S')] Connection from 192.168.1.30" >> services/cowrie/logs/cowrie.log
-echo "[$(date '+%Y-%m-%d %H:%M:%S')] Connection from 10.0.0.100" >> services/cowrie/logs/cowrie.log
+{
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] Connection from 192.168.1.10"
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] Connection from 192.168.1.20"
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] Connection from 192.168.1.30"
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] Connection from 10.0.0.100"
+} > services/cowrie/logs/cowrie.log
 ./build/quorum > /tmp/quorum_test_output5.txt 2>&1
 QUORUM_EXIT=$?
 # Both success and alert exit codes are acceptable
 if [ $QUORUM_EXIT -eq $EXIT_SUCCESS ] || [ $QUORUM_EXIT -eq $EXIT_ALERT ]; then
     pass "Quorum processes multiple unique IPs"
-    
+
     # Check if multiple IPs tracked - split into steps for better error handling
     UNIQUE_LINE=$(grep "unique IPs tracked:" /tmp/quorum_test_output5.txt 2>/dev/null || echo "")
     if [ -n "$UNIQUE_LINE" ]; then

@@ -810,7 +810,7 @@ index = cowrie
 # verify SSL certificates
 #verify_certs = true
 
-# Send login attemp information to SANS DShield
+# Send login attempt information to SANS DShield
 # See https://isc.sans.edu/ssh.html
 # You must signup for an api key.
 # Once registered, find your details at: https://isc.sans.edu/myaccount.html
@@ -869,11 +869,11 @@ port = 3306
 debug = false
 
 
-# PostgresSQL logging module
+# PostgreSQL logging module
 # Database structure for this module is supplied in docs/sql/postgres.sql
 #
-# PostgresSQL logging requires extra software: sudo apt-get install libpq-dev
-# PostgresSQL logging requires an extra Python module: pip install psycopg2
+# PostgreSQL logging requires extra software: sudo apt-get install libpq-dev
+# PostgreSQL logging requires an extra Python module: pip install psycopg2
 #
 [output_postgresql]
 enabled = false
@@ -984,7 +984,7 @@ api_key = 130928309823098
 enabled = false
 
 # Sends Cowrie event notifications to a Slack channel.
-# Warning: This will produce a _lot_ of messages unless `simplified = true` 
+# Warning: This will produce a _lot_ of messages unless `simplified = true`
 #          and `verbose = false` are set.
 #
 # Parameters:
@@ -994,7 +994,7 @@ enabled = false
 #                 raw JSON. (default = false)
 #  - timestamp:  If true, each message includes a timestamp,
 #                 if false, timestamps are hidden. (default = true)
-#  - verbose:    If false, reduces the number of messages by suppressing 
+#  - verbose:    If false, reduces the number of messages by suppressing
 #                 verbose event types: client.kex, client.connect, client.size,
 #                 client.var, log.closed, log.opened, session.params (default = true)
 [output_slack]
@@ -1111,7 +1111,7 @@ debug = false
 # 1. Create a bot following https://core.telegram.org/bots#6-botfather to get token.
 # 2. Send message to your bot, then use https://api.telegram.org/bot{bot_token}/getUpdates to find chat_id.
 # N.b. bot will only send messages on cowrie.login.success, cowrie.command.input/.failed, and
-# cowrie.session.file_download, to prevent spam. 
+# cowrie.session.file_download, to prevent spam.
 [output_telegram]
 enabled = false
 bot_token = 123456789:AbCDEfGhiJkLmnOpQRstUVWxYZ
@@ -1216,4 +1216,3 @@ exchange_type = topic
 
 [openai]
 API_KEY = xxxxx
-

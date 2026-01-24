@@ -1,8 +1,8 @@
 #ifndef TEMPORAL_H
 #define TEMPORAL_H
 
-#include <time.h>
 #include <stdint.h>
+#include <time.h>
 
 #define MAX_LOG_ENTRIES 1000
 #define MAX_LOG_SIZE 4096
@@ -21,8 +21,8 @@ typedef struct {
 // Log entry
 typedef struct {
     time_t timestamp;
-    const char* level;    // INFO, WARN, ERROR, DEBUG
-    const char* source;   // Kernel, service name, etc.
+    const char* level;  // INFO, WARN, ERROR, DEBUG
+    const char* source; // Kernel, service name, etc.
     char message[256];
 } log_entry_t;
 
@@ -38,7 +38,10 @@ int generate_kernel_messages(system_state_t* state, char* output, size_t output_
 int generate_syslog(system_state_t* state, char* output, size_t output_size);
 int get_realistic_uptime_seconds(void);
 time_t get_realistic_boot_time(void);
-void add_log_entry(system_state_t* state, const char* level, const char* source, const char* message);
+void add_log_entry(system_state_t* state,
+                   const char* level,
+                   const char* source,
+                   const char* message);
 void free_system_state(system_state_t* state);
 
 #endif // TEMPORAL_H
