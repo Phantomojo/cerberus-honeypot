@@ -260,15 +260,54 @@ HTML_TEMPLATE = """
 
         /* Mobile Responsiveness */
         @media (max-width: 1024px) {
-            body { overflow-y: auto; height: auto; }
-            main { display: flex; flex-direction: column; height: auto; padding: 0.5rem; gap: 0.5rem; margin-bottom: 60px; }
-            aside { height: auto; min-height: 300px; }
-            .card { height: auto; min-height: 400px; }
-            .map-section { height: 400px; order: -1; } /* Map at top on mobile */
-            header { height: auto; padding: 1rem; flex-direction: column; gap: 0.5rem; }
-            footer { height: auto; flex-wrap: wrap; padding: 0.8rem; gap: 1rem; position: relative; }
-            .progress-container { width: 80px; }
-            .feed { height: 200px; }
+            body {
+                overflow-y: auto !important;
+                height: auto !important;
+                touch-action: manipulation;
+            }
+            main {
+                display: flex !important;
+                flex-direction: column !important;
+                height: auto !important;
+                padding: 0.5rem !important;
+                gap: 1rem !important;
+                margin-bottom: 80px !important;
+            }
+            aside {
+                height: auto !important;
+                min-height: 250px !important;
+            }
+            .card {
+                height: auto !important;
+                min-height: 350px !important;
+                flex-shrink: 0;
+            }
+            .map-section {
+                height: 350px !important;
+                order: -1 !important;
+                width: 100% !important;
+            }
+            #map {
+                height: 100% !important;
+                width: 100% !important;
+            }
+            header {
+                height: auto !important;
+                padding: 1rem !important;
+                flex-direction: column !important;
+                gap: 0.5rem !important;
+                text-align: center;
+            }
+            footer {
+                height: auto !important;
+                flex-wrap: wrap !important;
+                padding: 0.8rem !important;
+                gap: 0.8rem !important;
+                position: fixed !important;
+                bottom: 0;
+            }
+            .progress-container { width: 70px !important; }
+            .feed { height: 180px !important; }
         }
 
         /* Terminal Proxy */

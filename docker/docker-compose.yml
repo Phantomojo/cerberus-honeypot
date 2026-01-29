@@ -37,7 +37,7 @@ services:
     container_name: cerberus-router-web
     restart: unless-stopped
     ports:
-      - "80:80"
+      - "8081:80"
     volumes:
       - ../services/fake-router-web/html:/usr/share/nginx/html:ro
     networks:
