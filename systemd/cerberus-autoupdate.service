@@ -1,0 +1,13 @@
+[Unit]
+Description=CERBERUS Auto-Update Service
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/home/ph/cerberus-honeypot/scripts/auto_update.sh
+User=root
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
