@@ -49,14 +49,14 @@ def check_auth():
     auth = request.headers.get('Authorization')
     if not auth:
         return False
-    
+
     # Remove 'Bearer ' prefix
     token = auth.replace('Bearer ', '')
-    
+
     # Check if it's the pre-hashed token OR hash the incoming password
     if token == AUTH_TOKEN:
         return True
-    
+
     # Try hashing the incoming value (in case it's the plain password)
     plain_hash = hashlib.sha256(token.encode()).hexdigest()
     return plain_hash == AUTH_TOKEN
@@ -128,8 +128,29 @@ def get_docker_stats():
     try:
         cmd = ["docker", "ps", "--format", "{{.Names}}|{{.Status}}"]
         output = subprocess.check_output(cmd).decode().strip()
+        if not output: return []
         return [{"name": l.split('|')[0], "stat": l.split('|')[1], "active": "Up" in l.split('|')[1]} for l in output.split('\n') if '|' in l]
     except: return []
+
+def get_system_metrics():
+    try:
+        cpu = psutil.cpu_percent()
+        ram = psutil.virtual_memory().percent
+        disk = psutil.disk_usage('/').percent
+        return {"cpu": cpu, "ram": ram, "disk": disk}
+    except: return {"cpu": 0, "ram": 0, "disk": 0}
+
+def get_deployment_status():
+    try:
+        # Check for active docker builds
+        cmd = ["ps", "aux"]
+        output = subprocess.check_output(cmd).decode()
+        if "docker-compose up" in output or "docker build" in output:
+            # Estimate progress based on common log patterns or time
+            # For now, return a tactical 'Deploying' state
+            return {"active": True, "target": "CORE_SERVICES", "progress": 45}
+        return {"active": False, "target": "STABLE", "progress": 100}
+    except: return {"active": False, "target": "NULL", "progress": 0}
 
 # Background Logic: Monitoring and Parsing
 def log_monitor():
@@ -229,6 +250,12 @@ HTML_TEMPLATE = """
         @keyframes ping-zoom { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(4); opacity: 0; } }
 
         .feed { padding: 1rem; font-family: 'JetBrains Mono'; font-size: 0.6rem; overflow-y: auto; flex-grow: 1; }
+
+        /* Tactical Status Bar */
+        footer { position: fixed; bottom: 0; left: 0; width: 100%; height: 32px; background: rgba(0,0,0,0.9); border-top: var(--border); display: flex; align-items: center; padding: 0 1rem; font-size: 0.6rem; font-family: 'JetBrains Mono'; z-index: 200; gap: 2rem; }
+        .status-pill { display: flex; align-items: center; gap: 0.5rem; }
+        .progress-container { width: 150px; height: 8px; background: rgba(255,255,255,0.05); border-radius: 4px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); }
+        .progress-fill { height: 100%; background: var(--accent); transition: width 0.5s ease; box-shadow: 0 0 10px var(--accent); }
     </style>
 </head>
 <body>
@@ -276,6 +303,33 @@ HTML_TEMPLATE = """
         </aside>
     </main>
 
+    <footer>
+        <div class="status-pill">
+            <span style="color: var(--dim)">DEPLOYMENT_STATUS:</span>
+            <span id="deploy-target" style="color: var(--accent)">STABLE</span>
+            <div class="progress-container">
+                <div id="deploy-progress" class="progress-fill" style="width: 100%"></div>
+            </div>
+            <span id="deploy-pct" style="color: var(--accent)">100%</span>
+        </div>
+        <div class="status-pill">
+            <span style="color: var(--dim)">CPU:</span>
+            <span id="cpu-usage" style="color: var(--success)">0%</span>
+        </div>
+        <div class="status-pill">
+            <span style="color: var(--dim)">RAM:</span>
+            <span id="ram-usage" style="color: var(--success)">0%</span>
+        </div>
+        <div class="status-pill">
+            <span style="color: var(--dim)">DISK:</span>
+            <span id="disk-usage" style="color: var(--success)">0%</span>
+        </div>
+        <div style="flex-grow: 1"></div>
+        <div class="status-pill">
+            <span style="color: var(--success)">●</span> SYNC_ACTIVE
+        </div>
+    </footer>
+
     <script>
         let dashboardToken = sessionStorage.getItem('cerberus_token');
         let deepReconActive = false;
@@ -299,11 +353,11 @@ HTML_TEMPLATE = """
             const pass = document.getElementById('admin-pass').value;
             // Send plain password - server will hash it
             const res = await fetch('/api/data', { headers: { 'Authorization': `Bearer ${pass}` } });
-            if (res.ok) { 
-                dashboardToken = pass; 
-                sessionStorage.setItem('cerberus_token', pass); 
-                document.getElementById('login-overlay').style.display = 'none'; 
-                startDashboard(); 
+            if (res.ok) {
+                dashboardToken = pass;
+                sessionStorage.setItem('cerberus_token', pass);
+                document.getElementById('login-overlay').style.display = 'none';
+                startDashboard();
             }
             else alert("AUTH_FAILURE");
         }
@@ -364,6 +418,28 @@ HTML_TEMPLATE = """
                 const el = document.createElement('div'); el.className = 'flight-marker';
                 return new maplibregl.Marker({element: el}).setLngLat([a.lon, a.lat]).addTo(map);
             });
+
+            // Update Tactical Status Bar
+            document.getElementById('cpu-usage').innerText = `${d.system.cpu}%`;
+            document.getElementById('ram-usage').innerText = `${d.system.ram}%`;
+            document.getElementById('disk-usage').innerText = `${d.system.disk}%`;
+
+            const deploy = d.deployment;
+            document.getElementById('deploy-target').innerText = deploy.target;
+            document.getElementById('deploy-progress').style.width = `${deploy.progress}%`;
+            document.getElementById('deploy-pct').innerText = `${deploy.progress}%`;
+
+            // Health colors
+            document.getElementById('cpu-usage').style.color = d.system.cpu > 80 ? 'var(--danger)' : 'var(--success)';
+            document.getElementById('ram-usage').style.color = d.system.ram > 80 ? 'var(--danger)' : 'var(--success)';
+
+            if (deploy.active) {
+                document.getElementById('deploy-target').style.color = 'var(--accent)';
+                document.getElementById('deploy-progress').style.background = 'var(--accent)';
+            } else {
+                document.getElementById('deploy-target').style.color = 'var(--success)';
+                document.getElementById('deploy-progress').style.background = 'var(--success)';
+            }
         }
 
         async function fetchAndFocus(ip) {
@@ -399,7 +475,9 @@ def api_data():
         "events": EVENT_HISTORY,
         "quorum": QUORUM_ALERTS + SYSTEM_ERRORS[-5:],
         "neural": [0.8, 0.4],
-        "aircraft": AIRCRAFT_DATA
+        "aircraft": AIRCRAFT_DATA,
+        "system": get_system_metrics(),
+        "deployment": get_deployment_status()
     })
 
 @app.route('/api/intel')
