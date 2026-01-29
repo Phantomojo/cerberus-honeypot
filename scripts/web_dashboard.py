@@ -45,10 +45,21 @@ def log_system_error(msg):
     print(f"ERROR [{ts}]: {msg}")
 
 def check_auth():
+    # Accept both hashed token (from localStorage) and plain password
     auth = request.headers.get('Authorization')
-    if not auth or auth != f"Bearer {AUTH_TOKEN}":
+    if not auth:
         return False
-    return True
+    
+    # Remove 'Bearer ' prefix
+    token = auth.replace('Bearer ', '')
+    
+    # Check if it's the pre-hashed token OR hash the incoming password
+    if token == AUTH_TOKEN:
+        return True
+    
+    # Try hashing the incoming value (in case it's the plain password)
+    plain_hash = hashlib.sha256(token.encode()).hexdigest()
+    return plain_hash == AUTH_TOKEN
 
 def resolve_geoip(ip):
     if ip in ["127.0.0.1", "localhost"] or ip.startswith("192.168."):
@@ -286,10 +297,14 @@ HTML_TEMPLATE = """
 
         async function tryLogin() {
             const pass = document.getElementById('admin-pass').value;
-            const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pass));
-            const token = Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
-            const res = await fetch('/api/data', { headers: { 'Authorization': `Bearer ${token}` } });
-            if (res.ok) { dashboardToken = token; sessionStorage.setItem('cerberus_token', token); document.getElementById('login-overlay').style.display = 'none'; startDashboard(); }
+            // Send plain password - server will hash it
+            const res = await fetch('/api/data', { headers: { 'Authorization': `Bearer ${pass}` } });
+            if (res.ok) { 
+                dashboardToken = pass; 
+                sessionStorage.setItem('cerberus_token', pass); 
+                document.getElementById('login-overlay').style.display = 'none'; 
+                startDashboard(); 
+            }
             else alert("AUTH_FAILURE");
         }
 
