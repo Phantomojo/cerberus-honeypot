@@ -197,6 +197,7 @@ HTML_TEMPLATE = """
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>CERBERUS CC | PHOENIX VR 5.0</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <script src='https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js'></script>
@@ -259,11 +260,15 @@ HTML_TEMPLATE = """
 
         /* Mobile Responsiveness */
         @media (max-width: 1024px) {
-            main { grid-template-columns: 1fr; overflow-y: auto; height: auto; padding-bottom: 40px; }
-            aside { height: 400px; }
-            .map-section { height: 500px; }
-            footer { height: auto; flex-wrap: wrap; padding: 0.5rem; gap: 1rem; }
-            .progress-container { width: 100px; }
+            body { overflow-y: auto; height: auto; }
+            main { display: flex; flex-direction: column; height: auto; padding: 0.5rem; gap: 0.5rem; margin-bottom: 60px; }
+            aside { height: auto; min-height: 300px; }
+            .card { height: auto; min-height: 400px; }
+            .map-section { height: 400px; order: -1; } /* Map at top on mobile */
+            header { height: auto; padding: 1rem; flex-direction: column; gap: 0.5rem; }
+            footer { height: auto; flex-wrap: wrap; padding: 0.8rem; gap: 1rem; position: relative; }
+            .progress-container { width: 80px; }
+            .feed { height: 200px; }
         }
 
         /* Terminal Proxy */
