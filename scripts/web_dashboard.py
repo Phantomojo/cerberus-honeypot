@@ -254,8 +254,22 @@ HTML_TEMPLATE = """
         /* Tactical Status Bar */
         footer { position: fixed; bottom: 0; left: 0; width: 100%; height: 32px; background: rgba(0,0,0,0.9); border-top: var(--border); display: flex; align-items: center; padding: 0 1rem; font-size: 0.6rem; font-family: 'JetBrains Mono'; z-index: 200; gap: 2rem; }
         .status-pill { display: flex; align-items: center; gap: 0.5rem; }
-        .progress-container { width: 150px; height: 8px; background: rgba(255,255,255,0.05); border-radius: 4px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); }
+        .progress-container { width: 150px; height: 8px; background: rgba(255,255,255,0.05); border-radius: 4px; overflow: hidden; border: 1px solid rgba(255,255,255,1); }
         .progress-fill { height: 100%; background: var(--accent); transition: width 0.5s ease; box-shadow: 0 0 10px var(--accent); }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 1024px) {
+            main { grid-template-columns: 1fr; overflow-y: auto; height: auto; padding-bottom: 40px; }
+            aside { height: 400px; }
+            .map-section { height: 500px; }
+            footer { height: auto; flex-wrap: wrap; padding: 0.5rem; gap: 1rem; }
+            .progress-container { width: 100px; }
+        }
+
+        /* Terminal Proxy */
+        .term-proxy { background: #000; border: 1px solid var(--accent); color: var(--accent); font-family: 'JetBrains Mono'; font-size: 0.7rem; padding: 0.5rem; border-radius: 4px; margin-top: 0.5rem; display: flex; }
+        .term-proxy input { background: transparent; border: none; padding: 0; margin: 0; flex-grow: 1; color: var(--accent); font-family: inherit; font-size: inherit; outline: none; }
+        .term-prompt { color: var(--success); margin-right: 0.5rem; }
     </style>
 </head>
 <body>
@@ -300,6 +314,13 @@ HTML_TEMPLATE = """
             </div>
             <div class="card-header">Real-Time Telemetry</div>
             <div class="feed" id="feed"></div>
+            <div class="card-header">Honeypot Terminal Proxy [RESTRICTED]</div>
+            <div style="padding: 1rem;">
+                <div class="term-proxy">
+                    <span class="term-prompt">root@cerberus:~$</span>
+                    <input type="text" id="term-input" placeholder="EXECUTE_DECEPTION_CMD" onkeypress="handleTerm(event)">
+                </div>
+            </div>
         </aside>
     </main>
 
@@ -454,6 +475,23 @@ HTML_TEMPLATE = """
             focusTarget(ip, geo.lat, geo.lon);
         }
 
+        async function handleTerm(e) {
+            if (e.key === 'Enter') {
+                const cmd = e.target.value;
+                e.target.value = '';
+                const res = await fetch('/api/terminal', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${dashboardToken}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ command: cmd })
+                });
+                const data = await res.json();
+                const feed = document.getElementById('feed');
+                feed.innerHTML += `<div style="color: var(--accent); margin-top: 5px;">$ ${cmd}</div>`;
+                feed.innerHTML += `<div style="color: #888; white-space: pre-wrap;">${data.output}</div>`;
+                feed.scrollTop = feed.scrollHeight;
+            }
+        }
+
         function startDashboard() {
             setInterval(update, 5000);
             update();
@@ -491,6 +529,20 @@ def api_uptime():
     if not check_auth(): return jsonify({"error": "Unauthorized"}), 401
     uptime_seconds = time.time() - psutil.boot_time()
     return jsonify({"uptime": time.strftime('%H:%M:%S', time.gmtime(uptime_seconds))})
+
+@app.route('/api/terminal', methods=['POST'])
+def api_terminal():
+    if not check_auth(): return jsonify({"error": "Unauthorized"}), 401
+    cmd = request.json.get('command')
+    # SECURE PROXY: Execute ONLY in honeypot container, NOT on host VM
+    try:
+        # We target the 'cerberus-cowrie' container
+        output = subprocess.check_output(["docker", "exec", "cerberus-cowrie", "bash", "-c", cmd], stderr=subprocess.STDOUT, timeout=5).decode()
+        return jsonify({"output": output})
+    except subprocess.CalledProcessError as e:
+        return jsonify({"output": e.output.decode()})
+    except Exception as e:
+        return jsonify({"output": f"ERROR: Service or Container Offline ({str(e)})"})
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000, threaded=True)
