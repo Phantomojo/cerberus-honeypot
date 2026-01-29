@@ -22,6 +22,7 @@ static char state_file_path[MAX_PATH_SIZE] = "build/morph-state.txt";
 
 // Forward declaration
 static int create_default_profiles(void);
+const char* get_profile_type(const char* device_name);
 
 // External function declaration for Phase 1 (Network)
 extern int morph_network_config(const char* base_ip, const char* profile_type);
@@ -132,7 +133,9 @@ int load_profiles(const char* config_file) {
         return create_default_profiles();
     }
 
-    log_event_level(LOG_INFO, "Loaded profiles");
+    char count_msg[64];
+    snprintf(count_msg, sizeof(count_msg), "Loaded %d profiles from config", profile_count);
+    log_event_level(LOG_INFO, count_msg);
     return profile_count;
 }
 
@@ -511,13 +514,30 @@ int morph_router_html(const device_profile_t* profile) {
         return 0;
     }
 
-    // Copy theme to active location
-    if (copy_file(profile->router_html_path, "services/fake-router-web/html/index.html") != 0) {
-        log_event_level(LOG_ERROR, "Failed to copy router HTML");
-        return -1;
+    // TECH DEBT FIX: Inject dynamic uptime into HTML themes
+    char* buffer = malloc(1024 * 1024); // 1MB buffer for HTML
+    if (read_file(profile->router_html_path, buffer, 1024 * 1024) == 0) {
+        char uptime_str[64];
+        int days = (rand() % 30) + 1;
+        int hours = rand() % 24;
+        snprintf(uptime_str, sizeof(uptime_str), "%d days, %d hours", days, hours);
+
+        // Simple replacement (in a real system, we'd use a more robust template engine)
+        // We assume the theme has a {{UPTIME}} placeholder
+        replace_string(buffer, "{{UPTIME}}", uptime_str);
+
+        write_file("services/fake-router-web/html/index.html", buffer);
+        free(buffer);
+    } else {
+        free(buffer);
+        // Fallback to simple copy if read fails
+        if (copy_file(profile->router_html_path, "services/fake-router-web/html/index.html") != 0) {
+            log_event_level(LOG_ERROR, "Failed to copy router HTML");
+            return -1;
+        }
     }
 
-    log_event_level(LOG_INFO, "Router HTML theme updated");
+    log_event_level(LOG_INFO, "Router HTML theme updated with dynamic uptime");
     return 0;
 }
 
@@ -542,13 +562,26 @@ int morph_camera_html(const device_profile_t* profile) {
         return 0;
     }
 
-    // Copy theme to active location
-    if (copy_file(profile->camera_html_path, "services/fake-camera-web/html/index.html") != 0) {
-        log_event_level(LOG_ERROR, "Failed to copy camera HTML");
-        return -1;
+    // TECH DEBT FIX: Inject dynamic uptime into HTML themes
+    char* buffer = malloc(1024 * 1024);
+    if (read_file(profile->camera_html_path, buffer, 1024 * 1024) == 0) {
+        char uptime_str[64];
+        int days = (rand() % 10) + 1;
+        int hours = rand() % 24;
+        snprintf(uptime_str, sizeof(uptime_str), "%d days, %d hours", days, hours);
+
+        replace_string(buffer, "{{UPTIME}}", uptime_str);
+        write_file("services/fake-camera-web/html/index.html", buffer);
+        free(buffer);
+    } else {
+        free(buffer);
+        if (copy_file(profile->camera_html_path, "services/fake-camera-web/html/index.html") != 0) {
+            log_event_level(LOG_ERROR, "Failed to copy camera HTML");
+            return -1;
+        }
     }
 
-    log_event_level(LOG_INFO, "Camera HTML theme updated");
+    log_event_level(LOG_INFO, "Camera HTML theme updated with dynamic uptime");
     return 0;
 }
 
@@ -737,7 +770,7 @@ int morph_phase4_behavior(const device_profile_t* profile) {
         return -1;
 
     // Generate behavioral profiles
-    session_behavior_t session = generate_session_behavior(profile);
+    session_behavior_t session = generate_session_behavior(profile->name);
 
     // Create a behavior config file that other parts of the system can read
     create_dir("build/cowrie-dynamic");
@@ -861,15 +894,19 @@ int morph_phase5_temporal(void) {
  *
  * Think of it like changing the set decorations when a play moves to a new scene.
  */
-int setup_honeyfs_for_profile(const char* device_name, const char* profile_type) {
+int setup_honeyfs_for_profile(const device_profile_t* profile) {
     log_event_level(LOG_INFO, "Setting up honeyfs for device profile...");
 
+    const char* profile_type = get_profile_type(profile->name);
+
     // Build the command to run our setup script
-    // The script creates a realistic fake filesystem based on device type
+    // Arguments: script, dir, type, name, kernel, arch
     char* argv[] = {"./scripts/setup_honeyfs.sh",
                     "services/cowrie/honeyfs",
                     (char*)profile_type,
-                    (char*)device_name,
+                    (char*)profile->name,
+                    (char*)profile->kernel_version,
+                    (char*)profile->arch,
                     NULL};
 
     // Check if script exists before trying to run it
@@ -877,7 +914,8 @@ int setup_honeyfs_for_profile(const char* device_name, const char* profile_type)
         int result = execute_command_safely(argv[0], argv);
         if (result == 0) {
             char msg[256];
-            snprintf(msg, sizeof(msg), "Honeyfs configured for %s (%s)", device_name, profile_type);
+            snprintf(
+                msg, sizeof(msg), "Honeyfs configured for %s (%s)", profile->name, profile_type);
             log_event_level(LOG_INFO, msg);
             return 0;
         } else {
@@ -1060,16 +1098,25 @@ int setup_device_filesystem(const char* device_name) {
 }
 
 int morph_device(void) {
+    // TECH DEBT FIX: Reload profiles before morphing to detect new harvested ghosts
+    load_profiles("profiles.conf");
+
     if (profile_count == 0) {
         log_event_level(LOG_ERROR, "No profiles loaded");
         return -1;
     }
 
-    // Rotate to next profile
-    int next_index = (current_profile_index + 1) % profile_count;
-    if (current_profile_index < 0) {
+    // Random selection from past scavenged devices, excluding the current one
+    int next_index = 0;
+    if (profile_count > 1) {
+        do {
+            next_index = rand() % profile_count;
+        } while (next_index == current_profile_index);
+    } else {
         next_index = 0;
     }
+
+    current_profile_index = next_index;
 
     device_profile_t* new_profile = get_profile(next_index);
     if (!new_profile) {
@@ -1088,9 +1135,8 @@ int morph_device(void) {
     result += morph_camera_html(new_profile);
 
     // Setup device-specific filesystem using our honeyfs script
-    // This creates a realistic fake filesystem that matches the device type
     const char* profile_type = get_profile_type(new_profile->name);
-    setup_honeyfs_for_profile(new_profile->name, profile_type);
+    setup_honeyfs_for_profile(new_profile);
 
     // Also run the old setup for backwards compatibility
     setup_device_filesystem(new_profile->name);

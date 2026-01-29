@@ -24,6 +24,15 @@ int update_kill_chain_state(const char* ip, int state);
 int add_to_persistence(const char* ip, int profile_index);
 int get_persisted_profile(const char* ip);
 
+static int get_current_profile_index_from_file(void) {
+    char val[32];
+    // This matches morph.c's save_current_profile output
+    if (read_config_value("build/morph-state.txt", "current_profile", val, sizeof(val)) == 0) {
+        return atoi(val);
+    }
+    return 0;
+}
+
 // IP address validation (simple IPv4 check)
 bool is_valid_ip(const char* ip) {
     if (!ip || strlen(ip) < 7)
@@ -106,8 +115,23 @@ int add_ip_to_tracking(const char* ip, const char* service) {
         entry->ip[MAX_IP_STRING - 1] = '\0';
         entry->service_count = 0;
         entry->hit_count = 0;
+        entry->intensity = 0.0f;
         entry->first_seen = time(NULL);
+        entry->last_hit_time = 0;
     }
+
+    time_t now = time(NULL);
+    // Apply intensity decay (factor of 0.5 every 15 minutes of inactivity)
+    if (entry->last_hit_time > 0) {
+        double elapsed = difftime(now, entry->last_hit_time);
+        if (elapsed > 900.0) { // 15 minutes
+            entry->intensity *= 0.5f;
+        }
+    }
+
+    // Increase intensity
+    entry->intensity += 1.0f;
+    entry->last_hit_time = now;
 
     // Check if service already recorded
     bool service_exists = false;
@@ -263,14 +287,26 @@ int detect_coordinated_attacks(void) {
     for (int i = 0; i < ip_count; i++) {
         ip_tracking_t* entry = &ip_tracking[i];
 
-        // KILL CHAIN AWARE QUORUM:
-        // Alert if:
+        // SMART QUORUM LOGIC:
         // 1. IP hits multiple services (Coordinated Probe)
         // 2. IP hits one service but reaches EXPLOIT stage
-        if (entry->service_count >= 2 || entry->kill_chain_state >= 2) {
+        // 3. New: High-intensity rapid probing (> 10 intensity/burst)
+
+        bool alert_needed = false;
+        if (entry->service_count >= 2) {
+            alert_needed = true; // Coordinated across services
+        } else if (entry->kill_chain_state >= 2) {
+            alert_needed = true; // Exploit attempt
+        } else if (entry->intensity > 15.0f) {
+            alert_needed = true; // Rapid spam/hammering
+        }
+
+        if (alert_needed) {
             generate_alert(entry);
             emit_morph_signal(entry->ip, entry->service_count);
             alert_count++;
+            // Reset intensity after alert to prevent spamming the dashboard
+            entry->intensity = 0.0f;
         }
     }
 
@@ -409,10 +445,11 @@ int run_quorum_logic(void) {
     alert_count += detect_lateral_movement();
 
     // Persistence: Record identities for active attackers
+    int current_index = get_current_profile_index_from_file();
     for (int i = 0; i < ip_count; i++) {
         if (ip_tracking[i].service_count > 0) {
             // If they are deep into the kill chain, ensure they are pinned
-            add_to_persistence(ip_tracking[i].ip, get_current_profile_index());
+            add_to_persistence(ip_tracking[i].ip, current_index);
         }
     }
 
@@ -444,7 +481,8 @@ int update_kill_chain_state(const char* ip, int state) {
 int add_to_persistence(const char* ip, int profile_index) {
     char entry[128];
     snprintf(entry, sizeof(entry), "%s=%d\n", ip, profile_index);
-    return log_event_file(LOG_INFO, persistence_path, entry);
+    log_event_file(LOG_INFO, persistence_path, entry);
+    return 0;
 }
 
 int get_persisted_profile(const char* ip) {

@@ -11,8 +11,8 @@ cd "$PROJECT_ROOT"
 
 # Config
 QUORUM_INTERVAL=60 # Check quorum every 60 seconds
-MIN_ROTATION_MINUTES=120 # 2 hours
-MAX_ROTATION_MINUTES=360 # 6 hours
+MIN_ROTATION_MINUTES=300   # 5 hours
+MAX_ROTATION_MINUTES=1440  # 24 hours (1 day)
 
 STATE_FILE="build/watchdog_state.conf"
 SIGNAL_FILE="build/signals/emergency_morph.signal"

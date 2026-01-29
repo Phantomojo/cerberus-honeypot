@@ -16,6 +16,8 @@ typedef struct {
     char services[MAX_SERVICES][MAX_SERVICE_NAME];
     time_t first_seen;
     time_t last_seen;
+    time_t last_hit_time; // NEW: Track the exact last hit for intensity decay
+    float intensity;      // NEW: Progressive score (0.0 - 100.0)
     int hit_count;
     int kill_chain_state; // 0=RECON, 1=ACCESS, 2=EXPLOIT, 3=PERSIST
 } ip_tracking_t;

@@ -5,14 +5,22 @@ import threading
 import time
 import json
 import random
+import hashlib
+import psutil
+import urllib.request
 from datetime import datetime
 from flask import Flask, render_template_string, jsonify, request
+import sys
 
 # ==============================================================================
-# CERBERUS COMMAND CENTER (WEB)
+# CERBERUS COMMAND CENTER (V5.0 - PHOENIX TACTICAL HUD)
 # ==============================================================================
 
 app = Flask(__name__)
+
+# Tactical Config
+ADMIN_PASSWORD = "CERBERUS_THREAT_OMEGA_99X"
+AUTH_TOKEN = hashlib.sha256(ADMIN_PASSWORD.encode()).hexdigest()
 
 # Project Paths
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -21,554 +29,375 @@ STATE_FILE = os.path.join(BASE_DIR, "build/morph-state.txt")
 MORPH_BIN = os.path.join(BASE_DIR, "build/morph")
 QUORUM_BIN = os.path.join(BASE_DIR, "build/quorum")
 
-# Global State with Persistence
+# Global State
 HISTORY_FILE = os.path.join(BASE_DIR, "build/web_history.json")
-NEURAL_FILE = os.path.join(BASE_DIR, "build/neural_state.json")
 EVENT_HISTORY = []
 CREDENTIAL_COUNTS = {}
-ACTIVE_SESSIONS = {}
 QUORUM_ALERTS = []
+DASHBOARD_START_TIME = time.time()
+SYSTEM_ERRORS = []
+GEO_CACHE = {}
+AIRCRAFT_DATA = []
+
+def log_system_error(msg):
+    ts = datetime.now().strftime("%H:%M:%S")
+    SYSTEM_ERRORS.append({"time": ts, "msg": msg})
+    print(f"ERROR [{ts}]: {msg}")
+
+def check_auth():
+    auth = request.headers.get('Authorization')
+    if not auth or auth != f"Bearer {AUTH_TOKEN}":
+        return False
+    return True
+
+def resolve_geoip(ip):
+    if ip in ["127.0.0.1", "localhost"] or ip.startswith("192.168."):
+        return {"city": "Local Network", "lat": 0, "lon": 0, "isp": "Internal", "org": "Private Cloud", "proxy": False}
+    if ip in GEO_CACHE: return GEO_CACHE[ip]
+    try:
+        url = f"http://ip-api.com/json/{ip}?fields=status,message,country,regionName,city,lat,lon,isp,org,proxy,hosting,mobile"
+        with urllib.request.urlopen(url, timeout=5) as response:
+            data = json.loads(response.read().decode())
+            if data.get("status") == "success":
+                GEO_CACHE[ip] = data
+                return data
+    except Exception as e: log_system_error(f"GeoIP resolution failed for {ip}: {str(e)}")
+    return {"city": "Unknown", "lat": 0, "lon": 0, "isp": "Unknown", "org": "Unknown", "proxy": False}
+
+# Phoenix HUD: Aircraft Tracker (Simulated for high FPS)
+def update_flight_hud():
+    global AIRCRAFT_DATA
+    while True:
+        try:
+            # Simulated Phoenix Data (MacGyver Style)
+            new_aircraft = []
+            for i in range(15):
+                new_aircraft.append({
+                    "id": f"PHX-{random.randint(100,999)}",
+                    "lat": (random.random() * 120) - 60,
+                    "lon": (random.random() * 360) - 180,
+                    "alt": random.randint(20000, 45000),
+                    "spd": random.randint(400, 600)
+                })
+            AIRCRAFT_DATA = new_aircraft
+        except: pass
+        time.sleep(10)
+
+threading.Thread(target=update_flight_hud, daemon=True).start()
 
 def load_persistence():
     global EVENT_HISTORY, CREDENTIAL_COUNTS, QUORUM_ALERTS
-    if os.path.exists(HISTORY_FILE):
-        try:
+    try:
+        if os.path.exists(HISTORY_FILE):
             with open(HISTORY_FILE, 'r') as f:
                 data = json.load(f)
                 EVENT_HISTORY = data.get('events', [])
                 CREDENTIAL_COUNTS = data.get('credentials', {})
                 QUORUM_ALERTS = data.get('quorum', [])
-        except: pass
+    except: pass
 
 def save_persistence():
     try:
         with open(HISTORY_FILE, 'w') as f:
-            json.dump({
-                "events": EVENT_HISTORY[:50],
-                "credentials": CREDENTIAL_COUNTS,
-                "quorum": QUORUM_ALERTS[-10:]
-            }, f)
+            json.dump({"events": EVENT_HISTORY[:50], "credentials": CREDENTIAL_COUNTS, "quorum": QUORUM_ALERTS[-10:]}, f)
     except: pass
 
 load_persistence()
 
-# Mock Locations for 127.0.0.1 visuals
-MOCK_LOCATIONS = [
-    {"city": "Singapore", "lat": 1.35, "lng": 103.8},
-    {"city": "Frankfurt", "lat": 50.11, "lng": 8.68},
-    {"city": "San Francisco", "lat": 37.77, "lng": -122.41},
-    {"city": "Tokyo", "lat": 35.68, "lng": 139.65},
-    {"city": "London", "lat": 51.50, "lng": -0.12},
-    {"city": "Sydney", "lat": -33.86, "lng": 151.2},
-]
-
 def get_current_profile():
-    if os.path.exists(STATE_FILE):
-        try:
+    try:
+        if os.path.exists(STATE_FILE):
             with open(STATE_FILE, 'r') as f:
                 c = f.read().strip()
                 return c.split('=')[1] if '=' in c else c
-        except: return "Generic Device"
+    except: return "Generic Device"
     return "Initializing..."
 
 def get_docker_stats():
     try:
-        cmd = ["docker", "ps", "--format", "{{.Names}}|{{.Status}}|{{.Image}}"]
+        cmd = ["docker", "ps", "--format", "{{.Names}}|{{.Status}}"]
         output = subprocess.check_output(cmd).decode().strip()
-        services = []
-        for line in output.split('\n'):
-            if '|' in line:
-                name, stat, img = line.split('|')
-                services.append({
-                    "name": name,
-                    "status": stat,
-                    "image": img,
-                    "active": "Up" in stat
-                })
-        return services
+        return [{"name": l.split('|')[0], "stat": l.split('|')[1], "active": "Up" in l.split('|')[1]} for l in output.split('\n') if '|' in l]
     except: return []
 
 # Background Logic: Monitoring and Parsing
 def log_monitor():
     global EVENT_HISTORY, CREDENTIAL_COUNTS, QUORUM_ALERTS
-
     if not os.path.exists(LOG_FILE):
         os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
         open(LOG_FILE, 'a').close()
-
     file_pos = os.path.getsize(LOG_FILE)
-
     while True:
-        # 1. Check Cowrie JSON Logs
-        current_size = os.path.getsize(LOG_FILE)
-        if current_size > file_pos:
-            with open(LOG_FILE, 'r') as f:
-                f.seek(file_pos)
-                for line in f:
-                    try:
-                        data = json.loads(line.strip())
-                        eventid = data.get('eventid')
-                        ts = data.get('timestamp', '').split('T')[-1][:8]
-                        src = data.get('src_ip', '127.0.0.1')
-
-                        msg = None
-                        etype = "info"
-
-                        if eventid == "cowrie.session.connect":
-                            loc = random.choice(MOCK_LOCATIONS)
-                            msg = f"Inbound connection from {src} ({loc['city']})"
-                            etype = "info"
-                        elif eventid == "cowrie.login.success":
-                            user = data.get('username', 'root')
-                            pwd = data.get('password', 'admin')
-                            msg = f"SUCCESSFUL LOGIN: {user}:{pwd}"
-                            etype = "success"
-                            CREDENTIAL_COUNTS[pwd] = CREDENTIAL_COUNTS.get(pwd, 0) + 1
-                        elif eventid == "cowrie.login.failed":
-                            user = data.get('username', 'root')
-                            pwd = data.get('password', 'guest')
-                            msg = f"Login Failed: {user}:{pwd}"
-                            etype = "warn"
-                            CREDENTIAL_COUNTS[pwd] = CREDENTIAL_COUNTS.get(pwd, 0) + 1
-                        elif eventid == "cowrie.command.input":
-                            msg = f"CMD: {data.get('input')}"
-                            etype = "command"
-
-                        if msg:
-                            EVENT_HISTORY.insert(0, {"time": ts, "msg": msg, "type": etype, "src": src})
-                            EVENT_HISTORY = EVENT_HISTORY[:50] # Keep last 50
-                            save_persistence()
-                    except: continue
-            file_pos = current_size
-
-        # 2. Check Quorum Engine
         try:
-            res = subprocess.run([QUORUM_BIN], capture_output=True, text=True, timeout=2)
-            if res.returncode == 1:
-                alert = res.stdout.split("ALERT:")[1].split("---")[0].strip() if "ALERT:" in res.stdout else "Coordinated attack detected!"
-                if not any(a['msg'] == alert for a in QUORUM_ALERTS[-5:]):
-                    QUORUM_ALERTS.append({"time": datetime.now().strftime("%H:%M:%S"), "msg": alert})
-                    save_persistence()
+            current_size = os.path.getsize(LOG_FILE)
+            if current_size > file_pos:
+                with open(LOG_FILE, 'r') as f:
+                    f.seek(file_pos)
+                    for line in f:
+                        try:
+                            data = json.loads(line.strip())
+                            eventid = data.get('eventid')
+                            ts = data.get('timestamp', '').split('T')[-1][:8]
+                            src = data.get('src_ip', '127.0.0.1')
+                            msg, etype = None, "info"
+                            if eventid == "cowrie.session.connect":
+                                geo = resolve_geoip(src)
+                                msg = f"Inbound connection from {src} ({geo['city']})"
+                            elif eventid == "cowrie.login.success":
+                                msg = f"SUCCESSFUL LOGIN: {data.get('username')}"
+                                etype = "success"
+                            elif eventid == "cowrie.login.failed":
+                                msg = f"FAILED LOGIN: {data.get('username')}:{data.get('password')}"
+                                etype = "warn"
+                            if msg:
+                                EVENT_HISTORY.insert(0, {"time": ts, "msg": msg, "type": etype, "src": src})
+                                EVENT_HISTORY = EVENT_HISTORY[:50]
+                        except: continue
+                file_pos = current_size
         except: pass
-
         time.sleep(1)
 
-# Start background monitor
 threading.Thread(target=log_monitor, daemon=True).start()
 
-# HTML Template
+# HTML Template (V5.0 PHOENIX HUD)
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>CERBERUS | COMMAND CENTER</title>
-    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <title>CERBERUS CC | PHOENIX VR 5.0</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <script src='https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js'></script>
+    <link href='https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css' rel='stylesheet' />
     <style>
         :root {
-            --bg-dark: #05060a;
-            --panel-bg: rgba(15, 18, 28, 0.85);
-            --accent-primary: #00f2ff;
-            --accent-red: #ff3e3e;
-            --accent-purple: #7000ff;
-            --text-main: #e2e8f0;
-            --text-dim: #64748b;
-            --success: #10b981;
-            --danger: #ef4444;
-            --glass-border: 1px solid rgba(255, 255, 255, 0.1);
+            --bg: #030408; --panel: rgba(10, 12, 18, 0.95); --accent: #00f2ff;
+            --danger: #ff4757; --success: #2ed573; --text: #e2e8f0;
+            --dim: #64748b; --border: 1px solid rgba(255, 255, 255, 0.08);
         }
-
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            background-color: var(--bg-dark);
-            color: var(--text-main);
-            font-family: 'Outfit', sans-serif;
-            background-image:
-                radial-gradient(circle at 10% 10%, rgba(0, 242, 255, 0.05) 0%, transparent 40%),
-                radial-gradient(circle at 90% 90%, rgba(112, 0, 255, 0.05) 0%, transparent 40%);
-            min-height: 100vh;
-            overflow: hidden;
-        }
+        body { background-color: var(--bg); color: var(--text); font-family: 'Outfit', sans-serif; height: 100vh; overflow: hidden; }
 
-        /* Header & Navigation */
-        header {
-            height: 70px; display: flex; align-items: center; justify-content: space-between;
-            padding: 0 2rem; border-bottom: var(--glass-border); background: rgba(0,0,0,0.5); backdrop-filter: blur(10px);
-        }
-        .logo { display: flex; align-items: center; gap: 1rem; }
-        .logo-box { width: 32px; height: 32px; border: 2px solid var(--accent-primary); border-radius: 4px; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 15px rgba(0,242,255,0.4); }
-        .logo h1 { font-size: 1.2rem; letter-spacing: 5px; font-weight: 800; }
+        /* Login Interface */
+        #login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); z-index: 9999; display: flex; align-items: center; justify-content: center; flex-direction: column; }
+        .login-box { background: var(--panel); border: var(--border); padding: 2.5rem; border-radius: 12px; width: 380px; text-align: center; }
+        input { background: rgba(255,255,255,0.05); border: var(--border); color: white; padding: 0.8rem; border-radius: 4px; width: 100%; outline: none; font-family: 'JetBrains Mono'; margin-top: 1rem; }
+        .login-btn { background: var(--accent); color: var(--bg); border: none; padding: 0.8rem; width: 100%; border-radius: 4px; font-weight: 800; margin-top: 1rem; cursor: pointer; }
 
-        .morph-control {
-            background: rgba(239, 68, 68, 0.1); border: 1px solid var(--danger); color: var(--danger);
-            padding: 0.6rem 1.2rem; border-radius: 8px; font-weight: 700; font-size: 0.8rem;
-            cursor: pointer; transition: all 0.3s ease; letter-spacing: 1px;
-        }
-        .morph-control:hover { background: var(--danger); color: white; box-shadow: 0 0 20px rgba(239, 68, 68, 0.4); transform: scale(1.05); }
-        .morph-control:active { transform: scale(0.95); }
+        header { height: 60px; border-bottom: var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 1.5rem; background: rgba(0,0,0,0.8); backdrop-filter: blur(20px); z-index: 100; }
+        .logo-text { font-size: 1rem; letter-spacing: 4px; font-weight: 800; border-left: 3px solid var(--accent); padding-left: 1rem; }
 
-        /* Main Grid */
-        main {
-            display: grid; grid-template-columns: 280px 1fr 340px; height: calc(100vh - 70px); gap: 1rem; padding: 1rem;
-        }
+        main { display: grid; grid-template-columns: 320px 1fr 380px; height: calc(100vh - 60px); padding: 1rem; gap: 1rem; }
+        .card { background: var(--panel); border: var(--border); border-radius: 12px; display: flex; flex-direction: column; position: relative; overflow: hidden; }
+        .card-header { padding: 0.8rem 1.2rem; border-bottom: var(--border); font-size: 0.7rem; font-weight: 800; color: var(--dim); text-transform: uppercase; letter-spacing: 2px; background: rgba(255,255,255,0.02); }
 
-        .panel { background: var(--panel-bg); border: var(--glass-border); border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; }
-        .panel-header { padding: 1rem; border-bottom: var(--glass-border); font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 2px; font-weight: 700; display: flex; justify-content: space-between; align-items: center; }
+        /* Intelligence Terminal (IP List) */
+        .intel-terminal { overflow-y: auto; flex-grow: 1; }
+        .intel-item { padding: 0.8rem 1.2rem; border-bottom: 1px solid rgba(255,255,255,0.03); cursor: pointer; transition: 0.2s; position: relative; }
+        .intel-item:hover { background: rgba(0,242,255,0.05); }
+        .intel-item.active { border-left: 3px solid var(--accent); background: rgba(0,242,255,0.08); }
+        .intel-ip { font-family: 'JetBrains Mono'; font-weight: 700; font-size: 0.8rem; color: var(--accent); }
+        .intel-meta { font-size: 0.6rem; color: var(--dim); margin-top: 0.2rem; }
 
-        /* Left Panel: Inventory & Status */
-        .inventory-list { padding: 1rem; display: flex; flex-direction: column; gap: 1rem; }
-        .status-card { background: rgba(0,0,0,0.3); padding: 1rem; border-radius: 8px; border-left: 3px solid var(--accent-primary); }
-        .status-card h4 { font-size: 0.7rem; color: var(--text-dim); margin-bottom: 0.2rem; }
-        .status-card p { font-size: 1.1rem; font-weight: 700; color: var(--accent-primary); }
+        /* Map Section */
+        .map-section { position: relative; overflow: hidden; background: #000; border: 1px solid rgba(0,242,255,0.15); }
+        #map { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
 
-        .svc-item { display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; padding: 0.7rem; background: rgba(255,255,255,0.02); border-radius: 6px; margin-bottom: 0.5rem; border: 1px solid rgba(255,255,255,0.05); }
-        .svc-name { color: var(--text-main); font-weight: 700; letter-spacing: 1px; font-family: 'JetBrains Mono', monospace; }
-        .svc-status { display: flex; align-items: center; gap: 0.5rem; }
-        .svc-badge { font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; font-weight: 800; text-transform: uppercase; }
-        .badge-up { background: rgba(16, 185, 129, 0.2); color: var(--success); border: 1px solid var(--success); }
-        .badge-down { background: rgba(239, 68, 68, 0.2); color: var(--danger); border: 1px solid var(--danger); }
-        .svc-led { width: 6px; height: 6px; border-radius: 50%; animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+        .layer-selector { position: absolute; top: 1rem; right: 1rem; z-index: 100; background: var(--panel); border: var(--border); border-radius: 8px; padding: 0.4rem; display: flex; flex-direction: column; gap: 0.3rem; }
+        .layer-btn { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); color: var(--dim); padding: 0.4rem 0.8rem; border-radius: 4px; font-size: 0.55rem; font-weight: 800; cursor: pointer; }
+        .layer-btn.active { color: var(--accent); border-color: var(--accent); background: rgba(0,242,255,0.08); }
 
-        /* Center: World Map & Topology */
-        .center-stack { display: grid; grid-template-rows: 1fr 1fr; gap: 1rem; }
+        .recon-toggle { position: absolute; top: 1rem; left: 1rem; z-index: 100; background: var(--panel); border: 1px solid var(--danger); border-radius: 20px; padding: 4px 12px; font-size: 0.6rem; font-weight: 800; color: var(--danger); cursor: pointer; }
+        .recon-toggle.active { background: var(--danger); color: white; box-shadow: 0 0 15px var(--danger); }
 
-        .map-area { position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; background: radial-gradient(circle at center, #0a0b14 0%, #05060a 100%); }
-        .map-bg { width: 95%; height: 95%; opacity: 0.15; filter: drop-shadow(0 0 10px var(--accent-primary)); }
-        .map-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
-        .attack-dot { position: absolute; width: 6px; height: 6px; background: var(--accent-red); border-radius: 50%; box-shadow: 0 0 15px var(--accent-red); animation: ping 2s infinite; }
-        @keyframes ping { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(5); opacity: 0; } }
+        /* Flight Markers */
+        .flight-marker { width: 12px; height: 12px; border: 1px solid var(--accent); position: relative; display: flex; align-items: center; justify-content: center; }
+        .flight-marker::after { content: ''; width: 4px; height: 4px; background: var(--accent); border-radius: 50%; }
 
-        .topology-area { padding: 0; overflow: hidden; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.2); }
-        .mermaid { transform: scale(0.85); transform-origin: center; filter: drop-shadow(0 0 5px var(--accent-primary)); }
+        .ping-marker { width: 16px; height: 16px; background: var(--danger); border: 2px solid white; border-radius: 50%; box-shadow: 0 0 20px var(--danger); animation: ping-zoom 1.5s infinite; }
+        @keyframes ping-zoom { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(4); opacity: 0; } }
 
-        /* Right Panel: Feeds & Intelligence */
-        .intel-stack { display: grid; grid-template-rows: 2fr 1fr; gap: 1rem; overflow: hidden; }
-
-        .log-feed { flex-grow: 1; overflow-y: auto; padding: 1rem; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; scrollbar-width: none; }
-        .log-item { margin-bottom: 0.8rem; padding-bottom: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.03); }
-        .log-ts { color: var(--accent-primary); margin-right: 0.5rem; }
-        .log-item.success { color: var(--success); }
-        .log-item.warn { color: #facc15; }
-        .log-item.command { color: #fb923c; }
-
-        .threat-board { padding: 1rem; background: rgba(239, 68, 68, 0.05); }
-        .threat-item { font-size: 0.75rem; color: var(--danger); padding: 0.4rem 0; font-weight: 600; border-left: 2px solid var(--danger); padding-left: 0.5rem; margin-bottom: 0.5rem; animation: flicker 0.5s infinite; }
-        @keyframes flicker { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
-
-        .heatmap { padding: 1rem; }
-        .heat-row { display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 0.4rem; padding: 0.3rem 0; }
-        .heat-bar { height: 4px; background: var(--accent-purple); border-radius: 2px; transition: width 0.5s ease; }
-
-        /* Alerts Overlay */
-        #flash-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; border: 10px solid var(--danger);
-            opacity: 0; z-index: 999;
-        }
-        .critical-flash { animation: screen-flash 1s 3; }
-        @keyframes screen-flash { 0% { opacity: 0; } 50% { opacity: 0.3; } 100% { opacity: 0; } }
+        .feed { padding: 1rem; font-family: 'JetBrains Mono'; font-size: 0.6rem; overflow-y: auto; flex-grow: 1; }
     </style>
 </head>
 <body>
-    <div id="flash-overlay"></div>
+    <div id="login-overlay">
+        <div class="login-box">
+            <div style="font-size: 0.7rem; color: var(--accent); letter-spacing: 4px; font-weight: 800; margin-bottom: 1rem;">PHOENIX_GATEWAY_V5.0</div>
+            <input type="password" id="admin-pass" placeholder="ENTER_TACTICAL_KEY">
+            <button class="login-btn" onclick="tryLogin()">AUTHENTICATE</button>
+        </div>
+    </div>
 
     <header>
-        <div class="logo">
-            <div class="logo-box">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-                </svg>
-            </div>
-            <h1>CERBERUS</h1>
-        </div>
-        <div style="display: flex; gap: 2rem; align-items: center;">
-            <div id="uptime" style="font-family: 'JetBrains Mono'; font-size: 0.8rem; color: var(--text-dim);">SYSTEM_UP: 00:00:00</div>
-            <button class="morph-control" onclick="triggerMorph()">⚡ TRIGGER INITIALIZE MORPH</button>
-        </div>
+        <div class="logo-text">CERBERUS // PHOENIX HUD</div>
+        <div id="uptime" style="font-family: 'JetBrains Mono'; font-size: 0.7rem; color: var(--dim);">BOOT_TIME: 00:00:00</div>
     </header>
 
     <main>
-        <!-- LEFT PANEL -->
-        <aside class="panel">
-            <div class="panel-header">System Health <span>V6.2</span></div>
-            <div class="inventory-list">
-                <div class="status-card">
-                    <h4>DEVICE IDENTITY</h4>
-                    <p id="val-profile">LOADING...</p>
-                </div>
-                <div class="status-card" style="border-left-color: var(--accent-purple);">
-                    <h4>ACTIVE THREATS</h4>
-                    <p id="val-threats">0</p>
-                </div>
-
-                <div style="margin-top: 1rem;">
-                    <div class="panel-header" style="padding: 0.5rem 0; border: none;">Neural Brain Status</div>
-                    <div class="status-card" style="margin-bottom: 0.5rem; background: rgba(16, 185, 129, 0.1);">
-                        <h4 style="color: var(--success);">SYSTEM_INTEGRITY</h4>
-                        <div style="display: flex; gap: 0.5rem; align-items: center;">
-                            <div style="flex-grow: 1; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px;">
-                                <div id="neural-integrity-bar" style="width: 100%; height: 100%; background: var(--success); box-shadow: 0 0 10px var(--success);"></div>
-                            </div>
-                            <span id="val-integrity" style="font-size: 0.7rem; font-family: 'JetBrains Mono';">100%</span>
-                        </div>
-                    </div>
-                    <div class="status-card" style="margin-bottom: 0.5rem; background: rgba(239, 68, 68, 0.1);">
-                        <h4 style="color: var(--danger);">NEURAL_THREAT_LOAD</h4>
-                        <div style="display: flex; gap: 0.5rem; align-items: center;">
-                            <div style="flex-grow: 1; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px;">
-                                <div id="neural-threat-bar" style="width: 0%; height: 100%; background: var(--danger); box-shadow: 0 0 10px var(--danger);"></div>
-                            </div>
-                            <span id="val-threat-load" style="font-size: 0.7rem; font-family: 'JetBrains Mono';">0%</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div style="margin-top: 1rem;">
-                    <div class="panel-header" style="padding: 0.5rem 0; border: none;">Service Grid</div>
-                    <div id="service-grid">
-                        <!-- Services dynamically here -->
-                    </div>
-                </div>
-
-                <div style="margin-top: 1rem;">
-                    <div class="panel-header" style="padding: 0.5rem 0; border: none;">Credential Heatmap</div>
-                    <div id="heatmap-list">
-                        <!-- Top PWs here -->
-                    </div>
-                </div>
+        <aside class="card">
+            <div class="card-header">Global Threat Flux</div>
+            <div style="padding: 1rem; height: 120px;">
+                <canvas id="flux-chart" width="280" height="80"></canvas>
             </div>
+            <div class="card-header">Intelligence Terminal</div>
+            <div class="intel-terminal" id="intel-list"></div>
         </aside>
 
-        <!-- CENTER AREA -->
-        <div class="center-stack">
-            <div class="panel map-area">
-                <!-- Simplified World Map SVG (Embedded for Reliability) -->
-                <svg class="map-bg" viewBox="0 0 1000 500" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M150,150 L180,140 L200,160 L220,150 L250,180 L230,220 L200,240 L160,230 L140,200 Z" fill="currentColor" opacity="0.4"/>
-                    <path d="M400,100 L450,110 L480,150 L500,200 L480,250 L420,280 L380,240 L350,180 L380,130 Z" fill="currentColor" opacity="0.4"/>
-                    <path d="M700,200 L750,180 L800,200 L820,250 L780,300 L720,320 L680,280 L670,230 Z" fill="currentColor" opacity="0.4"/>
-                    <path d="M200,350 L250,340 L300,380 L280,450 L220,460 L180,420 Z" fill="currentColor" opacity="0.4"/>
-                    <path d="M750,380 L800,370 L830,410 L810,460 L760,450 L730,410 Z" fill="currentColor" opacity="0.4"/>
-                    <!-- Decorative Dots for 'Tech' look -->
-                    <circle cx="200" cy="150" r="2" fill="var(--accent-primary)"/>
-                    <circle cx="450" cy="200" r="2" fill="var(--accent-primary)"/>
-                    <circle cx="750" cy="250" r="2" fill="var(--accent-primary)"/>
-                    <circle cx="100" cy="100" r="1" fill="var(--text-dim)"/>
-                    <circle cx="900" cy="400" r="1" fill="var(--text-dim)"/>
-                </svg>
-                <div class="map-overlay" id="map-pings"></div>
-                <div style="position: absolute; bottom: 1rem; left: 1rem; font-size: 0.6rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 2px;">
-                    <span style="color: var(--accent-primary); animation: flicker 2s infinite;">●</span> GEO-SIMULATION: ACTIVE (Local Projection)
-                </div>
+        <section class="card map-section">
+            <div id="map"></div>
+            <div class="recon-toggle" id="recon-toggle" onclick="toggleDeepRecon()">DEEP_RECON: OFF</div>
+            <div class="layer-selector">
+                <button class="layer-btn active" onclick="setMapLayer('standard')">NASA_GLOBAL</button>
+                <button class="layer-btn" onclick="setMapLayer('hybrid')">HYBRID_INTEL</button>
+                <button class="layer-btn" onclick="setMapLayer('highres')">DEEP_SAT</button>
+                <button class="layer-btn" onclick="setMapLayer('street')">STREET_LEVEL</button>
             </div>
+        </section>
 
-            <div class="panel topology-area">
-                <div class="mermaid" id="topo-graph">
-graph TD
-    subgraph Deception Core
-        Core[Cerberus Core]
-        Morph[Morphing Engine]
-        Quorum[Quorum Engine]
-    end
-
-    subgraph IoT Interfaces
-        Cowrie[Cowrie SSH]
-        Router[Fake Router Admin]
-        Camera[Fake Camera UI]
-    end
-
-    subgraph Intelligence
-        GPT[HoneyGPT AI]
-        Ollama[Llama-3 LLM]
-    end
-
-    Core --> Morph
-    Core --> Quorum
-    Morph -.-> Cowrie
-    Morph -.-> Router
-    Morph -.-> Camera
-    Cowrie <--> GPT
-    GPT <--> Ollama
-
-    style Core fill:#00f2ff22,stroke:#00f2ff,stroke-width:2px;
-    style Cowrie fill:#7000ff22,stroke:#7000ff,stroke-width:2px;
-    style GPT fill:#10b98122,stroke:#10b981,stroke-width:2px;
-    style Router fill:#f59e0b22,stroke:#f59e0b;
-                </div>
+        <aside class="card">
+            <div class="card-header">Target Deep-Intel</div>
+            <div id="target-details" style="padding: 1rem; flex-grow: 0.5; border-bottom: var(--border);">
+                <div style="color: var(--dim); text-align: center; font-size: 0.7rem;">SELECT TARGET FROM TERMINAL</div>
             </div>
-        </div>
-
-        <!-- RIGHT PANEL -->
-        <aside class="intel-stack">
-            <div class="panel">
-                <div class="panel-header">Live Telemetry <span>Auto-Sync</span></div>
-                <div class="log-feed" id="log-feed">
-                    <!-- Events here -->
-                </div>
-            </div>
-
-            <div class="panel">
-                <div class="panel-header" style="color: var(--danger);">Quorum Threat Board</div>
-                <div class="threat-board" id="threat-list">
-                    <div style="color: var(--text-dim); font-size: 0.7rem; text-align: center; margin-top: 1rem;">No coordinated attacks detected.</div>
-                </div>
-            </div>
+            <div class="card-header">Real-Time Telemetry</div>
+            <div class="feed" id="feed"></div>
         </aside>
     </main>
 
     <script>
-        mermaid.initialize({ startOnLoad: true, theme: 'dark' });
+        let dashboardToken = sessionStorage.getItem('cerberus_token');
+        let deepReconActive = false;
+        let selectedIp = null;
+        let flightMarkers = [];
 
-        async function triggerMorph() {
-            if(!confirm("Warning: This will rotate the honeypot's entire identity and drop current sessions. Proceed?")) return;
-            const btn = document.querySelector('.morph-control');
-            btn.innerText = "🔄 MORPHING... PLEASE WAIT";
-            btn.style.opacity = '0.5';
+        const LAYERS = {
+            standard: { id: 'standard', url: 'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/BlueMarble_NextGeneration/default/2022-06-15/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpg', zoom: 8 },
+            hybrid: { id: 'hybrid', base: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', overlay: 'https://a.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png', zoom: 19 },
+            highres: { id: 'highres', url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', zoom: 19 },
+            street: { id: 'street', url: 'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', zoom: 18 }
+        };
 
-            try {
-                const res = await fetch('/api/morph', {method: 'POST'});
-                const data = await res.json();
-                if(data.success) {
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 2000);
-                }
-            } catch(e) { alert("Morph Error: " + e); }
+        const map = new maplibregl.Map({
+            container: 'map',
+            style: { version: 8, sources: { 'base': { type: 'raster', tiles: [LAYERS.standard.url], tileSize: 256 } }, layers: [{ id: 'base-layer', type: 'raster', source: 'base', minzoom: 0, maxzoom: 8 }] },
+            center: [0, 20], zoom: 1.5
+        });
+
+        async function tryLogin() {
+            const pass = document.getElementById('admin-pass').value;
+            const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pass));
+            const token = Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+            const res = await fetch('/api/data', { headers: { 'Authorization': `Bearer ${token}` } });
+            if (res.ok) { dashboardToken = token; sessionStorage.setItem('cerberus_token', token); document.getElementById('login-overlay').style.display = 'none'; startDashboard(); }
+            else alert("AUTH_FAILURE");
         }
 
-        async function updateDashboard() {
-            try {
-                const response = await fetch('/api/data');
-                const data = await response.json();
+        if (dashboardToken) { document.getElementById('login-overlay').style.display = 'none'; startDashboard(); }
 
-                // 1. Profile & Basic Stats
-                document.getElementById('val-profile').innerText = data.profile;
-                document.getElementById('val-threats').innerText = data.quorum.length;
-                
-                // 1.1 Neural Tensors
-                const [ni, nt, nd] = data.neural;
-                document.getElementById('val-integrity').innerText = Math.round(ni * 100) + '%';
-                document.getElementById('neural-integrity-bar').style.width = (ni * 100) + '%';
-                document.getElementById('val-threat-load').innerText = Math.round(nt * 100) + '%';
-                document.getElementById('neural-threat-bar').style.width = (nt * 100) + '%';
-
-                if (data.quorum.length > 0) {
-                    document.getElementById('flash-overlay').classList.add('critical-flash');
-                } else {
-                    document.getElementById('flash-overlay').classList.remove('critical-flash');
-                }
-
-                // 2. Service Grid
-                const grid = document.getElementById('service-grid');
-                grid.innerHTML = data.services.map(s => `
-                    <div class="svc-item">
-                        <span class="svc-name">${s.name.replace('cerberus-', '')}</span>
-                        <div class="svc-status">
-                            <span class="svc-badge ${s.active ? 'badge-up' : 'badge-down'}">${s.active ? 'UP' : 'DOWN'}</span>
-                            <div class="svc-led" style="background: ${s.active ? 'var(--success)' : 'var(--danger)'}; box-shadow: 0 0 8px ${s.active ? 'var(--success)' : 'var(--danger)'}"></div>
-                        </div>
-                    </div>
-                `).join('');
-
-                // 3. Log Feed
-                const feed = document.getElementById('log-feed');
-                feed.innerHTML = data.events.map(e => `
-                    <div class="log-item ${e.type}">
-                        <span class="log-ts">${e.time}</span>
-                        <span>${e.msg}</span>
-                    </div>
-                `).join('');
-
-                // 4. Heatmap
-                const heat = document.getElementById('heatmap-list');
-                const max = Math.max(...Object.values(data.heatmap), 1);
-                heat.innerHTML = Object.entries(data.heatmap)
-                    .sort((a,b) => b[1] - a[1])
-                    .slice(0, 5)
-                    .map(([pw, count]) => `
-                        <div class="heat-row">
-                            <span style="font-family: 'JetBrains Mono';">${pw}</span>
-                            <span style="color: var(--text-dim);">${count} hits</span>
-                        </div>
-                        <div class="heat-bar" style="width: ${(count/max)*100}%"></div>
-                    `).join('');
-
-                // 5. Threat Board
-                const threats = document.getElementById('threat-list');
-                if (data.quorum.length > 0) {
-                    threats.innerHTML = data.quorum.map(q => `
-                        <div class="threat-item">[${q.time}] ALERT: ${q.msg}</div>
-                    `).join('');
-                }
-
-                // 6. Map Pings
-                const map = document.getElementById('map-pings');
-                if (data.events.length > 0 && Math.random() > 0.7) {
-                    const ping = document.createElement('div');
-                    ping.className = 'attack-dot';
-                    ping.style.left = Math.random() * 90 + '%';
-                    ping.style.top = Math.random() * 80 + '%';
-                    map.appendChild(ping);
-                    setTimeout(() => ping.remove(), 2000);
-                }
-
-            } catch (e) { console.error("Poll error", e); }
+        function toggleDeepRecon() {
+            deepReconActive = !deepReconActive;
+            const btn = document.getElementById('recon-toggle');
+            btn.classList.toggle('active', deepReconActive);
+            btn.innerText = `DEEP_RECON: ${deepReconActive ? 'ON' : 'OFF'}`;
         }
 
-        // Timer
-        let start = Date.now();
-        setInterval(() => {
-            let diff = Math.floor((Date.now() - start) / 1000);
-            let h = String(Math.floor(diff/3600)).padStart(2,'0');
-            let m = String(Math.floor((diff%3600)/60)).padStart(2,'0');
-            let s = String(diff%60).padStart(2,'0');
-            document.getElementById('uptime').innerText = `SYSTEM_UP: ${h}:${m}:${s}`;
-        }, 1000);
+        function setMapLayer(id) {
+            const l = LAYERS[id];
+            if (!deepReconActive && id !== 'standard') { alert("ENABLE DEEP_RECON"); return; }
+            document.querySelectorAll('.layer-btn').forEach(b => b.classList.toggle('active', b.innerText.toLowerCase().includes(id.substring(0,3))));
+            if (map.getLayer('base-layer')) map.removeLayer('base-layer');
+            if (map.getSource('base')) map.removeSource('base');
+            if (map.getLayer('overlay-layer')) map.removeLayer('overlay-layer');
+            if (map.getSource('overlay')) map.removeSource('overlay');
+            map.addSource('base', { type: 'raster', tiles: [l.base || l.url], tileSize: 256 });
+            map.addLayer({ id: 'base-layer', type: 'raster', source: 'base', minzoom: 0, maxzoom: l.zoom });
+            if(l.overlay) {
+                map.addSource('overlay', { type: 'raster', tiles: [l.overlay], tileSize: 256 });
+                map.addLayer({ id: 'overlay-layer', type: 'raster', source: 'overlay', minzoom: 0, maxzoom: l.zoom });
+            }
+        }
 
-        setInterval(updateDashboard, 2000);
-        updateDashboard();
+        function focusTarget(ip, lat, lon) {
+            selectedIp = ip;
+            if(!deepReconActive) toggleDeepRecon();
+            setMapLayer('hybrid');
+            map.flyTo({ center: [lon, lat], zoom: 16, speed: 1.2 });
+        }
+
+        async function update() {
+            const res = await fetch('/api/data', { headers: { 'Authorization': `Bearer ${dashboardToken}` } });
+            if (!res.ok) return;
+            const d = await res.json();
+
+            // Update Intel Terminal
+            const uniqueIps = Array.from(new Set(d.events.map(e => e.src))).filter(ip => ip !== '127.0.0.1');
+            document.getElementById('intel-list').innerHTML = uniqueIps.map(ip => {
+                const lastEvent = d.events.find(e => e.src === ip);
+                return `<div class="intel-item ${selectedIp === ip ? 'active' : ''}" onclick="fetchAndFocus('${ip}')">
+                    <div class="intel-ip">${ip}</div>
+                    <div class="intel-meta">${lastEvent.msg}</div>
+                </div>`;
+            }).join('');
+
+            // Update Telemetry
+            document.getElementById('feed').innerHTML = d.events.map(e => `<div>[${e.time}] ${e.msg}</div>`).join('');
+
+            // Update Flight HUD
+            flightMarkers.forEach(m => m.remove());
+            flightMarkers = d.aircraft.map(a => {
+                const el = document.createElement('div'); el.className = 'flight-marker';
+                return new maplibregl.Marker({element: el}).setLngLat([a.lon, a.lat]).addTo(map);
+            });
+        }
+
+        async function fetchAndFocus(ip) {
+            const res = await fetch(`/api/intel?ip=${ip}`, { headers: { 'Authorization': `Bearer ${dashboardToken}` } });
+            const geo = await res.json();
+            document.getElementById('target-details').innerHTML = `
+                <div style="font-size: 1rem; color: var(--accent); font-weight: 800;">${ip}</div>
+                <div style="font-size: 0.6rem; color: var(--dim); margin-top:0.4rem;">ORG: ${geo.isp}</div>
+                <div style="font-size: 0.6rem; color: var(--dim);">LOC: ${geo.city}, ${geo.country}</div>
+                <div style="font-size: 0.6rem; color: ${geo.proxy?'var(--danger)':'var(--success)'};">ANONYMITY: ${geo.proxy?'VPN_DETECTED':'CLEAR'}</div>
+            `;
+            focusTarget(ip, geo.lat, geo.lon);
+        }
+
+        function startDashboard() {
+            setInterval(update, 5000);
+            update();
+        }
     </script>
 </body>
 </html>
 """
 
 @app.route('/')
-def index():
-    return render_template_string(HTML_TEMPLATE)
+def index(): return render_template_string(HTML_TEMPLATE)
 
 @app.route('/api/data')
 def api_data():
-    neural = {"vector": [1.0, 0.0, 0.5, 0.5]}
-    if os.path.exists(NEURAL_FILE):
-        try:
-            with open(NEURAL_FILE, 'r') as f:
-                neural = json.load(f)
-        except: pass
-
+    if not check_auth(): return jsonify({"error": "Unauthorized"}), 401
     return jsonify({
         "profile": get_current_profile(),
         "services": get_docker_stats(),
         "events": EVENT_HISTORY,
-        "heatmap": CREDENTIAL_COUNTS,
-        "quorum": QUORUM_ALERTS,
-        "neural": neural.get("vector", [1.0, 0.0, 0.5, 0.5])
+        "quorum": QUORUM_ALERTS + SYSTEM_ERRORS[-5:],
+        "neural": [0.8, 0.4],
+        "aircraft": AIRCRAFT_DATA
     })
 
-@app.route('/api/morph', methods=['POST'])
-def trigger_morph():
-    try:
-        # Stop existing cowrie to allow morph to run
-        subprocess.run(["docker", "stop", "cerberus-cowrie"], timeout=10)
-        # Execute morph binary
-        subprocess.run([MORPH_BIN], timeout=15)
-        # Restart cowrie
-        subprocess.run(["docker", "start", "cerberus-cowrie"], timeout=10)
-        return jsonify({"success": True})
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)})
+@app.route('/api/intel')
+def api_intel():
+    if not check_auth(): return jsonify({"error": "Unauthorized"}), 401
+    ip = request.args.get('ip')
+    return jsonify(resolve_geoip(ip))
+
+@app.route('/api/uptime')
+def api_uptime():
+    if not check_auth(): return jsonify({"error": "Unauthorized"}), 401
+    uptime_seconds = time.time() - psutil.boot_time()
+    return jsonify({"uptime": time.strftime('%H:%M:%S', time.gmtime(uptime_seconds))})
 
 if __name__ == "__main__":
-    print("🚀 CERBERUS COMMAND CENTER starting on http://localhost:5000")
     app.run(host='0.0.0.0', port=5000, threaded=True)

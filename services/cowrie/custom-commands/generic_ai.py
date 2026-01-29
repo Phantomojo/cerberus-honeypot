@@ -47,6 +47,11 @@ class Command_generic_ai(HoneyPotCommand):
                     if not raw_response.endswith('\n'):
                         self.write('\n')
         except Exception as e:
+            # LOG THE ERROR: Don't just fail silently!
+            try:
+                with open("/var/log/cowrie/ai_errors.log", "a") as f:
+                    f.write(f"[{datetime.now()}] AI Bridge Error ({full_command}): {str(e)}\n")
+            except: pass
             self.write(f"sh: {full_command}: command not found\n")
 
 # Entry point for Cowrie
