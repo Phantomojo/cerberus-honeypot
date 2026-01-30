@@ -12,6 +12,7 @@ from datetime import datetime
 from flask import Flask, render_template_string, jsonify, request
 import sys
 import sqlite3
+import socket
 from dotenv import load_dotenv
 
 load_dotenv() # Load from .env file
@@ -76,6 +77,19 @@ MANUAL_GEO_OVERRIDES = {
     # Zuku Fiber / Wananchi Group ranges often resolve to Nairobi generic
     "102.68.": {"city": "Ruiru", "region": "Kiambu", "lat": -1.146, "lon": 36.963, "org": "Zuku Fiber (Wananchi Group)"}
 }
+
+# Deep Recon: Reverse Geocoding via OSM Nominatim (No Token Required)
+def get_physical_address(lat, lon):
+    try:
+        url = f"https://nominatim.openstreetmap.org/reverse?format=json&lat={lat}&lon={lon}&zoom=18&addressdetails=1"
+        req = urllib.request.Request(url, headers={'User-Agent': 'Cerberus/5.0'})
+        with urllib.request.urlopen(req, timeout=5) as response:
+            data = json.loads(response.read().decode())
+            addr = data.get('address', {})
+            # Construct meaningful address string
+            parts = [addr.get('road'), addr.get('suburb'), addr.get('city') or addr.get('town'), addr.get('state'), addr.get('country')]
+            return ", ".join([p for p in parts if p])
+    except: return "Address Lookup Failed"
 
 def resolve_geoip(ip):
     # Check Manual Overrides First
@@ -691,8 +705,9 @@ HTML_TEMPLATE = """
 
             document.getElementById('target-details').innerHTML = `
                 <div style="font-size: 1rem; color: var(--accent); font-weight: 800;">${ip}</div>
-                <div style="font-size: 0.6rem; color: var(--dim); margin-top:0.4rem;">ISP: ${geo.isp}</div>
+                <div style="font-size: 0.6rem; color: var(--dim); margin-top:0.4rem;">ISP: ${geo.isp} <span style="color:${geo.type.includes('RESIDENTIAL') ? 'var(--success)' : 'var(--danger)'}; border:1px solid; padding:0 3px; border-radius:2px; margin-left:5px;">${geo.type}</span></div>
                 <div style="font-size: 0.6rem; color: var(--dim);">LOC: ${geo.city}, ${geo.region}, ${geo.country}</div>
+                <div style="font-size: 0.6rem; color: var(--accent);">ADDR: ${geo.address || 'Triangulating...'}</div>
                 <div style="font-size: 0.6rem; color: var(--dim);">HOST: ${geo.hostname || 'N/A'}</div>
 
                 <hr style="border: 0; border-top: 1px solid #222; margin: 10px 0;">
@@ -708,8 +723,12 @@ HTML_TEMPLATE = """
                 <div style="font-size: 0.6rem; color: var(--accent);">OPEN PORTS: ${shodan.ports.join(', ')}</div>
                 ` : ''}
 
+                <div style="font-size: 0.6rem; color: var(--accent);">OPEN PORTS: ${shodan.ports.join(', ')}</div>
+                ` : ''}
+
                 <div style="margin-top: 15px; display: flex; gap: 10px;">
                     <button class="layer-btn" style="flex: 1; border-color: var(--accent);" onclick="generateAiReport('${ip}')">GENERATE AI REPORT</button>
+                    <button class="layer-btn" style="flex: 1; border-color: var(--success); color: var(--success);" onclick="window.open('https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${geo.lat},${geo.lon}', '_blank')">VISUAL CONFIRM</button>
                     <button class="layer-btn" style="flex: 1; border-color: var(--danger); color: var(--danger);" onclick="triggerBlackout('${ip}')">BLACKOUT</button>
                 </div>
                 <div id="ai-report-box" style="margin-top: 10px; font-size: 0.55rem; color: var(--text); font-family: 'JetBrains Mono'; background: rgba(0,0,0,0.4); padding: 5px; border-radius: 4px; display: none; white-space: pre-wrap;"></div>
@@ -832,8 +851,26 @@ def api_intel():
         conn.close()
     except: pass
 
+    geo = resolve_geoip(ip)
+
+    # Deep Recon: Reverse DNS
+    try:
+        hostname = socket.gethostbyaddr(ip)[0]
+    except: hostname = "Reverse DNS Failed"
+    geo['hostname'] = hostname
+
+    # Deep Recon: Physical Address Estimate
+    geo['address'] = get_physical_address(geo['lat'], geo['lon'])
+
+    # Deep Recon: ASN Intelligence Tagging
+    isp_lower = geo.get('isp', '').lower()
+    geo['type'] = "DATACENTER/CLOUD"
+    residential_keywords = ['fiber', 'telecom', 'home', 'cable', 'dialup', 'dsl', 'wananchi', 'safaricom', 'zuku', 'comcast', 'verizon']
+    if any(k in isp_lower for k in residential_keywords):
+        geo['type'] = "RESIDENTIAL (ISP)"
+
     return jsonify({
-        "geo": resolve_geoip(ip),
+        "geo": geo,
         "rep": get_reputation(ip),
         "shodan": get_shodan_intel(ip),
         "history": history
