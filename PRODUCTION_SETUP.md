@@ -1,174 +1,69 @@
-# 🛡️ CERBERUS Production Setup & Security Guide
+# 🛡️ CERBERUS Production Setup & Hardening Guide
 
-## Quick Setup (Run on GCP Instance)
+## 🛸 Quick Setup (GCP Instance)
 
-### 1. Install Python Dependencies
+### 1. Configure Private Secrets (PREVENET LEAKS)
+Cerberus is designed to be secure. **NEVER** commit your secrets to git.
+1. Create a `.env` file in the root directory:
+   ```bash
+   cp .env.template .env
+   ```
+2. Fill in your professional API keys:
+   - **IPINFO_TOKEN**: High-precision geolocation and ASN data.
+   - **ABUSEIPDB_API_KEY**: Real-time risk scoring for attackers.
+   - **SHODAN_API_KEY**: "Counter-Scanning" of the attacker network.
+   - **ADMIN_PASSWORD**: Your secret key for the HUD dashboard.
+
+### 2. Deploy Intelligence Core
+Deploy the VPS and launch the HUD (handles Tailscale and Docker automatedly):
 ```bash
-cd ~/cerberus-honeypot
-sudo pip3 install -r requirements.txt
-```
-
-### 2. Build Native Components
-```bash
-sudo make build
-```
-
-## 🛸 HUD Dashboard Features (V5.1)
-
-### 📱 Mobile Access
-The dashboard is now fully responsive. Use the same URL on your phone for a tactical mobile view.
-- **Viewport**: 1:1 scaling for physical devices.
-- **Layout**: Stacking cards for easy vertical scrolling.
-
-### 🛡️ Secure Terminal Proxy
-- **Access**: Located at the bottom right of the HUD.
-- **Safety**: This terminal *only* interacts with the honeypot containers (`cowrie`). It cannot access the host VM files or commands.
-- **Usage**: Test attacker interactions or reset honeypot states safely.
-
-### 📊 System Metrics
-- Real-time CPU, RAM, and Disk metrics of the GCP VM are shown in the persistent footer.
-
-### 3. Start the Dashboard (Manual Test)
-```bash
-sudo python3 scripts/web_dashboard.py &
-```
-
-Test it: http://35.209.99.106:5000 (Password: `CERBERUS_THREAT_OMEGA_99X`)
-
----
-
-## 🔄 Auto-Restart Setup (Systemd)
-
-### Install Systemd Service
-This keeps the dashboard running automatically and restarts it if it crashes:
-
-```bash
-cd ~/cerberus-honeypot
-sudo cp systemd/cerberus-web-dashboard.service /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable cerberus-web-dashboard
-sudo systemctl start cerberus-web-dashboard
-```
-
-### Check Status
-```bash
-sudo systemctl status cerberus-web-dashboard
-```
-
-### View Logs
-```bash
-sudo journalctl -u cerberus-web-dashboard -f
+./scripts/gcp_deploy.sh
 ```
 
 ---
 
-## 🔐 Security Architecture
+## 🛸 Phoenix HUD v5.0: Mission Control
 
-### Three-Layer Security Model
+### 📊 Tactical Features
+- **NASA Satellite Feed**: Integrated global map with deep-recon capabilities.
+- **AI Threat Reporting**: Click "Generate AI Report" on any target to see intent analysis.
+- **Counter-Scan [Shodan]**: Real-time identification of attacker open ports and OS.
+- **Persistent Intelligence**: All attacker commands and sessions are stored in `build/cerberus.db` (SQLite). This data persists across restarts.
 
-#### Layer 1: GCP Firewall (Network Perimeter)
-**Current Rules:**
-- Port 2222 (SSH Honeypot) → **Open to World** ✅
-- Port 5000 (Admin Dashboard) → **Open to World** ⚠️
-
-**Recommended: Lock Down Dashboard**
-```bash
-# Get your current IP
-MY_IP=$(curl -s ifconfig.me)
-
-# Update firewall to only allow YOUR IP to access dashboard
-gcloud compute firewall-rules update cerberus-ingress \
-  --project=lofty-feat-469115-r8 \
-  --source-ranges=0.0.0.0/0 \
-  --allow=tcp:2222
-
-# Create separate rule for admin access
-gcloud compute firewall-rules create cerberus-admin \
-  --project=lofty-feat-469115-r8 \
-  --source-ranges=$MY_IP/32 \
-  --allow=tcp:5000 \
-  --target-tags=cerberus-node
-```
-
-#### Layer 2: Application Authentication
-The dashboard has **Admin Shield** built-in:
-- Password: `CERBERUS_THREAT_OMEGA_99X`
-- SHA-256 hashed
-- All API endpoints protected
-
-**To Change Password:**
-Edit `scripts/web_dashboard.py` line 21:
-```python
-ADMIN_PASSWORD = "YOUR_NEW_ULTRA_SECRET_PASSWORD"
-```
-
-#### Layer 3: Honeypot Isolation
-The honeypot runs in **Docker containers**, isolated from the host:
-- Attackers interact with Cowrie (fake SSH)
-- No access to real system
-- All data logged and analyzed
+### 🔐 Multi-Layer Security
+- **Layer 1: Perimeter**: GCP Firewalls allow honeypot ports (2222) while locking admin ports (8080).
+- **Layer 2: Zero-Config P2P**: Cerberus uses **Tailscale** for a secure P2P encrypted tunnel. If you are on the Tailscale network, you can access the dashboard via its internal IP without opening port 8080 to the world.
+- **Layer 3: Deception Terminal**: The HUD includes a **Secure Proxy Terminal** that only allows interaction with the honeypot container, preventing host VM lateral movement.
 
 ---
 
-## 🚀 Start All Services (Production Mode)
+## 🔄 Management & Services
 
+### Start/Restart HUD
 ```bash
-cd ~/cerberus-honeypot
-sudo docker-compose -f docker/docker-compose.yml up -d
-sudo systemctl start cerberus-web-dashboard
+sudo systemctl restart cerberus-dashboard
 ```
 
-### Check Everything is Running
+### Monitor Intelligence Flux
 ```bash
-# Docker containers
-sudo docker ps
+# Dashboard Logs
+sudo journalctl -u cerberus-dashboard -f
 
-# Dashboard service
-sudo systemctl status cerberus-web-dashboard
-
-# Firewall rules
-gcloud compute firewall-rules list --project=lofty-feat-469115-r8
+# Threat Database Audit
+sqlite3 build/cerberus.db "SELECT * FROM activities LIMIT 10;"
 ```
 
 ---
 
-## 📊 Monitoring & Maintenance
-
-### Daily Checks
-```bash
-# Dashboard logs
-sudo journalctl -u cerberus-web-dashboard --since today
-
-# Honeypot logs
-sudo docker logs cerberus-cowrie --tail 50
-
-# System resources
-htop
-```
-
-### Weekly Tasks
-- Review captured credentials at http://35.209.99.106:5000
-- Update CERBERUS: `git pull origin fix/codeql-hardening`
-- Apply security updates: `sudo apt update && sudo apt upgrade`
+## 🛑 Hardening Recommendations
+1. **Rotate Admin Keys**: Periodically change `ADMIN_PASSWORD` in `.env`.
+2. **Whitelist Management**: Ensure only your management IPs can access the GCP VM.
+3. **Automated Harvest**: Run `./scripts/cloud_sync.sh` weekly to pull cloud malware samples and logs to your local secure workstation.
 
 ---
 
-## 🛑 Emergency Commands
+## 📊 Monitoring
+Cerberus provides a **Global Threat Flux** dashboard at `http://your-vps-ip:8080`.
+Authentication requires the **TACTICAL_KEY** set in your `.env`.
 
-### Stop Everything
-```bash
-sudo systemctl stop cerberus-web-dashboard
-sudo docker-compose -f docker/docker-compose.yml down
-```
-
-### Restart Dashboard
-```bash
-sudo systemctl restart cerberus-web-dashboard
-```
-
-### Delete the Instance (Clean Slate)
-```bash
-gcloud compute instances delete cerberus-command \
-  --zone=us-central1-a \
-  --project=lofty-feat-469115-r8
-```
+🛡️ **Mission Status: FULLY_OPERATIONAL** 🛸

@@ -29,8 +29,14 @@ logs/*
 .DS_Store
 Thumbs.db
 
-# Docker
+# Environment variables
+.env
+.env.local
+.env.*
 docker/.env
+
+# Docker
+# docker/.env (moved to Environment variables section)
 
 # Python
 __pycache__/

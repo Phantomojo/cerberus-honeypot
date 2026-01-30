@@ -11,6 +11,9 @@ import argparse
 import urllib.request
 import urllib.error
 from datetime import datetime
+from dotenv import load_dotenv
+
+load_dotenv()
 
 def query_abuseipdb(api_key, ip):
     """Check IP reputation on AbuseIPDB (1,000 free requests/day)."""
@@ -83,11 +86,11 @@ def query_zoomeye_basic(api_key, ip):
     except: return None
 
 def enrich_all(ip):
-    # Load keys from environment or use provided defaults
-    ABUSE_KEY = os.environ.get("ABUSEIPDB_API_KEY") or "ad83c0b7788eeda9406a75cb47271c289f7776026e223e69a582eaa898042deee24261a9e007a59d"
+    # Load keys from environment
+    ABUSE_KEY = os.environ.get("ABUSEIPDB_API_KEY")
     GREY_KEY = os.environ.get("GREYNOISE_API_KEY")
     SHODAN_KEY = os.environ.get("SHODAN_API_KEY")
-    ZOOM_KEY = os.environ.get("ZOOMEYE_API_KEY") or "43F0F3D0-F277-3015f-6420-53093640cb5"
+    ZOOM_KEY = os.environ.get("ZOOMEYE_API_KEY")
 
     results = {
         "ip": ip,

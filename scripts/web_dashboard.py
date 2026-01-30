@@ -12,6 +12,9 @@ from datetime import datetime
 from flask import Flask, render_template_string, jsonify, request
 import sys
 import sqlite3
+from dotenv import load_dotenv
+
+load_dotenv() # Load from .env file
 
 # ==============================================================================
 # CERBERUS COMMAND CENTER (V5.0 - PHOENIX TACTICAL HUD)
@@ -20,7 +23,7 @@ import sqlite3
 app = Flask(__name__)
 
 # Tactical Config
-ADMIN_PASSWORD = "CERBERUS_THREAT_OMEGA_99X"
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "CERBERUS_THREAT_OMEGA_99X")
 AUTH_TOKEN = hashlib.sha256(ADMIN_PASSWORD.encode()).hexdigest()
 
 # Project Paths
@@ -31,9 +34,9 @@ MORPH_BIN = os.path.join(BASE_DIR, "build/morph")
 QUORUM_BIN = os.path.join(BASE_DIR, "build/quorum")
 
 # Enrichment Config
-IPINFO_TOKEN = "24034ea09a1ebb"
-ABUSE_KEY = "ad83c0b7788eeda9406a75cb47271c289f7776026e223e69a582eaa898042deee24261a9e007a59d"
-SHODAN_KEY = "a0MbctASs4DslzXqUUVkSbYr6cwuYzPP"
+IPINFO_TOKEN = os.environ.get("IPINFO_TOKEN")
+ABUSE_KEY = os.environ.get("ABUSEIPDB_API_KEY")
+SHODAN_KEY = os.environ.get("SHODAN_API_KEY")
 
 # Global State
 HISTORY_FILE = os.path.join(BASE_DIR, "build/web_history.json")

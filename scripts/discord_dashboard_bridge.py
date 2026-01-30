@@ -4,6 +4,9 @@ import time
 import requests
 import json
 from datetime import datetime, timezone
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # ==============================================================================
 # DISCORD DASHBOARD BRIDGE
@@ -16,7 +19,7 @@ LOG_FILE = os.path.join(BASE_DIR, "services/cowrie/logs/cowrie.json")
 STATE_FILE = os.path.join(BASE_DIR, "build/morph-state.txt")
 
 # Configuration (Use environment variable or edit here)
-WEBHOOK_URL = os.environ.get('DISCORD_WEBHOOK_URL', 'https://discord.com/api/webhooks/1461402278391975976/kCtrQNLP5BaWQhGfTL6i_pdkG1Ud0z7B5rQMqddFICWDBuzSIRTVKdTxbPjJCxfKkCmO')
+WEBHOOK_URL = os.environ.get('DISCORD_WEBHOOK_URL')
 # If using a Forum Channel, specify a thread name to create a new post, or thread_id to post to existing
 # LEAVE THESE AS NONE FOR NORMAL TEXT CHANNELS
 THREAD_NAME = os.environ.get('DISCORD_THREAD_NAME', None)
@@ -36,7 +39,7 @@ def post_to_discord(content, title="Cerberus Status", color=0x3498db):
             "timestamp": datetime.now(timezone.utc).isoformat()
         }]
     }
-    
+
     # Handle Forum Channels or Threads
     params = {}
     if THREAD_ID:
@@ -115,7 +118,7 @@ def monitor():
                             data = json.loads(line.strip())
                             eventid = data.get('eventid')
                             src_ip = data.get('src_ip', 'Unknown')
-                            
+
                             if eventid == "cowrie.session.connect":
                                 post_to_discord(f"🌐 **New Connection Detected**\nSource: `{src_ip}`", "Intrusion Alert", 0x34495e)
                             elif eventid == "cowrie.login.success":
