@@ -5,10 +5,8 @@ Intercepts reads of sensitive system files to prevent leakage.
 
 from __future__ import annotations
 from cowrie.shell.command import HoneyPotCommand
-from .cerberus_loader import load_cerberus_output, cerberus_available, get_current_arch, get_current_profile_name
-from .ghost_gen import GhostGenerator
+from .cerberus_loader import load_cerberus_output, cerberus_available, get_current_arch
 import random
-import os
 
 class command_cat(HoneyPotCommand):
     def call(self):
@@ -17,30 +15,6 @@ class command_cat(HoneyPotCommand):
 
         client_ip = self.protocol.transport.getPeer().host
         filename = self.args[0]
-
-        # Lure Detection
-        try:
-            profile_name = get_current_profile_name()
-            # Handle profile type mapping
-            p_type = "Generic Device"
-            if "Router" in profile_name: p_type = "Router"
-            elif "Camera" in profile_name: p_type = "Camera"
-
-            gg = GhostGenerator()
-            baits = gg.get_baits(p_type)
-            for bait in baits:
-                if bait["path"] == filename or filename.endswith(bait["path"]):
-                    self.write(bait["content"] + "\n")
-                    # Trigger custom log event for HUD
-                    self.protocol.log_event(
-                        eventid='cowrie.lure.access',
-                        filename=filename,
-                        profile=profile_name,
-                        src_ip=client_ip,
-                        msg=f"CRITICAL: Lure violation on {filename} ({profile_name})"
-                    )
-                    return
-        except Exception: pass
 
         # Intercept /proc and /dev nodes
         if "/proc/cpuinfo" in filename:

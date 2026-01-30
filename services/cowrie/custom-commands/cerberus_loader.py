@@ -25,6 +25,19 @@ def get_persisted_profile_index(ip: str) -> Optional[int]:
         pass
     return None
 
+def get_current_profile_name() -> str:
+    """Read the current profile name from cowrie-dynamic os-release."""
+    try:
+        path = os.path.join(CERBERUS_DYNAMIC, "bin", "os-release")
+        if os.path.exists(path):
+            with open(path, 'r') as f:
+                for line in f:
+                    if line.startswith("NAME="):
+                        return line.strip().split('=')[1].strip('"')
+    except Exception:
+        pass
+    return "Generic Device"
+
 def load_cerberus_output(command_name: str, args: list = None, ip: str = None) -> Optional[str]:
     """
     Load command output from Cerberus dynamic files.

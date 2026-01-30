@@ -349,6 +349,10 @@ def log_monitor():
                             elif eventid == "cowrie.login.failed":
                                 msg = f"FAILED LOGIN: {data.get('username')}:{data.get('password')}"
                                 etype = "warn"
+                            elif eventid == "cowrie.lure.access":
+                                msg = data.get('msg', 'Lure accessed!')
+                                etype = "danger"
+                                QUORUM_ALERTS.append({"time": ts, "msg": f"CRITICAL: Lure Violation by {src}"})
 
                             if msg:
                                 rep = get_reputation(src)
@@ -675,8 +679,9 @@ HTML_TEMPLATE = """
                 <div style="font-size: 0.6rem; color: var(--accent);">OPEN PORTS: ${shodan.ports.join(', ')}</div>
                 ` : ''}
 
-                <div style="margin-top: 15px;">
-                    <button class="layer-btn" style="width: 100%; border-color: var(--accent);" onclick="generateAiReport('${ip}')">GENERATE AI THREAT REPORT</button>
+                <div style="margin-top: 15px; display: flex; gap: 10px;">
+                    <button class="layer-btn" style="flex: 1; border-color: var(--accent);" onclick="generateAiReport('${ip}')">GENERATE AI REPORT</button>
+                    <button class="layer-btn" style="flex: 1; border-color: var(--danger); color: var(--danger);" onclick="triggerBlackout('${ip}')">BLACKOUT</button>
                 </div>
                 <div id="ai-report-box" style="margin-top: 10px; font-size: 0.55rem; color: var(--text); font-family: 'JetBrains Mono'; background: rgba(0,0,0,0.4); padding: 5px; border-radius: 4px; display: none; white-space: pre-wrap;"></div>
 
@@ -697,6 +702,18 @@ HTML_TEMPLATE = """
             const res = await fetch(`/api/ai_report?ip=${ip}`, { headers: { 'Authorization': `Bearer ${dashboardToken}` } });
             const data = await res.json();
             box.innerText = data.report;
+        }
+
+        async function triggerBlackout(ip) {
+            if (!confirm(`INITIALIZE PERMANENT BLACKOUT FOR ${ip}?`)) return;
+            const res = await fetch('/api/blackout', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${dashboardToken}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ip: ip })
+            });
+            const data = await res.json();
+            alert(data.msg);
+            update();
         }
 
         // Global Threat Flux Chart
@@ -827,8 +844,23 @@ def api_terminal():
         return jsonify({"output": output})
     except subprocess.CalledProcessError as e:
         return jsonify({"output": e.output.decode()})
+@app.route('/api/blackout', methods=['POST'])
+def api_blackout():
+    if not check_auth(): return jsonify({"error": "Unauthorized"}), 401
+    ip = request.json.get('ip')
+    if not ip or ip in ['127.0.0.1', '8.8.8.8']:
+        return jsonify({"msg": "ERROR: Cannot blackout protected source."})
+
+    try:
+        # 1. Local IPTables Block
+        subprocess.run(["sudo", "iptables", "-I", "INPUT", "-s", ip, "-j", "DROP"], timeout=5)
+        # 2. Kill Active Docker Sessions
+        subprocess.run(["docker", "exec", "cerberus-cowrie", "bash", "-c", f"pkill -u cowrie"], timeout=5)
+
+        QUORUM_ALERTS.append({"time": time.strftime('%H:%M:%S'), "msg": f"BLACKOUT_ACTIVE: {ip}"})
+        return jsonify({"msg": f"SUCCESS: IP {ip} has been neutralized and blocked."})
     except Exception as e:
-        return jsonify({"output": f"ERROR: Service or Container Offline ({str(e)})"})
+        return jsonify({"msg": f"ERROR: Neutralization failed ({str(e)})"})
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=8080, threaded=True)
