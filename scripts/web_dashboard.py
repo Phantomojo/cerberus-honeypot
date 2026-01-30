@@ -71,50 +71,78 @@ def check_auth():
     plain_hash = hashlib.sha256(token.encode()).hexdigest()
     return plain_hash == AUTH_TOKEN
 
+# Manual overrides for known ranges where API is imprecise
+MANUAL_GEO_OVERRIDES = {
+    # Zuku Fiber / Wananchi Group ranges often resolve to Nairobi generic
+    "102.68.": {"city": "Ruiru", "region": "Kiambu", "lat": -1.146, "lon": 36.963, "org": "Zuku Fiber (Wananchi Group)"}
+}
+
 def resolve_geoip(ip):
-    if ip in ["127.0.0.1", "localhost"] or ip.startswith("192.168."):
-        return {"city": "Local Network", "region": "Internal", "lat": 0, "lon": 0, "company": {"name": "Cerberus Node"}}
-    if ip in GEO_CACHE: return GEO_CACHE[ip]
-    try:
-        # Use ipinfo.io for premium carrier/location detail
-        url = f"https://ipinfo.io/{ip}?token={IPINFO_TOKEN}"
-        with urllib.request.urlopen(url, timeout=5) as response:
-            data = json.loads(response.read().decode())
-            loc = data.get("loc", "0,0").split(',')
-            normalized = {
-                "city": data.get("city", "Unknown"),
-                "region": data.get("region", "Unknown"),
-                "country": data.get("country", "Unknown"),
-                "lat": float(loc[0]),
-                "lon": float(loc[1]),
-                "isp": data.get("org", "Unknown"),
-                "org": data.get("org", "Unknown"),
-                "postal": data.get("postal", ""),
-                "timezone": data.get("timezone", "")
+    # Check Manual Overrides First
+    for prefix, data in MANUAL_GEO_OVERRIDES.items():
+        if ip.startswith(prefix):
+            # Merge with default structure
+            return {
+                "city": data["city"],
+                "region": data["region"],
+                "country": "KE",
+                "lat": data["lat"],
+                "lon": data["lon"],
+                "isp": data["org"],
+                "org": data["org"],
+                "postal": "00232",
+                "timezone": "Africa/Nairobi"
             }
-            GEO_CACHE[ip] = normalized
-            return normalized
+
+    if ip in ["127.0.0.1", "localhost"] or ip.startswith("192.168.") or ip.startswith("172."):
+        return {"city": "Local Network", "region": "Internal", "lat": 0, "lon": 0, "org": "Cerberus Node"}
+
+    # Logic: Cache -> IPInfo -> Legacy
+    if ip in GEO_CACHE and GEO_CACHE[ip].get("city") != "Unknown": return GEO_CACHE[ip]
+
+    # Try IPInfo (Precision)
+    try:
+        if IPINFO_TOKEN:
+            url = f"https://ipinfo.io/{ip}?token={IPINFO_TOKEN}"
+            with urllib.request.urlopen(url, timeout=3) as response:
+                data = json.loads(response.read().decode())
+                loc = data.get("loc", "0,0").split(',')
+                normalized = {
+                    "city": data.get("city", "Unknown"),
+                    "region": data.get("region", "Unknown"),
+                    "country": data.get("country", "Unknown"),
+                    "lat": float(loc[0]),
+                    "lon": float(loc[1]),
+                    "isp": data.get("org", "Unknown"), # IPInfo puts ISP in 'org'
+                    "org": data.get("org", "Unknown"),
+                    "postal": data.get("postal", ""),
+                    "timezone": data.get("timezone", "")
+                }
+                GEO_CACHE[ip] = normalized
+                return normalized
     except Exception as e:
         log_system_error(f"IPInfo failed for {ip}: {str(e)}")
-        # Fallback to ipwho.is if token fails or rate limited
-        try:
-            url = f"https://ipwho.is/{ip}"
-            with urllib.request.urlopen(url, timeout=5) as response:
-                data = json.loads(response.read().decode())
-                if data.get("success"):
-                    normalized = {
-                        "city": data.get("city", "Unknown"),
-                        "region": data.get("region", "Unknown"),
-                        "country": data.get("country", "Unknown"),
-                        "lat": data.get("latitude", 0),
-                        "lon": data.get("longitude", 0),
-                        "isp": data.get("connection", {}).get("isp", "Unknown"),
-                        "org": data.get("connection", {}).get("org", "Unknown")
-                    }
-                    GEO_CACHE[ip] = normalized
-                    return normalized
-        except: pass
-    return {"city": "Unknown", "region": "Unknown", "lat": 0, "lon": 0}
+
+    # Fallback to free API
+    try:
+        url = f"https://ipwho.is/{ip}"
+        with urllib.request.urlopen(url, timeout=3) as response:
+            data = json.loads(response.read().decode())
+            if data.get("success"):
+                normalized = {
+                    "city": data.get("city", "Unknown"),
+                    "region": data.get("region", "Unknown"),
+                    "country": data.get("country", "Unknown"),
+                    "lat": data.get("latitude", 0),
+                    "lon": data.get("longitude", 0),
+                    "isp": data.get("connection", {}).get("isp", "Unknown"),
+                    "org": data.get("connection", {}).get("org", "Unknown")
+                }
+                GEO_CACHE[ip] = normalized
+                return normalized
+    except: pass
+
+    return {"city": "Unknown", "region": "Unknown", "lat": 0, "lon": 0, "org": "Unknown"}
 
 def get_reputation(ip):
     if ip in INTELLIGENCE_CACHE: return INTELLIGENCE_CACHE[ip]
@@ -478,7 +506,7 @@ HTML_TEMPLATE = """
                 <canvas id="flux-chart" width="280" height="80"></canvas>
             </div>
             <div id="flux-events" class="feed" style="height: 200px; padding: 0.5rem; color: var(--danger);"></div>
-            <div class="card-header">Intelligence Terminal</div>
+            <div class="card-header">Intelligence Terminal [ALERTS]</div>
             <div class="intel-terminal" id="intel-list"></div>
         </aside>
 
@@ -498,8 +526,8 @@ HTML_TEMPLATE = """
             <div id="target-details" style="padding: 1rem; flex-grow: 0.5; border-bottom: var(--border);">
                 <div style="color: var(--dim); text-align: center; font-size: 0.7rem;">SELECT TARGET FROM TERMINAL</div>
             </div>
-            <div class="card-header">Real-Time Telemetry</div>
-            <div class="feed" id="feed"></div>
+            <div class="card-header">Raw Signal Intercept</div>
+            <div class="feed" id="feed" style="font-family: 'Consolas', monospace; opacity: 0.8;"></div>
             <div class="card-header">Honeypot Terminal Proxy [RESTRICTED]</div>
             <div style="padding: 1rem;">
                 <div class="term-proxy">
@@ -607,11 +635,12 @@ HTML_TEMPLATE = """
             const d = await res.json();
 
             // Update Intel Terminal
+            // Update Intel Terminal
             const uniqueIps = Array.from(new Set(d.events.map(e => e.src))).filter(ip => ip !== '127.0.0.1');
             document.getElementById('intel-list').innerHTML = uniqueIps.map(ip => {
                 const lastEvent = d.events.find(e => e.src === ip);
                 return `<div class="intel-item ${selectedIp === ip ? 'active' : ''}" onclick="fetchAndFocus('${ip}')">
-                    <div class="intel-ip">${ip}</div>
+                    <div class="intel-ip">${ip} <span style="float:right; opacity:0.5; font-size:0.6rem;">[${lastEvent.time}]</span></div>
                     <div class="intel-meta">${lastEvent.msg}</div>
                 </div>`;
             }).join('');
