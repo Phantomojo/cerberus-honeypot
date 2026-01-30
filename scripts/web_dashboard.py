@@ -47,6 +47,7 @@ QUORUM_ALERTS = []
 SYSTEM_ERRORS = []
 DASHBOARD_START_TIME = time.time()
 GEO_CACHE = {}
+P0F_CACHE = {}
 AIRCRAFT_DATA = []
 INTELLIGENCE_CACHE = {} # Store deep hits
 
@@ -255,6 +256,69 @@ def update_flight_hud():
             AIRCRAFT_DATA = new_aircraft
         except: pass
         time.sleep(10)
+
+# Precision Fingerprinting: p0f Log Parser
+def parse_p0f_logs():
+    p0f_log = os.path.join(BASE_DIR, "services/cowrie/logs/p0f.json")
+    if not os.path.exists(p0f_log): return
+    try:
+        with open(p0f_log, 'r') as f:
+            for line in f.readlines()[-50:]: # Tail last 50
+                try:
+                    # p0f log format: [date] mod=x|cli=ip/port|...
+                    if '|' not in line: continue
+                    parts = line.strip().split('|')
+                    data = {}
+                    for p in parts:
+                         if '=' in p:
+                             k, v = p.split('=', 1)
+                             data[k.strip()] = v.strip()
+
+                    if 'cli' in data:
+                        ip = data['cli'].split('/')[0]
+                        os_sys = data.get('os', 'Unknown')
+                        dist = data.get('dist', '')
+                        if os_sys != 'Unknown':
+                            P0F_CACHE[ip] = f"{os_sys} {dist}".strip()
+                except: pass
+    except: pass
+
+# Precision Fingerprinting: Keystroke Bio-Metrics
+def analyze_keystrokes(history):
+    if not history or len(history) < 3: return "INSUFFICIENT_DATA"
+
+    # Analyze variance in typing speed (simulated from command timestamps if available, else generic)
+    # In a real scenario, we'd need high-res keyup/keydown logs.
+    # For now, we simulate based on 'burst' commands.
+
+    # Logic: Real humans have pauses > 500ms between thoughts. Bots blast commands < 50ms.
+    # Since we only have cmd timestamps, we look for bursts.
+
+    fast_bursts = 0
+    last_time = 0
+
+    for h in history:
+        try:
+           # HH:MM:SS -> seconds
+           parts = h['time'].split(':')
+           curr = int(parts[0])*3600 + int(parts[1])*60 + int(parts[2])
+           diff = curr - last_time
+           if diff < 2: fast_bursts += 1
+           last_time = curr
+        except: pass
+
+    if fast_bursts > 5: return "BOT (HIGH VELOCITY)"
+    return "HUMAN (NATURAL PAUSES)"
+
+# Precision Fingerprinting: Timezone Correlation
+def check_timezone_anomaly(geo, activity_hour_utc):
+    try:
+        tz = geo.get('timezone', 'UTC')
+        # Simplified check: If TZ is Asia/China (UTC+8) and activity is 3 AM local
+        # This requires a full TZ database python library which we might not have.
+        # Tactical approximation:
+        return "NORMAL" # Placehold for now to avoid dependency errors
+    except: return "UNKNOWN"
 
 threading.Thread(target=update_flight_hud, daemon=True).start()
 
@@ -649,7 +713,6 @@ HTML_TEMPLATE = """
             const d = await res.json();
 
             // Update Intel Terminal
-            // Update Intel Terminal
             const uniqueIps = Array.from(new Set(d.events.map(e => e.src))).filter(ip => ip !== '127.0.0.1');
             document.getElementById('intel-list').innerHTML = uniqueIps.map(ip => {
                 const lastEvent = d.events.find(e => e.src === ip);
@@ -709,6 +772,8 @@ HTML_TEMPLATE = """
                 <div style="font-size: 0.6rem; color: var(--dim);">LOC: ${geo.city}, ${geo.region}, ${geo.country}</div>
                 <div style="font-size: 0.6rem; color: var(--accent);">ADDR: ${geo.address || 'Triangulating...'}</div>
                 <div style="font-size: 0.6rem; color: var(--dim);">HOST: ${geo.hostname || 'N/A'}</div>
+                <div style="font-size: 0.6rem; color: var(--accent);">OS INTEL: ${geo.os_fingerprint || 'Pending Packet Analysis...'}</div>
+                <div style="font-size: 0.6rem; color: ${rep.bio_class.includes('BOT') ? 'var(--dim)' : 'var(--danger)'};">BIOMETRICS: ${rep.bio_class}</div>
 
                 <hr style="border: 0; border-top: 1px solid #222; margin: 10px 0;">
                 <div style="font-size: 0.7rem; color: ${rep.abuse_score > 20 ? 'var(--alert)' : 'var(--accent)'}; font-weight: bold;">
@@ -720,9 +785,6 @@ HTML_TEMPLATE = """
                 <hr style="border: 0; border-top: 1px solid #222; margin: 10px 0;">
                 <div style="font-size: 0.7rem; color: #00ccff; font-weight: bold;">COUNTER-SCAN [SHODAN]:</div>
                 <div style="font-size: 0.6rem; color: var(--dim);">OS: ${shodan.os || 'Unknown'}</div>
-                <div style="font-size: 0.6rem; color: var(--accent);">OPEN PORTS: ${shodan.ports.join(', ')}</div>
-                ` : ''}
-
                 <div style="font-size: 0.6rem; color: var(--accent);">OPEN PORTS: ${shodan.ports.join(', ')}</div>
                 ` : ''}
 
@@ -869,9 +931,18 @@ def api_intel():
     if any(k in isp_lower for k in residential_keywords):
         geo['type'] = "RESIDENTIAL (ISP)"
 
+    # Deep Recon: P0f OS Fingerprint
+    parse_p0f_logs()
+    geo['os_fingerprint'] = P0F_CACHE.get(ip, "Unknown")
+
+    # Deep Recon: Biometric Classification
+    bio_class = analyze_keystrokes(history)
+    rep = get_reputation(ip)
+    rep['bio_class'] = bio_class
+
     return jsonify({
         "geo": geo,
-        "rep": get_reputation(ip),
+        "rep": rep,
         "shodan": get_shodan_intel(ip),
         "history": history
     })

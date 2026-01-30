@@ -130,6 +130,18 @@ services:
     networks:
       - cerberus-net
 
+  # Passive OS Fingerprinting
+  p0f:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.p0f
+    container_name: cerberus-p0f
+    restart: unless-stopped
+    command: "-i eth0 -o /var/log/p0f.json -f /etc/p0f/p0f.fp"
+    network_mode: "service:cowrie" # Share network stack to see Cowrie traffic
+    volumes:
+      - ../services/cowrie/logs:/var/log:rw # Share logs with Dashboard
+
 networks:
   cerberus-net:
     driver: bridge
