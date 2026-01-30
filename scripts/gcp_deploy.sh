@@ -48,14 +48,20 @@ echo "[+] Instance Created. Waiting for boot..."
 sleep 15
 
 # 4. Remote Execution: Install Dependencies and Startup CERBERUS
-echo "[*] Deploying CERBERUS software suite..."
+echo "[*] Deploying CERBERUS Hybrid Node..."
 gcloud compute ssh $INSTANCE_NAME --zone=$ZONE --project=$PROJECT_ID --command="
     sudo apt-get update && sudo apt-get install -y docker.io docker-compose make build-essential python3-pip git
+
+    # Install Tailscale for the Hybrid Tunnel
+    curl -fsSL https://tailscale.com/install.sh | sh
+    sudo tailscale up --authkey=\$TAILSCALE_AUTHKEY
+
     git clone https://github.com/Phantomojo/cerberus-honeypot.git
     cd cerberus-honeypot
     sudo make build
-    sudo bash scripts/morph_and_reload.sh
-    nohup sudo python3 scripts/web_dashboard.py > build/cloud_dashboard.log 2>&1 &
+
+    # Start the Lightweight Cloud Stack
+    sudo docker-compose -f docker/docker-compose.cloud.yml up -d
 "
 
 EXTERNAL_IP=$(gcloud compute instances describe $INSTANCE_NAME --zone=$ZONE --project=$PROJECT_ID --format='get(networkInterfaces[0].accessConfigs[0].natIP)')

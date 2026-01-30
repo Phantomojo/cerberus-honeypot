@@ -1,0 +1,104 @@
+services:
+  # Cowrie SSH/Telnet Honeypot - Core Capture Component
+  cowrie:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.cerberus
+    image: cerberus-cowrie:latest
+    container_name: cerberus-cowrie
+    restart: unless-stopped
+    ports:
+      - "2222:2222" # SSH
+      - "2323:2323" # Telnet
+    volumes:
+      - ../services/cowrie/data:/cowrie/cowrie-git/var/lib/cowrie/data
+      - ../services/cowrie/logs:/cowrie/cowrie-git/var/log/cowrie:rw
+      - ../services/cowrie/etc/cowrie.cfg:/cowrie/cowrie-git/etc/cowrie.cfg:ro
+      - ../services/cowrie/etc/cowrie.cfg.local:/cowrie/cowrie-git/etc/cowrie.cfg.local:ro
+      - ../services/cowrie/etc/userdb.txt:/cowrie/cowrie-git/etc/userdb.txt:ro
+      - ../services/cowrie/honeyfs:/cowrie/cowrie-git/share/cowrie/honeyfs:rw
+    environment:
+      - COWRIE_SSH_PORT=2222
+      - COWRIE_TELNET_PORT=2323
+      - CERBERUS_BRAIN_HOST=100.x.x.x # Replace with your Local PC Tailscale IP
+      - CERBERUS_BRAIN_PORT=50051
+    deploy:
+      resources:
+        limits:
+          memory: 256M # Hard cap for Cowrie
+    networks:
+      - cerberus-net
+
+  # Media Server (RTSP) - Lightweight
+  rtsp-server:
+    image: bluenviron/mediamtx:latest
+    container_name: cerberus-rtsp
+    restart: unless-stopped
+    ports:
+      - "554:554"
+      - "8554:8554"
+      - "1935:1935"
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+    networks:
+      - cerberus-net
+
+  # Lightweight Static Dash (Optional redirect)
+  fake-router-web:
+    image: nginx:alpine
+    container_name: cerberus-router-web
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ../services/fake-router-web/html:/usr/share/nginx/html:ro
+    deploy:
+      resources:
+        limits:
+          memory: 32M
+    networks:
+      - cerberus-net
+
+  # Watchdog - Critical for persistence
+  watchdog:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.watchdog
+    container_name: cerberus-watchdog
+    restart: unless-stopped
+    volumes:
+      - ..:/app
+      - /var/run/docker.sock:/var/run/docker.sock
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+    networks:
+      - cerberus-net
+
+  # Phoenix Mission Control (Admin Dashboard)
+  dashboard:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.dashboard
+    container_name: cerberus-dashboard
+    restart: unless-stopped
+    ports:
+      - "8080:5000"
+    volumes:
+      - ../services/cowrie/logs:/cowrie/var/log/cowrie:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ..:/app # For accessing scripts
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    networks:
+      - cerberus-net
+
+networks:
+  cerberus-net:
+    driver: bridge
+    name: cerberus-cloud-net

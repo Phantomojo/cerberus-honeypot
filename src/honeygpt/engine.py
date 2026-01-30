@@ -134,17 +134,26 @@ class CerberusUnifiedEngine:
 
     def egress_check(self, command: str) -> Tuple[bool, str]:
         """Identifies and blocks malicious outbound activity."""
-        # 1. OUTGOING SCANS
-        if re.search(r"(nmap|zmap|masscan).*?(\d{1,3}\.){3}\d{1,3}", command):
+        # 1. OUTGOING SCANS & ENUMERATION
+        if re.search(r"(nmap|zmap|masscan|scan|ping).*?(\d{1,3}\.){3}\d{1,3}", command):
             return True, "Network unreachable: Egress scan detected. Target IP is outside permitted subnet."
 
-        # 2. DDOS PATTERNS
-        if re.search(r"ping.*?-f", command) or "hping3" in command:
-            return True, "Operation not permitted: High-frequency ICMP burst blocked."
+        # 2. MALICIOUS PORTS & STAGING
+        # Block common exploit ports (SMB, RDP, Redis, DBs)
+        if re.search(r":[445|3389|6379|3306|5432|27017]", command):
+             return True, "Connection refused: Outbound access to restricted administrative port blocked."
 
-        # 3. REVERSE SHELLS / EXFIL
-        if re.search(r"/dev/tcp/|nc -e|python.*?socket", command):
-            return True, "Connection reset by peer: Suspicious outbound socket attempt."
+        # 3. DDOS & FLOOD PATTERNS
+        if re.search(r"ping.*?-f", command) or "hping3" in command or "flood" in command:
+            return True, "Operation not permitted: High-frequency packet burst blocked by supervisor."
+
+        # 4. REVERSE SHELLS / EXFIL / MALWARE STAGING
+        if re.search(r"/dev/tcp/|nc -e|python.*?socket|bash -i|>& /dev/udp/", command):
+            return True, "Connection reset by peer: Suspicious outbound socket attempt detected."
+
+        # 5. EXPLOIT STRINGS (Generic detection)
+        if re.search(r"base64 --decode|curl.*?\|.*?bash|wget.*?\|.*?sh", command):
+            return True, "Permission denied: Attempt to execute remote piped payload blocked."
 
         return False, ""
 

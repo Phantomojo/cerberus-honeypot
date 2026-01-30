@@ -13,6 +13,21 @@ sudo pip3 install -r requirements.txt
 sudo make build
 ```
 
+## 🛸 HUD Dashboard Features (V5.1)
+
+### 📱 Mobile Access
+The dashboard is now fully responsive. Use the same URL on your phone for a tactical mobile view.
+- **Viewport**: 1:1 scaling for physical devices.
+- **Layout**: Stacking cards for easy vertical scrolling.
+
+### 🛡️ Secure Terminal Proxy
+- **Access**: Located at the bottom right of the HUD.
+- **Safety**: This terminal *only* interacts with the honeypot containers (`cowrie`). It cannot access the host VM files or commands.
+- **Usage**: Test attacker interactions or reset honeypot states safely.
+
+### 📊 System Metrics
+- Real-time CPU, RAM, and Disk metrics of the GCP VM are shown in the persistent footer.
+
 ### 3. Start the Dashboard (Manual Test)
 ```bash
 sudo python3 scripts/web_dashboard.py &

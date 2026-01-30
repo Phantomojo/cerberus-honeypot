@@ -11,6 +11,7 @@ import urllib.request
 from datetime import datetime
 from flask import Flask, render_template_string, jsonify, request
 import sys
+import sqlite3
 
 # ==============================================================================
 # CERBERUS COMMAND CENTER (V5.0 - PHOENIX TACTICAL HUD)
@@ -29,15 +30,21 @@ STATE_FILE = os.path.join(BASE_DIR, "build/morph-state.txt")
 MORPH_BIN = os.path.join(BASE_DIR, "build/morph")
 QUORUM_BIN = os.path.join(BASE_DIR, "build/quorum")
 
+# Enrichment Config
+IPINFO_TOKEN = "24034ea09a1ebb"
+ABUSE_KEY = "ad83c0b7788eeda9406a75cb47271c289f7776026e223e69a582eaa898042deee24261a9e007a59d"
+SHODAN_KEY = "a0MbctASs4DslzXqUUVkSbYr6cwuYzPP"
+
 # Global State
 HISTORY_FILE = os.path.join(BASE_DIR, "build/web_history.json")
+DB_FILE = os.path.join(BASE_DIR, "build/cerberus.db")
 EVENT_HISTORY = []
-CREDENTIAL_COUNTS = {}
 QUORUM_ALERTS = []
-DASHBOARD_START_TIME = time.time()
 SYSTEM_ERRORS = []
+DASHBOARD_START_TIME = time.time()
 GEO_CACHE = {}
 AIRCRAFT_DATA = []
+INTELLIGENCE_CACHE = {} # Store deep hits
 
 def log_system_error(msg):
     ts = datetime.now().strftime("%H:%M:%S")
@@ -63,17 +70,127 @@ def check_auth():
 
 def resolve_geoip(ip):
     if ip in ["127.0.0.1", "localhost"] or ip.startswith("192.168."):
-        return {"city": "Local Network", "lat": 0, "lon": 0, "isp": "Internal", "org": "Private Cloud", "proxy": False}
+        return {"city": "Local Network", "region": "Internal", "lat": 0, "lon": 0, "company": {"name": "Cerberus Node"}}
     if ip in GEO_CACHE: return GEO_CACHE[ip]
     try:
-        url = f"http://ip-api.com/json/{ip}?fields=status,message,country,regionName,city,lat,lon,isp,org,proxy,hosting,mobile"
+        # Use ipinfo.io for premium carrier/location detail
+        url = f"https://ipinfo.io/{ip}?token={IPINFO_TOKEN}"
         with urllib.request.urlopen(url, timeout=5) as response:
             data = json.loads(response.read().decode())
-            if data.get("status") == "success":
-                GEO_CACHE[ip] = data
-                return data
-    except Exception as e: log_system_error(f"GeoIP resolution failed for {ip}: {str(e)}")
-    return {"city": "Unknown", "lat": 0, "lon": 0, "isp": "Unknown", "org": "Unknown", "proxy": False}
+            loc = data.get("loc", "0,0").split(',')
+            normalized = {
+                "city": data.get("city", "Unknown"),
+                "region": data.get("region", "Unknown"),
+                "country": data.get("country", "Unknown"),
+                "lat": float(loc[0]),
+                "lon": float(loc[1]),
+                "isp": data.get("org", "Unknown"),
+                "org": data.get("org", "Unknown"),
+                "postal": data.get("postal", ""),
+                "timezone": data.get("timezone", "")
+            }
+            GEO_CACHE[ip] = normalized
+            return normalized
+    except Exception as e:
+        log_system_error(f"IPInfo failed for {ip}: {str(e)}")
+        # Fallback to ipwho.is if token fails or rate limited
+        try:
+            url = f"https://ipwho.is/{ip}"
+            with urllib.request.urlopen(url, timeout=5) as response:
+                data = json.loads(response.read().decode())
+                if data.get("success"):
+                    normalized = {
+                        "city": data.get("city", "Unknown"),
+                        "region": data.get("region", "Unknown"),
+                        "country": data.get("country", "Unknown"),
+                        "lat": data.get("latitude", 0),
+                        "lon": data.get("longitude", 0),
+                        "isp": data.get("connection", {}).get("isp", "Unknown"),
+                        "org": data.get("connection", {}).get("org", "Unknown")
+                    }
+                    GEO_CACHE[ip] = normalized
+                    return normalized
+        except: pass
+    return {"city": "Unknown", "region": "Unknown", "lat": 0, "lon": 0}
+
+def get_reputation(ip):
+    if ip in INTELLIGENCE_CACHE: return INTELLIGENCE_CACHE[ip]
+    intel = {"abuse_score": 0, "reports": 0, "last_report": "None", "is_threat": False}
+    try:
+        # Check AbuseIPDB
+        url = f"https://api.abuseipdb.com/api/v2/check?ipAddress={ip}&maxAgeInDays=90"
+        req = urllib.request.Request(url)
+        req.add_header('Key', ABUSE_KEY)
+        req.add_header('Accept', 'application/json')
+        with urllib.request.urlopen(req, timeout=5) as response:
+            data = json.loads(response.read().decode())
+            rep = data.get("data", {})
+            intel["abuse_score"] = rep.get("abuseConfidenceScore", 0)
+            intel["reports"] = rep.get("totalReports", 0)
+            intel["last_report"] = rep.get("lastReportedAt", "Unknown")
+            intel["is_threat"] = intel["abuse_score"] > 20
+    except: pass
+    INTELLIGENCE_CACHE[ip] = intel
+    return intel
+
+def get_shodan_intel(ip):
+    # Check cache
+    cache_key = f"shodan_{ip}"
+    if cache_key in GEO_CACHE: return GEO_CACHE[cache_key]
+
+    intel = {"ports": [], "os": "Unknown", "hostnames": [], "isp": "Unknown"}
+    try:
+        url = f"https://api.shodan.io/shodan/host/{ip}?key={SHODAN_KEY}"
+        with urllib.request.urlopen(url, timeout=5) as response:
+            data = json.loads(response.read().decode())
+            intel = {
+                "ports": data.get("ports", []),
+                "os": data.get("os", "Unknown"),
+                "hostnames": data.get("hostnames", []),
+                "isp": data.get("isp", "Unknown")
+            }
+            GEO_CACHE[cache_key] = intel
+    except: pass
+    return intel
+
+def generate_ai_report(ip, history):
+    """
+    Simulated AI Threat Intelligence Engine.
+    In a full deployment, this calls HoneyGPT/Ollama.
+    For the dashboard, it provides a structured Tactical Report.
+    """
+    if not history:
+        return "NO_COMMAND_DATA: Threat intent cannot be determined."
+
+    cmds = [h['cmd'] for h in history]
+    # Simple tactical logic
+    threat_level = "LOW"
+    intent = "RECONNAISSANCE"
+    technique = "MANUAL_PROBING"
+
+    if any(c in str(cmds) for c in ['rm -rf', 'wget', 'curl', 'chmod +x']):
+        threat_level = "CRITICAL"
+        intent = "PAYLOAD_DELIVERY / PERSISTENCE"
+        technique = "AUTOMATED_SCANNER_EXPLOIT"
+    elif len(cmds) > 10:
+        threat_level = "ELEVATED"
+        intent = "SYSTEM_ENUMERATION"
+        technique = "BRUTE_FORCE_EXPLORATION"
+
+    report = f"""[AI INTEL REPORT // {ip}]
+---------------------------------
+THREAT_LEVEL: {threat_level}
+INTENT: {intent}
+TECHNIQUE: {technique}
+
+OBSERVED_BEHAVIOR:
+Attacker entered {len(cmds)} commands.
+Primary focus: {cmds[0] if cmds else 'N/A'}.
+
+TACTICAL_RECOMMENDATION:
+{'ENABLE_QUORUM_HARDENING' if threat_level != 'LOW' else 'MONITOR_ONLY'}
+"""
+    return report
 
 # Phoenix HUD: Aircraft Tracker (Simulated for high FPS)
 def update_flight_hud():
@@ -95,6 +212,37 @@ def update_flight_hud():
         time.sleep(10)
 
 threading.Thread(target=update_flight_hud, daemon=True).start()
+
+def init_db():
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS sessions
+                 (ip TEXT, session_id TEXT PRIMARY KEY, start_time TEXT, city TEXT, country TEXT, score INTEGER)''')
+    c.execute('''CREATE TABLE IF NOT EXISTS activities
+                 (session_id TEXT, timestamp TEXT, input TEXT, output TEXT)''')
+    conn.commit()
+    conn.close()
+
+init_db()
+
+def log_session_to_db(src, sid, ts, geo, rep):
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        c = conn.cursor()
+        c.execute("INSERT OR IGNORE INTO sessions VALUES (?,?,?,?,?,?)",
+                  (src, sid, ts, geo['city'], geo['country'], rep['abuse_score']))
+        conn.commit()
+        conn.close()
+    except: pass
+
+def log_activity_to_db(sid, ts, cmd):
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        c = conn.cursor()
+        c.execute("INSERT INTO activities VALUES (?,?,?,?)", (sid, ts, cmd, ""))
+        conn.commit()
+        conn.close()
+    except: pass
 
 def load_persistence():
     global EVENT_HISTORY, CREDENTIAL_COUNTS, QUORUM_ALERTS
@@ -134,7 +282,8 @@ def get_docker_stats():
 
 def get_system_metrics():
     try:
-        cpu = psutil.cpu_percent()
+        # Get usage over 1s for accurate readings
+        cpu = psutil.cpu_percent(interval=None)
         ram = psutil.virtual_memory().percent
         disk = psutil.disk_usage('/').percent
         return {"cpu": cpu, "ram": ram, "disk": disk}
@@ -158,33 +307,58 @@ def log_monitor():
     if not os.path.exists(LOG_FILE):
         os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
         open(LOG_FILE, 'a').close()
-    file_pos = os.path.getsize(LOG_FILE)
+    file_pos = 0 # Start from beginning to catch recent events on start
     while True:
         try:
+            if not os.path.exists(LOG_FILE):
+                time.sleep(1)
+                continue
             current_size = os.path.getsize(LOG_FILE)
+            if current_size < file_pos: file_pos = 0 # Handle rotation
             if current_size > file_pos:
                 with open(LOG_FILE, 'r') as f:
                     f.seek(file_pos)
                     for line in f:
+                        if not line.strip(): continue
                         try:
                             data = json.loads(line.strip())
                             eventid = data.get('eventid')
                             ts = data.get('timestamp', '').split('T')[-1][:8]
                             src = data.get('src_ip', '127.0.0.1')
+                            sid = data.get('session', 'N/A')
                             msg, etype = None, "info"
+
                             if eventid == "cowrie.session.connect":
                                 geo = resolve_geoip(src)
-                                msg = f"Inbound connection from {src} ({geo['city']})"
+                                msg = f"Inbound connection from {src} ({geo.get('city')}, {geo.get('region')})"
+                                rep = get_reputation(src) # Ensure rep is defined before use
+                                log_session_to_db(src, sid, ts, geo, rep)
+                                QUORUM_ALERTS.append({"time": ts, "msg": f"Target detected: {src}"})
+                            elif eventid == "cowrie.command.input":
+                                log_activity_to_db(sid, ts, data.get('input', ''))
+                                msg = f"COMMAND: {data.get('input')}"
+                                etype = "warn"
+                                if any(x in data.get('input', '') for x in ['rm', 'sudo', 'wget']):
+                                    QUORUM_ALERTS.append({"time": ts, "msg": f"Hostage Command from {src}"})
                             elif eventid == "cowrie.login.success":
                                 msg = f"SUCCESSFUL LOGIN: {data.get('username')}"
                                 etype = "success"
                             elif eventid == "cowrie.login.failed":
                                 msg = f"FAILED LOGIN: {data.get('username')}:{data.get('password')}"
                                 etype = "warn"
+
                             if msg:
-                                EVENT_HISTORY.insert(0, {"time": ts, "msg": msg, "type": etype, "src": src})
+                                rep = get_reputation(src)
+                                EVENT_HISTORY.insert(0, {
+                                    "time": ts,
+                                    "msg": msg,
+                                    "type": etype,
+                                    "src": src,
+                                    "threat": rep.get("is_threat", False),
+                                    "score": rep.get("abuse_score", 0)
+                                })
                                 EVENT_HISTORY = EVENT_HISTORY[:50]
-                        except: continue
+                        except Exception as e: continue
                 file_pos = current_size
         except: pass
         time.sleep(1)
@@ -260,54 +434,15 @@ HTML_TEMPLATE = """
 
         /* Mobile Responsiveness */
         @media (max-width: 1024px) {
-            body {
-                overflow-y: auto !important;
-                height: auto !important;
-                touch-action: manipulation;
-            }
-            main {
-                display: flex !important;
-                flex-direction: column !important;
-                height: auto !important;
-                padding: 0.5rem !important;
-                gap: 1rem !important;
-                margin-bottom: 80px !important;
-            }
-            aside {
-                height: auto !important;
-                min-height: 250px !important;
-            }
-            .card {
-                height: auto !important;
-                min-height: 350px !important;
-                flex-shrink: 0;
-            }
-            .map-section {
-                height: 350px !important;
-                order: -1 !important;
-                width: 100% !important;
-            }
-            #map {
-                height: 100% !important;
-                width: 100% !important;
-            }
-            header {
-                height: auto !important;
-                padding: 1rem !important;
-                flex-direction: column !important;
-                gap: 0.5rem !important;
-                text-align: center;
-            }
-            footer {
-                height: auto !important;
-                flex-wrap: wrap !important;
-                padding: 0.8rem !important;
-                gap: 0.8rem !important;
-                position: fixed !important;
-                bottom: 0;
-            }
-            .progress-container { width: 70px !important; }
-            .feed { height: 180px !important; }
+            body { overflow-y: auto; height: auto; }
+            main { display: flex; flex-direction: column; height: auto; padding: 0.5rem; gap: 0.5rem; margin-bottom: 60px; }
+            aside { height: auto; min-height: 300px; }
+            .card { height: auto; min-height: 400px; }
+            .map-section { height: 400px; order: -1; } /* Map at top on mobile */
+            header { height: auto; padding: 1rem; flex-direction: column; gap: 0.5rem; }
+            footer { height: auto; flex-wrap: wrap; padding: 0.8rem; gap: 1rem; position: relative; }
+            .progress-container { width: 80px; }
+            .feed { height: 200px; }
         }
 
         /* Terminal Proxy */
@@ -332,10 +467,10 @@ HTML_TEMPLATE = """
 
     <main>
         <aside class="card">
-            <div class="card-header">Global Threat Flux</div>
-            <div style="padding: 1rem; height: 120px;">
+            <div style="padding: 1rem; height: 120px; border-bottom: var(--border);">
                 <canvas id="flux-chart" width="280" height="80"></canvas>
             </div>
+            <div id="flux-events" class="feed" style="height: 200px; padding: 0.5rem; color: var(--danger);"></div>
             <div class="card-header">Intelligence Terminal</div>
             <div class="intel-terminal" id="intel-list"></div>
         </aside>
@@ -505,19 +640,90 @@ HTML_TEMPLATE = """
                 document.getElementById('deploy-target').style.color = 'var(--success)';
                 document.getElementById('deploy-progress').style.background = 'var(--success)';
             }
+
+            // Update Global Threat Flux
+            document.getElementById('flux-events').innerHTML = d.quorum.map(q => `<div>[${q.time}] ${q.msg}</div>`).join('');
         }
 
         async function fetchAndFocus(ip) {
             const res = await fetch(`/api/intel?ip=${ip}`, { headers: { 'Authorization': `Bearer ${dashboardToken}` } });
-            const geo = await res.json();
+            const data = await res.json();
+            const geo = data.geo;
+            const rep = data.rep;
+            const shodan = data.shodan || {};
+            const history = data.history || [];
+
             document.getElementById('target-details').innerHTML = `
                 <div style="font-size: 1rem; color: var(--accent); font-weight: 800;">${ip}</div>
-                <div style="font-size: 0.6rem; color: var(--dim); margin-top:0.4rem;">ORG: ${geo.isp}</div>
-                <div style="font-size: 0.6rem; color: var(--dim);">LOC: ${geo.city}, ${geo.country}</div>
-                <div style="font-size: 0.6rem; color: ${geo.proxy?'var(--danger)':'var(--success)'};">ANONYMITY: ${geo.proxy?'VPN_DETECTED':'CLEAR'}</div>
+                <div style="font-size: 0.6rem; color: var(--dim); margin-top:0.4rem;">ISP: ${geo.isp}</div>
+                <div style="font-size: 0.6rem; color: var(--dim);">LOC: ${geo.city}, ${geo.region}, ${geo.country}</div>
+                <div style="font-size: 0.6rem; color: var(--dim);">HOST: ${geo.hostname || 'N/A'}</div>
+
+                <hr style="border: 0; border-top: 1px solid #222; margin: 10px 0;">
+                <div style="font-size: 0.7rem; color: ${rep.abuse_score > 20 ? 'var(--alert)' : 'var(--accent)'}; font-weight: bold;">
+                    REPUTATION SCORE: ${rep.abuse_score}%
+                </div>
+                <div style="font-size: 0.6rem; color: var(--dim);">REPORTS: ${rep.reports} | LAST: ${rep.last_report.substring(0,10)}</div>
+
+                ${shodan.ports && shodan.ports.length > 0 ? `
+                <hr style="border: 0; border-top: 1px solid #222; margin: 10px 0;">
+                <div style="font-size: 0.7rem; color: #00ccff; font-weight: bold;">COUNTER-SCAN [SHODAN]:</div>
+                <div style="font-size: 0.6rem; color: var(--dim);">OS: ${shodan.os || 'Unknown'}</div>
+                <div style="font-size: 0.6rem; color: var(--accent);">OPEN PORTS: ${shodan.ports.join(', ')}</div>
+                ` : ''}
+
+                <div style="margin-top: 15px;">
+                    <button class="layer-btn" style="width: 100%; border-color: var(--accent);" onclick="generateAiReport('${ip}')">GENERATE AI THREAT REPORT</button>
+                </div>
+                <div id="ai-report-box" style="margin-top: 10px; font-size: 0.55rem; color: var(--text); font-family: 'JetBrains Mono'; background: rgba(0,0,0,0.4); padding: 5px; border-radius: 4px; display: none; white-space: pre-wrap;"></div>
+
+                ${history.length > 0 ? `
+                <hr style="border: 0; border-top: 1px solid #222; margin: 10px 0;">
+                <div style="font-size: 0.6rem; color: var(--accent); font-weight: bold; margin-bottom: 5px;">DEEP ACTIVITY LOG:</div>
+                <div style="font-size: 0.5rem; color: #888; max-height: 100px; overflow-y: auto;">
+                    ${history.map(h => `<div>[${h.time}] ${h.cmd}</div>`).join('')}
+                </div>` : ''}
             `;
             focusTarget(ip, geo.lat, geo.lon);
         }
+
+        async function generateAiReport(ip) {
+            const box = document.getElementById('ai-report-box');
+            box.style.display = 'block';
+            box.innerText = 'GENERATING_REPORT...';
+            const res = await fetch(`/api/ai_report?ip=${ip}`, { headers: { 'Authorization': `Bearer ${dashboardToken}` } });
+            const data = await res.json();
+            box.innerText = data.report;
+        }
+
+        // Global Threat Flux Chart
+        const fluxCanvas = document.getElementById('flux-chart');
+        const fluxCtx = fluxCanvas.getContext('2d');
+        let fluxData = Array(30).fill(0);
+
+        function updateFluxChart() {
+            fluxCtx.clearRect(0, 0, fluxCanvas.width, fluxCanvas.height);
+            fluxData.push(Math.random() * 50 + (Math.sin(Date.now()/500) * 10));
+            fluxData.shift();
+
+            fluxCtx.beginPath();
+            fluxCtx.strokeStyle = '#00f2ff';
+            fluxCtx.lineWidth = 2;
+            for(let i=0; i<fluxData.length; i++) {
+                const x = (i / fluxData.length) * fluxCanvas.width;
+                const y = fluxCanvas.height - (fluxData[i]/100 * fluxCanvas.height);
+                if(i===0) fluxCtx.moveTo(x, y); else fluxCtx.lineTo(x, y);
+            }
+            fluxCtx.stroke();
+
+            // Fill
+            fluxCtx.lineTo(fluxCanvas.width, fluxCanvas.height);
+            fluxCtx.lineTo(0, fluxCanvas.height);
+            fluxCtx.fillStyle = 'rgba(0, 242, 255, 0.1)';
+            fluxCtx.fill();
+        }
+
+        setInterval(updateFluxChart, 200);
 
         async function handleTerm(e) {
             if (e.key === 'Enter') {
@@ -566,7 +772,40 @@ def api_data():
 def api_intel():
     if not check_auth(): return jsonify({"error": "Unauthorized"}), 401
     ip = request.args.get('ip')
-    return jsonify(resolve_geoip(ip))
+
+    # Get historical activities for this IP
+    history = []
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        c = conn.cursor()
+        c.execute("SELECT activities.timestamp, activities.input FROM activities JOIN sessions ON activities.session_id = sessions.session_id WHERE sessions.ip = ? ORDER BY timestamp DESC LIMIT 20", (ip,))
+        history = [{"time": r[0], "cmd": r[1]} for r in c.fetchall()]
+        conn.close()
+    except: pass
+
+    return jsonify({
+        "geo": resolve_geoip(ip),
+        "rep": get_reputation(ip),
+        "shodan": get_shodan_intel(ip),
+        "history": history
+    })
+
+@app.route('/api/ai_report')
+def api_ai_report():
+    if not check_auth(): return jsonify({"error": "Unauthorized"}), 401
+    ip = request.args.get('ip')
+    # Fetch history
+    history = []
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        c = conn.cursor()
+        c.execute("SELECT activities.input FROM activities JOIN sessions ON activities.session_id = sessions.session_id WHERE sessions.ip = ? ORDER BY timestamp DESC LIMIT 50", (ip,))
+        history = [{"cmd": r[0]} for r in c.fetchall()]
+        conn.close()
+    except: pass
+
+    report = generate_ai_report(ip, history)
+    return jsonify({"report": report})
 
 @app.route('/api/uptime')
 def api_uptime():
@@ -589,4 +828,4 @@ def api_terminal():
         return jsonify({"output": f"ERROR: Service or Container Offline ({str(e)})"})
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5000, threaded=True)
+    app.run(host='0.0.0.0', port=8080, threaded=True)

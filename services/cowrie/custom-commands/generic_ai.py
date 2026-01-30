@@ -1,73 +1,48 @@
-"""
-Generic AI Command - powered by HoneyGPT
-This handler catches commands and forwards them to the AI bridge.
-"""
-
 from __future__ import annotations
-import socket
 from cowrie.shell.command import HoneyPotCommand
-
-# HoneyGPT service address (Connect to Host)
-HONEYGPT_HOST = "172.17.0.1"
-HONEYGPT_PORT = 50051
+from .cerberus_ai_bridge import query_brain
+import json
 
 class Command_generic_ai(HoneyPotCommand):
     """
-    Generic command that forwards input to the HoneyGPT AI service.
+    Cerberus Hybrid AI Bridge handler.
+    Catches commands and forwards them to the remote local brain.
     """
-
     def call(self):
-        full_command = " ".join([self.args[0]] + self.args[1:]) if self.args else self.environ.get('COMMAND_LINE', '')
-        if not full_command:
-            # Try to reconstruct from call info if possible
-            full_command = self.environ.get('last_command', 'unknown')
+        # 1. Reconstruct the full command line
+        cmd_name = self.environ.get('COMMAND_NAME', 'unknown')
+        full_command = " ".join([cmd_name] + self.args) if self.args else cmd_name
+        attacker_ip = "unknown"
+        if hasattr(self.protocol, 'transport'):
+            attacker_ip = self.protocol.transport.getPeer().host
 
-        # Connect to HoneyGPT Bridge
-        try:
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.settimeout(30)
-                s.connect((HONEYGPT_HOST, HONEYGPT_PORT))
-                s.sendall(full_command.encode('utf-8'))
-                raw_response = s.recv(8192).decode('utf-8')
+        # 2. Query the Remote Brain (Local PC)
+        result = query_brain(full_command, attacker_ip)
 
-                import json
-                try:
-                    data = json.loads(raw_response)
-                    text = data.get("response", "")
-                    self.write(text)
-                    if not text.endswith('\n'):
-                        self.write('\n')
+        # 3. Handle response
+        if result.get("status") == "success":
+            response = result.get("response", "")
+            if response:
+                self.write(response + "\n")
 
-                    # DYNAMIC PROMPT SYNC: Update the shell hostname if the AI morphed
-                    if "hostname" in data and hasattr(self.protocol, 'hostname'):
-                        self.protocol.hostname = data["hostname"]
-                except:
-                    # Fallback for plain text
-                    self.write(raw_response)
-                    if not raw_response.endswith('\n'):
-                        self.write('\n')
-        except Exception as e:
-            # LOG THE ERROR: Don't just fail silently!
-            try:
-                with open("/var/log/cowrie/ai_errors.log", "a") as f:
-                    f.write(f"[{datetime.now()}] AI Bridge Error ({full_command}): {str(e)}\n")
-            except: pass
-            self.write(f"sh: {full_command}: command not found\n")
+            # IDENTITY SYNC: Update shell hostname if the AI morphed
+            if "hostname" in result and hasattr(self.protocol, 'hostname'):
+                self.protocol.hostname = result["hostname"]
+        else:
+            # Fallback for offline brain
+            self.write(f"bash: {cmd_name}: command not found\n")
 
-# Entry point for Cowrie
+# Entry point for Cowrie - Mapping all common "Intel" commands to AI
 commands = {}
 aicmd = Command_generic_ai
 
-# Map common missing commands to the AI
+# Massive target list for AI deception
 targets = [
-    'python', 'python3', 'pip', 'wget', 'curl',
-    'iptables', 'ip', 'ifconfig', 'tcpdump',
-    'nmap', 'nc', 'netcat', 'gcc', 'g++', 'make',
-    'sudo', 'apt', 'apt-get', 'yum', 'df', 'top',
-    'free', 'uptime', 'dmesg', 'mysql', 'ps', 'hostname', 'uname',
-    # Router-specific commands
-    'nvram', 'show', 'enable', 'configure', 'config',
-    'router', 'wireless', 'vlan', 'interface'
+    'python', 'python3', 'pip', 'wget', 'curl', 'iptables', 'ip', 'ifconfig',
+    'tcpdump', 'nmap', 'nc', 'netcat', 'gcc', 'g++', 'make', 'sudo', 'apt',
+    'apt-get', 'yum', 'df', 'top', 'free', 'uptime', 'dmesg', 'mysql', 'ps',
+    'hostname', 'uname', 'nvram', 'show', 'enable', 'configure', 'config',
+    'router', 'wireless', 'vlan', 'interface', 'ls', 'cat', 'sh', 'bash'
 ]
 
 for t in targets:

@@ -11,6 +11,11 @@ Environment=DEVICE_TYPE=router
 Restart=always
 RestartSec=10
 
+# Zero-Impact Priority (Background only)
+Nice=19
+CPUWeight=20
+IOSchedulingClass=idle
+
 # Security hardening
 NoNewPrivileges=true
 PrivateTmp=true

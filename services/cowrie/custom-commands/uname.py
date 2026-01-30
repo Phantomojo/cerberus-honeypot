@@ -49,3 +49,5 @@ class command_uname(HoneyPotCommand):
 
         # Default to kernel name
         self.write("Linux\n")
+
+commands = {"uname": command_uname}
