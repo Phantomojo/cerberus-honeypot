@@ -1,0 +1,11 @@
+[Unit]
+Description=CERBERUS Auto-Update Timer
+Requires=cerberus-autoupdate.service
+
+[Timer]
+# Run every 10 minutes
+OnBootSec=5min
+OnUnitActiveSec=10min
+
+[Install]
+WantedBy=timers.target

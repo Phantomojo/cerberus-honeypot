@@ -1,5 +1,6 @@
 #ifndef MORPH_H
 #define MORPH_H
+#include <stddef.h>
 
 #define MAX_PROFILES 10
 #define MAX_PROFILE_NAME 64
@@ -17,8 +18,11 @@ typedef struct {
     char kernel_version[MAX_KERNEL_VERSION];
     char arch[MAX_PROFILE_NAME];
     char mac_address[MAX_MAC_ADDR];
+    char shell_prompt[MAX_PROFILE_NAME];
     int memory_mb;
     int cpu_mhz;
+    int is_vulnerable; // 1 = Simulates kernel vulnerabilities
+    char cves[256];    // Comma-separated list of simulated CVEs
 } device_profile_t;
 
 // Profile management
@@ -43,4 +47,3 @@ int generate_session_variations(const device_profile_t* profile);
 int init_morph_engine(const char* config_file, const char* state_file);
 
 #endif // MORPH_H
-

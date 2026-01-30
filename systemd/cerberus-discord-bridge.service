@@ -1,0 +1,23 @@
+[Unit]
+Description=CERBERUS Discord Dashboard Bridge
+After=network.target
+
+[Service]
+Type=simple
+User=ph
+WorkingDirectory=/home/ph/cerberus-honeypot
+ExecStart=/home/ph/cerberus-honeypot/venv/bin/python3 scripts/discord_dashboard_bridge.py
+Restart=always
+RestartSec=10
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=cerberus-discord-bridge
+
+[Install]
+WantedBy=multi-user.target

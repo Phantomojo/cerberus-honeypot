@@ -1,11 +1,13 @@
+#include "quorum.h"
+
+#include "utils.h"
+
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
-#include <ctype.h>
 #include <sys/stat.h>
-#include "quorum.h"
-#include "utils.h"
+#include <time.h>
 
 // Global state
 static ip_tracking_t ip_tracking[MAX_IPS];
@@ -13,27 +15,48 @@ static int ip_count = 0;
 static service_config_t service_configs[MAX_SERVICES];
 static int service_count = 0;
 static char alert_log_path[512] = "build/quorum-alerts.log";
+static char persistence_path[512] = "build/attacker-persistence.txt";
+
+typedef enum { STATE_RECON, STATE_ACCESS, STATE_EXPLOIT, STATE_PERSIST } kill_chain_state_t;
+
+// Forward declaration
+int update_kill_chain_state(const char* ip, int state);
+int add_to_persistence(const char* ip, int profile_index);
+int get_persisted_profile(const char* ip);
+
+static int get_current_profile_index_from_file(void) {
+    char val[32];
+    // This matches morph.c's save_current_profile output
+    if (read_config_value("build/morph-state.txt", "current_profile", val, sizeof(val)) == 0) {
+        return atoi(val);
+    }
+    return 0;
+}
 
 // IP address validation (simple IPv4 check)
 bool is_valid_ip(const char* ip) {
-    if (!ip || strlen(ip) < 7) return false;
-    
+    if (!ip || strlen(ip) < 7)
+        return false;
+
     int parts[4];
     char extra;
     int count = sscanf(ip, "%d.%d.%d.%d%c", &parts[0], &parts[1], &parts[2], &parts[3], &extra);
-    if (count != 4) return false; // Should match exactly 4 numbers, no extra characters
-    
+    if (count != 4)
+        return false; // Should match exactly 4 numbers, no extra characters
+
     for (int i = 0; i < 4; i++) {
-        if (parts[i] < 0 || parts[i] > 255) return false;
+        if (parts[i] < 0 || parts[i] > 255)
+            return false;
     }
-    
+
     return true;
 }
 
 // Extract IP from log line (simple regex-free approach)
 int extract_ip_from_line(const char* line, char* ip_out) {
-    if (!line || !ip_out) return -1;
-    
+    if (!line || !ip_out)
+        return -1;
+
     // Look for IP pattern: digits.digits.digits.digits
     const char* start = line;
     while (*start) {
@@ -41,13 +64,13 @@ int extract_ip_from_line(const char* line, char* ip_out) {
             char ip_candidate[46] = {0};
             int i = 0;
             const char* p = start;
-            
+
             // Try to extract IP-like pattern
             while (i < 45 && *p && (isdigit(*p) || *p == '.')) {
                 ip_candidate[i++] = *p++;
             }
             ip_candidate[i] = '\0';
-            
+
             if (is_valid_ip(ip_candidate)) {
                 strncpy(ip_out, ip_candidate, MAX_IP_STRING - 1);
                 ip_out[MAX_IP_STRING - 1] = '\0';
@@ -56,7 +79,7 @@ int extract_ip_from_line(const char* line, char* ip_out) {
         }
         start++;
     }
-    
+
     return -1;
 }
 
@@ -70,8 +93,9 @@ bool is_ip_in_tracking(const char* ip) {
 }
 
 int add_ip_to_tracking(const char* ip, const char* service) {
-    if (!ip || !service) return -1;
-    
+    if (!ip || !service)
+        return -1;
+
     // Find existing IP or create new entry
     ip_tracking_t* entry = NULL;
     for (int i = 0; i < ip_count; i++) {
@@ -80,7 +104,7 @@ int add_ip_to_tracking(const char* ip, const char* service) {
             break;
         }
     }
-    
+
     if (!entry) {
         if (ip_count >= MAX_IPS) {
             log_event_level(LOG_WARN, "IP tracking table full");
@@ -91,9 +115,24 @@ int add_ip_to_tracking(const char* ip, const char* service) {
         entry->ip[MAX_IP_STRING - 1] = '\0';
         entry->service_count = 0;
         entry->hit_count = 0;
+        entry->intensity = 0.0f;
         entry->first_seen = time(NULL);
+        entry->last_hit_time = 0;
     }
-    
+
+    time_t now = time(NULL);
+    // Apply intensity decay (factor of 0.5 every 15 minutes of inactivity)
+    if (entry->last_hit_time > 0) {
+        double elapsed = difftime(now, entry->last_hit_time);
+        if (elapsed > 900.0) { // 15 minutes
+            entry->intensity *= 0.5f;
+        }
+    }
+
+    // Increase intensity
+    entry->intensity += 1.0f;
+    entry->last_hit_time = now;
+
     // Check if service already recorded
     bool service_exists = false;
     for (int i = 0; i < entry->service_count; i++) {
@@ -102,16 +141,16 @@ int add_ip_to_tracking(const char* ip, const char* service) {
             break;
         }
     }
-    
+
     if (!service_exists && entry->service_count < MAX_SERVICES) {
         strncpy(entry->services[entry->service_count], service, MAX_SERVICE_NAME - 1);
         entry->services[entry->service_count][MAX_SERVICE_NAME - 1] = '\0';
         entry->service_count++;
     }
-    
+
     entry->last_seen = time(NULL);
     entry->hit_count++;
-    
+
     return 0;
 }
 
@@ -119,40 +158,47 @@ int parse_log_file(const char* filepath, const char* service_name) {
     if (!file_exists(filepath)) {
         return 0; // File doesn't exist, not an error
     }
-    
+
     FILE* f = fopen(filepath, "r");
     if (!f) {
         log_event_level(LOG_WARN, "Failed to open log file");
         return -1;
     }
-    
+
     char line[MAX_LOG_LINE];
     int ip_count_before = ip_count;
-    
+
     // Read last N lines (simple approach - in production, use tail or seek)
     // For now, read all lines but only process recent ones
     while (fgets(line, sizeof(line), f)) {
         char ip[MAX_IP_STRING];
         if (extract_ip_from_line(line, ip) == 0) {
             add_ip_to_tracking(ip, service_name);
+
+            // KILL CHAIN: Detect escalation based on command patterns in the log
+            if (strstr(line, "wget") || strstr(line, "curl") || strstr(line, "Shadow")) {
+                update_kill_chain_state(ip, 2); // EXPLOIT
+            } else if (strstr(line, "ssh-keygen") || strstr(line, "crontab")) {
+                update_kill_chain_state(ip, 3); // PERSIST
+            }
         }
     }
-    
+
     fclose(f);
-    
+
     int new_ips = ip_count - ip_count_before;
     if (new_ips > 0) {
         char msg[256];
         snprintf(msg, sizeof(msg), "Found %d IP(s) in %s logs", new_ips, service_name);
         log_event_level(LOG_DEBUG, msg);
     }
-    
+
     return 0;
 }
 
 int scan_logs_for_ips(void) {
     log_event_level(LOG_INFO, "Scanning logs for IP addresses");
-    
+
     // Default log locations if no config loaded
     if (service_count == 0) {
         // Add default services
@@ -160,36 +206,110 @@ int scan_logs_for_ips(void) {
         add_service_config("router-web", "services/fake-router-web/logs/access.log");
         add_service_config("camera-web", "services/fake-camera-web/logs/access.log");
     }
-    
+
     // Scan each service's logs
     for (int i = 0; i < service_count; i++) {
         if (service_configs[i].enabled) {
             parse_log_file(service_configs[i].log_path, service_configs[i].name);
         }
     }
-    
+
     char msg[256];
     snprintf(msg, sizeof(msg), "Total unique IPs tracked: %d", ip_count);
     log_event_level(LOG_INFO, msg);
-    
+
     return ip_count;
+}
+
+int detect_lateral_movement(void) {
+    int lateral_alerts = 0;
+    const char* lateral_keywords[] = {"nmap", "ping", "arp", "route", "netstat", "ssh ", "telnet "};
+    const char* internal_ranges[] = {"172.17.", "192.168.", "10.0."};
+    int kw_count = sizeof(lateral_keywords) / sizeof(char*);
+    int range_count = sizeof(internal_ranges) / sizeof(char*);
+
+    log_event_level(LOG_INFO, "Scanning for lateral movement attempts...");
+
+    // We scan the tracking entries directly if they contain command context,
+    // but better yet, we parse the last log cycle for these patterns specifically.
+    // For Pillar 2, we implement a specific cross-module check.
+
+    for (int i = 0; i < ip_count; i++) {
+        ip_tracking_t* entry = &ip_tracking[i];
+
+        // This is a placeholder for deep packet/command inspection
+        // In a real micro-net, we'd check if this IP is trying to touch
+        // internal neighbors.
+
+        // Placeholder check for high hit counts on single IPs often indicates
+        // internal enumeration attempts.
+        if (entry->hit_count > 50 && entry->service_count == 1) {
+            char alert[512];
+            snprintf(alert,
+                     sizeof(alert),
+                     "ALERT: Potential Lateral Enumeration detected from %s\n"
+                     "  Signature: Internal Port Sweeping\n---\n",
+                     entry->ip);
+            log_event_file(LOG_WARN, alert_log_path, alert);
+            lateral_alerts++;
+        }
+    }
+
+    return lateral_alerts;
+}
+
+static int emit_morph_signal(const char* ip, int services_hit) {
+    create_dir("build/signals");
+    char signal_path[] = "build/signals/emergency_morph.signal";
+    char content[512];
+    snprintf(content,
+             sizeof(content),
+             "type=coordinated_attack\n"
+             "attacker_ip=%s\n"
+             "services_hit=%d\n"
+             "timestamp=%ld\n",
+             ip,
+             services_hit,
+             time(NULL));
+
+    if (write_file(signal_path, content) == 0) {
+        log_event_level(LOG_INFO, "Emergency morph signal emitted");
+        return 0;
+    }
+    return -1;
 }
 
 int detect_coordinated_attacks(void) {
     int alert_count = 0;
-    
+
     log_event_level(LOG_INFO, "Detecting coordinated attacks");
-    
+
     for (int i = 0; i < ip_count; i++) {
         ip_tracking_t* entry = &ip_tracking[i];
-        
-        // Coordinated attack: IP hitting multiple services
+
+        // SMART QUORUM LOGIC:
+        // 1. IP hits multiple services (Coordinated Probe)
+        // 2. IP hits one service but reaches EXPLOIT stage
+        // 3. New: High-intensity rapid probing (> 10 intensity/burst)
+
+        bool alert_needed = false;
         if (entry->service_count >= 2) {
+            alert_needed = true; // Coordinated across services
+        } else if (entry->kill_chain_state >= 2) {
+            alert_needed = true; // Exploit attempt
+        } else if (entry->intensity > 15.0f) {
+            alert_needed = true; // Rapid spam/hammering
+        }
+
+        if (alert_needed) {
             generate_alert(entry);
+            emit_morph_signal(entry->ip, entry->service_count);
             alert_count++;
+            // Reset intensity after alert to prevent spamming the dashboard
+            entry->intensity = 0.0f;
         }
     }
-    
+
     if (alert_count > 0) {
         char msg[256];
         snprintf(msg, sizeof(msg), "Detected %d potential coordinated attack(s)", alert_count);
@@ -197,46 +317,56 @@ int detect_coordinated_attacks(void) {
     } else {
         log_event_level(LOG_INFO, "No coordinated attacks detected");
     }
-    
+
     return alert_count;
 }
 
 int generate_alert(const ip_tracking_t* ip_track) {
-    if (!ip_track) return -1;
-    
+    if (!ip_track)
+        return -1;
+
     char alert[1024];
     char time_str[64];
     struct tm* tm_info = localtime(&ip_track->last_seen);
     strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S", tm_info);
-    
+
     // Build services list
     char services_list[512] = {0};
     for (int i = 0; i < ip_track->service_count; i++) {
-        if (i > 0) strcat(services_list, ", ");
-        strcat(services_list, ip_track->services[i]);
+        if (i > 0) {
+            size_t cur = strlen(services_list);
+            size_t rem = (sizeof(services_list) > cur + 1) ? (sizeof(services_list) - 1 - cur) : 0;
+            strncat(services_list, ", ", rem);
+        }
+        {
+            size_t cur = strlen(services_list);
+            size_t rem = (sizeof(services_list) > cur + 1) ? (sizeof(services_list) - 1 - cur) : 0;
+            strncat(services_list, ip_track->services[i], rem);
+        }
     }
-    
-    snprintf(alert, sizeof(alert),
-        "ALERT: Coordinated attack detected\n"
-        "  IP: %s\n"
-        "  Services hit: %s (%d services)\n"
-        "  Total hits: %d\n"
-        "  First seen: %s\n"
-        "  Last seen: %s\n"
-        "---\n",
-        ip_track->ip,
-        services_list,
-        ip_track->service_count,
-        ip_track->hit_count,
-        ctime(&ip_track->first_seen),
-        time_str);
-    
+
+    snprintf(alert,
+             sizeof(alert),
+             "ALERT: Coordinated attack detected\n"
+             "  IP: %s\n"
+             "  Services hit: %s (%d services)\n"
+             "  Total hits: %d\n"
+             "  First seen: %s\n"
+             "  Last seen: %s\n"
+             "---\n",
+             ip_track->ip,
+             services_list,
+             ip_track->service_count,
+             ip_track->hit_count,
+             ctime(&ip_track->first_seen),
+             time_str);
+
     // Log to file
     log_event_file(LOG_WARN, alert_log_path, alert);
-    
+
     // Also print to stdout
     printf("\n%s", alert);
-    
+
     return 0;
 }
 
@@ -245,19 +375,20 @@ int load_service_configs(const char* config_file) {
         log_event_level(LOG_DEBUG, "Service config file not found, using defaults");
         return 0;
     }
-    
+
     FILE* f = fopen(config_file, "r");
     if (!f) {
         return -1;
     }
-    
+
     service_count = 0;
     char line[512];
-    
+
     while (fgets(line, sizeof(line), f) && service_count < MAX_SERVICES) {
         trim_string(line);
-        if (line[0] == '#' || line[0] == '\0') continue;
-        
+        if (line[0] == '#' || line[0] == '\0')
+            continue;
+
         char* eq = strchr(line, '=');
         if (eq) {
             *eq = '\0';
@@ -265,11 +396,11 @@ int load_service_configs(const char* config_file) {
             char* path = eq + 1;
             trim_string(name);
             trim_string(path);
-            
+
             add_service_config(name, path);
         }
     }
-    
+
     fclose(f);
     return service_count;
 }
@@ -278,14 +409,14 @@ int add_service_config(const char* name, const char* log_path) {
     if (service_count >= MAX_SERVICES) {
         return -1;
     }
-    
+
     service_config_t* config = &service_configs[service_count++];
     strncpy(config->name, name, MAX_SERVICE_NAME - 1);
     config->name[MAX_SERVICE_NAME - 1] = '\0';
     strncpy(config->log_path, log_path, MAX_LOG_LINE - 1);
     config->log_path[MAX_LOG_LINE - 1] = '\0';
     config->enabled = true;
-    
+
     return 0;
 }
 
@@ -303,30 +434,81 @@ ip_tracking_t* get_tracked_ip(int index) {
 int run_quorum_logic(void) {
     // Clear previous tracking (or implement time-based expiration)
     // For now, we'll accumulate across runs
-    
+
     // Scan logs
     scan_logs_for_ips();
-    
+
     // Detect coordinated attacks
     int alert_count = detect_coordinated_attacks();
-    
+
+    // Pillar 2: Lateral Movement Detection
+    alert_count += detect_lateral_movement();
+
+    // Persistence: Record identities for active attackers
+    int current_index = get_current_profile_index_from_file();
+    for (int i = 0; i < ip_count; i++) {
+        if (ip_tracking[i].service_count > 0) {
+            // If they are deep into the kill chain, ensure they are pinned
+            add_to_persistence(ip_tracking[i].ip, current_index);
+        }
+    }
+
     return alert_count;
+}
+
+int update_kill_chain_state(const char* ip, int state) {
+    for (int i = 0; i < ip_count; i++) {
+        if (strcmp(ip_tracking[i].ip, ip) == 0) {
+            // Only update if it's an escalation
+            if (state > ip_tracking[i].kill_chain_state) {
+                ip_tracking[i].kill_chain_state = state;
+                char msg[256];
+                snprintf(
+                    msg, sizeof(msg), "KILL CHAIN ESCALATION: IP %s moved to state %d", ip, state);
+                log_event_level(LOG_WARN, msg);
+
+                // If it hits EXPLOIT or PERSIST, emit a high-priority signal
+                if (state >= 2) {
+                    emit_morph_signal(ip, ip_tracking[i].service_count);
+                }
+            }
+            return 0;
+        }
+    }
+    return -1;
+}
+
+int add_to_persistence(const char* ip, int profile_index) {
+    char entry[128];
+    snprintf(entry, sizeof(entry), "%s=%d\n", ip, profile_index);
+    log_event_file(LOG_INFO, persistence_path, entry);
+    return 0;
+}
+
+int get_persisted_profile(const char* ip) {
+    if (!file_exists(persistence_path))
+        return -1;
+    char val[32];
+    if (read_config_value(persistence_path, ip, val, sizeof(val)) == 0) {
+        return atoi(val);
+    }
+    return -1;
 }
 
 int main(int argc, char* argv[]) {
     printf("Bio-Adaptive IoT Honeynet Quorum Engine\n");
-    
+
     // Load service configs if provided
     if (argc > 1) {
         load_service_configs(argv[1]);
     }
-    
+
     time_t now = time(NULL);
     printf("Quorum check: Checking logs at %s", ctime(&now));
-    
+
     int alert_count = run_quorum_logic();
-    
+
     printf("\nQuorum check complete. Alerts: %d\n", alert_count);
-    
+
     return (alert_count > 0) ? 1 : 0;
 }

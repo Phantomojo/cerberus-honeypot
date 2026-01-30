@@ -1,0 +1,21 @@
+FROM python:3.9-slim
+
+# Install system dependencies (Docker CLI for control)
+RUN apt-get update && apt-get install -y \
+    docker.io \
+    procps \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Install Python deps
+RUN pip install flask psutil
+
+# Copy script
+COPY scripts/web_dashboard.py /app/dashboard.py
+
+# Expose
+EXPOSE 5000
+
+# Run
+CMD ["python3", "/app/dashboard.py"]

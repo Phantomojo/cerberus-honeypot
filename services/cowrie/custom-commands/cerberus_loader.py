@@ -10,45 +10,84 @@ from typing import Optional
 
 # Path to Cerberus dynamic outputs (inside Cowrie container)
 CERBERUS_DYNAMIC = "/data/cowrie-dynamic"
+ATTACKER_PERSISTENCE = "/data/attacker-persistence.txt"
 
-def load_cerberus_output(command_name: str, args: list = None) -> Optional[str]:
+def get_persisted_profile_index(ip: str) -> Optional[int]:
+    """Check if an IP has a persisted profile assigned."""
+    if not os.path.exists(ATTACKER_PERSISTENCE):
+        return None
+    try:
+        with open(ATTACKER_PERSISTENCE, 'r') as f:
+            for line in f:
+                if line.startswith(f"{ip}="):
+                    return int(line.strip().split('=')[1])
+    except Exception:
+        pass
+    return None
+
+def get_current_profile_name() -> str:
+    """Read the current profile name from cowrie-dynamic os-release."""
+    try:
+        path = os.path.join(CERBERUS_DYNAMIC, "bin", "os-release")
+        if os.path.exists(path):
+            with open(path, 'r') as f:
+                for line in f:
+                    if line.startswith("NAME="):
+                        return line.strip().split('=')[1].strip('"')
+    except Exception:
+        pass
+    return "Generic Device"
+
+def load_cerberus_output(command_name: str, args: list = None, ip: str = None) -> Optional[str]:
     """
     Load command output from Cerberus dynamic files.
-    
-    Args:
-        command_name: Name of the command (e.g., 'docker', 'systemctl')
-        args: Command arguments (for commands that have different outputs based on args)
-    
-    Returns:
-        Command output as string, or None if not found
     """
+    base_path = CERBERUS_DYNAMIC
+
+    # Check for persistence if IP is provided
+    if ip:
+        index = get_persisted_profile_index(ip)
+        if index is not None:
+            # Try to load from the persisted profile stash
+            persisted_path = os.path.join(CERBERUS_DYNAMIC, "profiles", str(index))
+            if os.path.exists(persisted_path):
+                base_path = persisted_path
+
     # Try bin/ first
-    path = os.path.join(CERBERUS_DYNAMIC, "bin", command_name)
+    path = os.path.join(base_path, "bin", command_name)
     if os.path.exists(path):
         try:
             with open(path, 'r') as f:
                 return f.read()
         except Exception:
             pass
-    
+
     # Try usr/bin/
-    path = os.path.join(CERBERUS_DYNAMIC, "usr/bin", command_name)
+    path = os.path.join(base_path, "usr/bin", command_name)
     if os.path.exists(path):
         try:
             with open(path, 'r') as f:
                 return f.read()
         except Exception:
             pass
-    
+
     return None
+
+def get_current_arch() -> str:
+    """Read the current morphed architecture from cowrie-dynamic bin directory."""
+    try:
+        path = os.path.join(CERBERUS_DYNAMIC, "bin", "uname_m")
+        if os.path.exists(path):
+            with open(path, 'r') as f:
+                return f.read().strip()
+    except Exception:
+        pass
+    return "mips"
 
 
 def load_network_config() -> Optional[dict]:
     """
     Load Cerberus network configuration.
-    
-    Returns:
-        Network config dict, or None if not found
     """
     config_path = os.path.join(CERBERUS_DYNAMIC, "network-config.json")
     if os.path.exists(config_path):
@@ -63,9 +102,6 @@ def load_network_config() -> Optional[dict]:
 def load_behavior_config() -> Optional[dict]:
     """
     Load Cerberus behavioral adaptation config.
-    
-    Returns:
-        Behavior config dict, or None if not found
     """
     config_path = os.path.join(CERBERUS_DYNAMIC, "behavior.conf")
     if os.path.exists(config_path):
@@ -85,4 +121,3 @@ def load_behavior_config() -> Optional[dict]:
 def cerberus_available() -> bool:
     """Check if Cerberus dynamic directory exists."""
     return os.path.exists(CERBERUS_DYNAMIC)
-

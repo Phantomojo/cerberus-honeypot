@@ -11,9 +11,11 @@ services:
       - "2222:2222" # SSH (mapped to non-standard port)
       - "2323:2323" # Telnet (mapped to non-standard port)
     volumes:
-      - ../services/cowrie/data:/data
-      - ../services/cowrie/logs:/var/log/cowrie
-      - ../services/cowrie/etc:/etc/cowrie
+      - ../services/cowrie/data:/cowrie/cowrie-git/var/lib/cowrie/data
+      - ../services/cowrie/logs:/cowrie/cowrie-git/var/log/cowrie:rw
+      - ../services/cowrie/etc/cowrie.cfg:/cowrie/cowrie-git/etc/cowrie.cfg:ro
+      - ../services/cowrie/etc/cowrie.cfg.local:/cowrie/cowrie-git/etc/cowrie.cfg.local:ro
+      - ../services/cowrie/etc/userdb.txt:/cowrie/cowrie-git/etc/userdb.txt:ro
       - ../services/cowrie/honeyfs:/cowrie/cowrie-git/share/cowrie/honeyfs:rw
       - ../build/cowrie-dynamic:/data/cowrie-dynamic:ro
     environment:
@@ -35,7 +37,7 @@ services:
     container_name: cerberus-router-web
     restart: unless-stopped
     ports:
-      - "80:80"
+      - "8081:80"
     volumes:
       - ../services/fake-router-web/html:/usr/share/nginx/html:ro
     networks:
@@ -88,7 +90,57 @@ services:
       - fake-router-web
       - fake-camera-web
     profiles:
-      - dashboard # Only start with: docker compose --profile dashboard up
+      - dashboard
+
+  # HoneyGPT AI Deception Layer
+  honeygpt:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.honeygpt
+    container_name: cerberus-honeygpt
+    restart: unless-stopped
+    volumes:
+      - ../build:/app/build:rw
+      - ../services/cowrie/logs:/var/log/cowrie:ro
+    ports:
+      - "50051:50051"
+    environment:
+      - OLLAMA_URL=http://host.docker.internal:11434/api/generate
+      - MODEL_NAME=qwen2.5:3b-instruct-q4_K_M
+      - DEVICE_TYPE=router
+    networks:
+      - cerberus-net
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - cowrie
+
+  # Adaptive Morphing Watchdog
+  watchdog:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.watchdog
+    container_name: cerberus-watchdog
+    restart: unless-stopped
+    volumes:
+      - ..:/app
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - cowrie
+    networks:
+      - cerberus-net
+
+  # Passive OS Fingerprinting
+  p0f:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.p0f
+    container_name: cerberus-p0f
+    restart: unless-stopped
+    command: "-i eth0 -o /var/log/p0f.json -f /etc/p0f/p0f.fp"
+    network_mode: "service:cowrie" # Share network stack to see Cowrie traffic
+    volumes:
+      - ../services/cowrie/logs:/var/log:rw # Share logs with Dashboard
 
 networks:
   cerberus-net:

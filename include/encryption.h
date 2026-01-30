@@ -28,19 +28,19 @@ typedef enum {
 // Encryption context
 typedef struct {
     crypt_algorithm_t algorithm;
-    uint8_t key[32];                    // Encryption key
-    uint8_t iv[12];                     // Initialization vector
-    uint8_t aad[64];                   // Additional authenticated data
-    size_t aad_len;                   // Length of AAD
-    bool key_set;                      // Whether key is set
-    bool initialized;                  // Whether context is initialized
+    uint8_t key[32];  // Encryption key
+    uint8_t iv[12];   // Initialization vector
+    uint8_t aad[64];  // Additional authenticated data
+    size_t aad_len;   // Length of AAD
+    bool key_set;     // Whether key is set
+    bool initialized; // Whether context is initialized
 } crypt_context_t;
 
 // Key derivation
 typedef struct {
-    uint8_t salt[16];                   // Salt for key derivation
-    uint32_t iterations;                 // PBKDF2 iterations
-    uint8_t info[32];                   // Context info for key derivation
+    uint8_t salt[16];    // Salt for key derivation
+    uint32_t iterations; // PBKDF2 iterations
+    uint8_t info[32];    // Context info for key derivation
 } crypt_key_derivation_t;
 
 // Encryption constants
@@ -48,7 +48,7 @@ typedef struct {
 #define CRYPT_MAX_IV_SIZE 12
 #define CRYPT_MAX_AAD_SIZE 64
 #define CRYPT_MAX_PLAINTEXT_SIZE 4096
-#define CRYPT_MAX_CIPHERTEXT_SIZE (CRYPT_MAX_PLAINTEXT_SIZE + 16)  // +16 for GCM tag
+#define CRYPT_MAX_CIPHERTEXT_SIZE (CRYPT_MAX_PLAINTEXT_SIZE + 16) // +16 for GCM tag
 #define CRYPT_PBKDF2_ITERATIONS 100000
 #define CRYPT_KEY_DERIVATION_INFO "cerberus-honeypot-v1"
 
@@ -56,13 +56,21 @@ typedef struct {
 crypt_result_t crypt_init(crypt_context_t* ctx, crypt_algorithm_t algorithm);
 crypt_result_t crypt_set_key(crypt_context_t* ctx, const uint8_t* key, size_t key_len);
 crypt_result_t crypt_set_aad(crypt_context_t* ctx, const uint8_t* aad, size_t aad_len);
-crypt_result_t crypt_encrypt(const crypt_context_t* ctx, const uint8_t* plaintext, size_t plaintext_len,
-                        uint8_t* ciphertext, size_t* ciphertext_len);
-crypt_result_t crypt_decrypt(const crypt_context_t* ctx, const uint8_t* ciphertext, size_t ciphertext_len,
-                        uint8_t* plaintext, size_t* plaintext_len);
-crypt_result_t crypt_derive_key(const uint8_t* password, size_t password_len,
-                           const crypt_key_derivation_t* derivation,
-                           uint8_t* key, size_t* key_len);
+crypt_result_t crypt_encrypt(const crypt_context_t* ctx,
+                             const uint8_t* plaintext,
+                             size_t plaintext_len,
+                             uint8_t* ciphertext,
+                             size_t* ciphertext_len);
+crypt_result_t crypt_decrypt(const crypt_context_t* ctx,
+                             const uint8_t* ciphertext,
+                             size_t ciphertext_len,
+                             uint8_t* plaintext,
+                             size_t* plaintext_len);
+crypt_result_t crypt_derive_key(const uint8_t* password,
+                                size_t password_len,
+                                const crypt_key_derivation_t* derivation,
+                                uint8_t* key,
+                                size_t* key_len);
 crypt_result_t crypt_generate_random_bytes(uint8_t* buffer, size_t len);
 crypt_result_t crypt_secure_zero_memory(void* ptr, size_t len);
 bool crypt_is_algorithm_supported(crypt_algorithm_t algorithm);

@@ -1,0 +1,11 @@
+Jan 15 18:26:49 device-hostname kernel: Linux version
+Jan 15 17:57:42 device-hostname kernel: dnsmasq[%d]: query[A] google.com from 192.168.1.50
+Jan 15 17:43:31 device-hostname kernel: dnsmasq[%d]: listening on 192.168.1.1#53
+Jan 15 17:54:30 device-hostname kernel: cron[%d]: (root) CMD (run-parts --report-only /etc/cron.daily)
+Jan 15 18:04:35 device-hostname kernel: sshd[%d]: Invalid user admin from 192.168.1.105 port 43251
+Jan 15 18:20:38 device-hostname kernel: cron[%d]: (root) CMD (run-parts --report-only /etc/cron.daily)
+Jan 15 17:42:29 device-hostname kernel: kernel: [12345.678901] Out of memory: Kill process %d (%s) score %u or sacrifice child
+Jan 15 18:23:57 device-hostname sshd: dnsmasq[%d]: query[A] google.com from 192.168.1.50
+Jan 15 18:21:42 device-hostname sshd: sshd[%d]: Invalid user admin from 192.168.1.105 port 43251
+Jan 15 18:05:31 device-hostname kernel: dnsmasq[%d]: listening on 192.168.1.1#53
+Jan 15 17:36:34 device-hostname kernel: sshd[%d]: Invalid user admin from 192.168.1.105 port 43251

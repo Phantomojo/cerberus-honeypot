@@ -114,7 +114,7 @@ This repository uses automated security scanning:
 
 We thank all security researchers who have responsibly disclosed vulnerabilities:
 
-<!-- 
+<!--
 Add acknowledged researchers here:
 - Name/Handle - Description of finding (date)
 -->

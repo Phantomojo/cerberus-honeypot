@@ -17,4 +17,3 @@ EXPOSE 5000
 
 # Placeholder command
 CMD ["python", "-c", "print('Dashboard not yet implemented')"]
-

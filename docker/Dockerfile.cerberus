@@ -1,10 +1,20 @@
 FROM cowrie/cowrie:latest
 
-# Copy Cerberus custom command handlers
-COPY services/cowrie/custom-commands/cerberus_loader.py /cowrie/cowrie-git/src/cowrie/commands/
-COPY services/cowrie/custom-commands/docker.py /cowrie/cowrie-git/src/cowrie/commands/
-COPY services/cowrie/custom-commands/systemctl.py /cowrie/cowrie-git/src/cowrie/commands/
-COPY services/cowrie/custom-commands/route.py /cowrie/cowrie-git/src/cowrie/commands/
+# Copy Cerberus custom command handlers with correct ownership
+COPY --chown=cowrie:cowrie services/cowrie/custom-commands/uname.py /cowrie/cowrie-git/src/cowrie/commands/
+COPY --chown=cowrie:cowrie services/cowrie/custom-commands/cerberus_loader.py /cowrie/cowrie-git/src/cowrie/commands/
+COPY --chown=cowrie:cowrie services/cowrie/custom-commands/docker.py /cowrie/cowrie-git/src/cowrie/commands/
+COPY --chown=cowrie:cowrie services/cowrie/custom-commands/systemctl.py /cowrie/cowrie-git/src/cowrie/commands/
+COPY --chown=cowrie:cowrie services/cowrie/custom-commands/route.py /cowrie/cowrie-git/src/cowrie/commands/
+COPY --chown=cowrie:cowrie services/cowrie/custom-commands/generic_ai.py /cowrie/cowrie-git/src/cowrie/commands/
+COPY --chown=cowrie:cowrie services/cowrie/custom-commands/cerberus_ai_bridge.py /cowrie/cowrie-git/src/cowrie/commands/
+COPY --chown=cowrie:cowrie services/cowrie/custom-commands/cat.py /cowrie/cowrie-git/src/cowrie/commands/
+COPY --chown=cowrie:cowrie services/cowrie/custom-commands/ghost_gen.py /cowrie/cowrie-git/src/cowrie/commands/
+COPY --chown=cowrie:cowrie services/cowrie/custom-commands/ai_cmd.py /cowrie/cowrie-git/src/cowrie/commands/
+
+USER cowrie
+WORKDIR /cowrie/cowrie-git
+ENV PYTHONPATH="/cowrie/cowrie-git/src:${PYTHONPATH}"
 
 # Label for identification
 LABEL maintainer="CERBERUS Project"

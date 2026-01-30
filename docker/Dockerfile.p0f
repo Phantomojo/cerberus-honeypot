@@ -1,0 +1,4 @@
+FROM debian:stable-slim
+RUN apt-get update && apt-get install -y p0f && rm -rf /var/lib/apt/lists/*
+ENTRYPOINT ["p0f"]
+CMD ["-i", "eth0", "-o", "/var/log/p0f.json", "-f", "/etc/p0f/p0f.fp"]

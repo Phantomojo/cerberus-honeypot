@@ -36,6 +36,8 @@ set -e
 HONEYFS_DIR="${1:-services/cowrie/honeyfs}"
 PROFILE_TYPE="${2:-router}"  # "router" or "camera"
 DEVICE_NAME="${3:-Generic_Device}"
+GHOST_KERNEL="${4:-}"        # NEW: Explicit kernel from harvester
+GHOST_ARCH="${5:-}"          # NEW: Explicit arch from harvester
 
 # Colors (because pretty output helps debugging)
 GREEN='\033[0;32m'
@@ -183,7 +185,13 @@ echo ""
 echo -e "${YELLOW}[1/10] Creating directory structure...${NC}"
 
 # Clear existing honeyfs (fresh start each time - part of the randomness!)
-rm -rf "${HONEYFS_DIR:?}"/*
+if [ -d "${HONEYFS_DIR}" ]; then
+    rm -rf "${HONEYFS_DIR}"/* 2>/dev/null || {
+        echo -e "${YELLOW}[!] Warning: Some files in ${HONEYFS_DIR} are locked (Permission Denied).${NC}"
+        echo -e "${YELLOW}[!] This usually happens if Docker created them as root.${NC}"
+        echo -e "${YELLOW}[!] Recommended fix: sudo chown -R \$USER:\$USER ${HONEYFS_DIR}${NC}"
+    }
+fi
 
 # Standard directories (always exist)
 mkdir -p "${HONEYFS_DIR}"/{bin,sbin,usr/bin,usr/sbin,usr/lib}
@@ -526,7 +534,7 @@ echo -e "${YELLOW}[5/10] Creating /proc filesystem...${NC}"
 
 # /proc/version - Kernel version (randomized build date)
 KERNEL_VERSIONS=("3.10.49" "3.4.35" "3.0.8" "2.6.36" "4.4.60" "4.9.37" "3.18.20")
-KERNEL_VER=$(rand_element "${KERNEL_VERSIONS[@]}")
+KERNEL_VER=${GHOST_KERNEL:-$(rand_element "${KERNEL_VERSIONS[@]}")}
 BUILD_DATE=$(date -d "@${BOOT_TIME}" '+%a %b %d %H:%M:%S UTC %Y' 2>/dev/null || date '+%a %b %d %H:%M:%S UTC %Y')
 GCC_VERS=("4.6.3" "4.8.3" "5.4.0" "6.3.0")
 GCC_VER=$(rand_element "${GCC_VERS[@]}")
@@ -535,8 +543,10 @@ cat > "${HONEYFS_DIR}/proc/version" << EOF
 Linux version ${KERNEL_VER} (buildroot@builder) (gcc version ${GCC_VER}) #1 SMP PREEMPT ${BUILD_DATE}
 EOF
 
-# /proc/cpuinfo - Varies by device type
-if [ "$PROFILE_TYPE" = "camera" ]; then
+# /proc/cpuinfo - Varies by device type and arch
+# Prefer GHOST_ARCH if provided
+CURRENT_ARCH=${GHOST_ARCH:-$PROFILE_TYPE}
+if [[ "$CURRENT_ARCH" == *"arm"* ]] || [[ "$CURRENT_ARCH" == "camera" ]] || [[ "$CURRENT_ARCH" == "aarch64" ]]; then
     CPU_MODELS=("Hi3516CV300" "Hi3516EV100" "Hi3518EV200" "GM8136S" "SSC335")
     CPU_MODEL=$(rand_element "${CPU_MODELS[@]}")
     BOGOMIPS=$(printf "%.2f" $(echo "scale=2; $(rand_between 500 1500) / 100" | bc 2>/dev/null || echo "6.00"))
@@ -618,8 +628,10 @@ rand_bool 15 && echo "/dev/sda1 /mnt/usb vfat rw,noatime 0 0" >> "${HONEYFS_DIR}
 rand_bool 20 && echo "/dev/mmcblk0p1 /mnt/sd vfat rw,noatime 0 0" >> "${HONEYFS_DIR}/proc/mounts"
 
 # /proc/net/dev - Network stats
+mkdir -p "${HONEYFS_DIR}/proc/net"
 cat > "${HONEYFS_DIR}/proc/net/dev" << EOF
 Inter-|   Receive                                                |  Transmit
  face |bytes    packets errs drop fifo frame compressed multicast|bytes    packets errs drop fifo colls carrier compressed
     lo:$(rand_between 10000 99999)    $(rand_between 100 999)    0    0    0     0          0         0 $(rand_between 10000 99999)    $(rand_between 100 999)    0    0    0     0       0          0
   eth0:$(rand_between 1000000 99999999) $(rand_between 10000 99999)    0    0    0     0          0         0 $(rand_between 100000 9999999) $(rand_between 1000 99999)    0    0    0     0
+EOF

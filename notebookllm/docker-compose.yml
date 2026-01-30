@@ -1,0 +1,136 @@
+services:
+  # Cowrie SSH/Telnet Honeypot
+  cowrie:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.cerberus
+    image: cerberus-cowrie:latest
+    container_name: cerberus-cowrie
+    restart: unless-stopped
+    ports:
+      - "2222:2222" # SSH (mapped to non-standard port)
+      - "2323:2323" # Telnet (mapped to non-standard port)
+    volumes:
+      - ../services/cowrie/data:/cowrie/cowrie-git/var/lib/cowrie/data
+      - ../services/cowrie/logs:/cowrie/cowrie-git/var/log/cowrie:rw
+      - ../services/cowrie/etc/cowrie.cfg:/cowrie/cowrie-git/etc/cowrie.cfg:ro
+      - ../services/cowrie/etc/cowrie.cfg.local:/cowrie/cowrie-git/etc/cowrie.cfg.local:ro
+      - ../services/cowrie/etc/userdb.txt:/cowrie/cowrie-git/etc/userdb.txt:ro
+      - ../services/cowrie/honeyfs:/cowrie/cowrie-git/share/cowrie/honeyfs:rw
+      - ../build/cowrie-dynamic:/data/cowrie-dynamic:ro
+    environment:
+      - COWRIE_SSH_PORT=2222
+      - COWRIE_TELNET_PORT=2323
+    env_file:
+      - ../services/cowrie/etc/cowrie.env
+    networks:
+      - cerberus-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Fake Router Web UI (nginx)
+  fake-router-web:
+    image: nginx:alpine
+    container_name: cerberus-router-web
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ../services/fake-router-web/html:/usr/share/nginx/html:ro
+    networks:
+      - cerberus-net
+    depends_on:
+      - cowrie
+
+  # Fake Camera Web UI (nginx)
+  fake-camera-web:
+    image: nginx:alpine
+    container_name: cerberus-camera-web
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - ../services/fake-camera-web/html:/usr/share/nginx/html:ro
+    networks:
+      - cerberus-net
+    depends_on:
+      - rtsp-server
+
+  # RTSP Server (MediaMTX - formerly rtsp-simple-server)
+  rtsp-server:
+    image: bluenviron/mediamtx:latest
+    container_name: cerberus-rtsp
+    restart: unless-stopped
+    ports:
+      - "554:554" # RTSP
+      - "8554:8554" # RTSP alternative
+      - "1935:1935" # RTMP
+    networks:
+      - cerberus-net
+
+  # Dashboard (Optional - Flask)
+  dashboard:
+    build:
+      context: ../dashboard
+      dockerfile: Dockerfile
+    container_name: cerberus-dashboard
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    volumes:
+      - ../logs:/app/logs:ro
+      - ../build:/app/build:ro
+    networks:
+      - cerberus-net
+    depends_on:
+      - cowrie
+      - fake-router-web
+      - fake-camera-web
+    profiles:
+      - dashboard
+
+  # HoneyGPT AI Deception Layer
+  honeygpt:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.honeygpt
+    container_name: cerberus-honeygpt
+    restart: unless-stopped
+    volumes:
+      - ../build:/app/build:rw
+      - ../services/cowrie/logs:/var/log/cowrie:ro
+    ports:
+      - "50051:50051"
+    environment:
+      - OLLAMA_URL=http://host.docker.internal:11434/api/generate
+      - MODEL_NAME=qwen2.5:3b-instruct-q4_K_M
+      - DEVICE_TYPE=router
+    networks:
+      - cerberus-net
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - cowrie
+
+  # Adaptive Morphing Watchdog
+  watchdog:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.watchdog
+    container_name: cerberus-watchdog
+    restart: unless-stopped
+    volumes:
+      - ..:/app
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - cowrie
+    networks:
+      - cerberus-net
+
+networks:
+  cerberus-net:
+    driver: bridge
+    name: cerberus-honeynet

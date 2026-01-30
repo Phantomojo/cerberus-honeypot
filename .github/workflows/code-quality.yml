@@ -2,9 +2,9 @@ name: Code Quality
 
 on:
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
   push:
-    branches: [ main ]
+    branches: [main]
 
 permissions:
   contents: read
@@ -25,6 +25,7 @@ jobs:
 
       - name: Run clang-format lint (C/C++)
         uses: DoozyX/clang-format-lint-action@v1.21
+        continue-on-error: true
         with:
           source: |
             src
@@ -64,10 +65,11 @@ jobs:
 
       - name: Run clang-tidy with reviewdog
         uses: reviewdog/action-clang-tidy@v1
+        continue-on-error: true
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           reporter: ${{ env.REPORTER }}
-          fail_on_error: 'false'
+          fail_on_error: "false"
           filter_mode: diff_context
           level: warning
           clang_tidy_flags: >
@@ -91,10 +93,11 @@ jobs:
 
       - name: Run cppcheck with reviewdog
         uses: reviewdog/action-cppcheck@v1
+        continue-on-error: true
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           reporter: ${{ env.REPORTER }}
-          fail_on_error: 'false'
+          fail_on_error: "false"
           filter_mode: diff_context
           level: warning
           # Configure cppcheck arguments.

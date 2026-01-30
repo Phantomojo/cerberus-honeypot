@@ -12,7 +12,7 @@ class Command_route(HoneyPotCommand):
     """
     Route command that reads output from Cerberus morphing engine
     """
-    
+
     def call(self):
         # Try to load from Cerberus first
         try:
@@ -25,7 +25,7 @@ class Command_route(HoneyPotCommand):
                 return
         except Exception:
             pass
-        
+
         # Fallback: basic route output
         if not self.args or self.args[0] == "-n":
             self.write("Kernel IP routing table\n")

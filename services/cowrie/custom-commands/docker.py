@@ -12,12 +12,13 @@ class Command_docker(HoneyPotCommand):
     """
     Docker command that reads output from Cerberus morphing engine
     """
-    
+
     def call(self):
         # Try to load from Cerberus first
+        client_ip = self.protocol.transport.getPeer().host
         try:
             from cowrie.commands.cerberus_loader import load_cerberus_output
-            output = load_cerberus_output("docker", self.args)
+            output = load_cerberus_output("docker", self.args, ip=client_ip)
             if output:
                 self.write(output)
                 if not output.endswith('\n'):
@@ -25,7 +26,7 @@ class Command_docker(HoneyPotCommand):
                 return
         except Exception:
             pass
-        
+
         # Fallback: basic docker output
         if not self.args:
             self.write("Usage: docker [OPTIONS] COMMAND [ARG...]\n")

@@ -29,7 +29,7 @@ assignees: ''
 
 <!-- These help make the honeypot convincing -->
 
-- **Default SSH Banner**: 
+- **Default SSH Banner**:
 ```
 <!-- e.g., SSH-2.0-dropbear_2017.75 -->
 ```
@@ -80,7 +80,7 @@ assignees: ''
 - [ ] SNMP
 - [ ] FTP
 - [ ] SMB/CIFS (for NAS)
-- [ ] Other: 
+- [ ] Other:
 
 ## Source of Information
 
@@ -92,13 +92,13 @@ assignees: ''
 - [ ] Vendor documentation
 - [ ] Teardown/reverse engineering
 - [ ] Security research paper
-- [ ] Other: 
+- [ ] Other:
 
 ### References
 
 <!-- Links to documentation, firmware, research, etc. -->
 
-- 
+-
 
 ## Sample Data
 
